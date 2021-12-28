@@ -1,10 +1,18 @@
 import { isNumber, isUndefined } from 'lodash';
-import React, { useEffect, useMemo } from 'react';
-import { useRef } from 'react';
+import React, { useId, useEffect, useMemo, useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { merge } from 'rxjs';
 
-import { useComponentConfig, useRefSelector, useThrottle, useAsync, usePrefixConfig, useId, useCustomContext, useImmer } from '../../hooks';
+import {
+  useComponentConfig,
+  useRefSelector,
+  useThrottle,
+  useAsync,
+  usePrefixConfig,
+  useCustomContext,
+  useImmer,
+  useStateBackflow,
+} from '../../hooks';
 import { DDropContext } from './Drop';
 
 export interface DDragProps {
@@ -21,26 +29,28 @@ export function DDrag(props: DDragProps) {
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const [{ dropOuter, dropCurrentData, dropPlaceholder, onDragStart: _onDragStart, onDrag: _onDrag, onDragEnd: _onDragEnd }, dropContext] =
+  const [{ dropOuter, dropPlaceholder, onDragStart: _onDragStart, onDrag: _onDrag, onDragEnd: _onDragEnd }, dropContext] =
     useCustomContext(DDropContext);
   //#endregion
 
-  const dataRef = useRef<{ dragEl: HTMLElement | null }>({ dragEl: null });
+  const dataRef = useRef<{ dragEl: HTMLElement | null }>({
+    dragEl: null,
+  });
 
   const asyncCapture = useAsync();
   const { throttleByAnimationFrame } = useThrottle();
-  const id = useId();
+  const uniqueId = useId();
   const [dragSize, setDragSize] = useImmer<{ width: number; height: number }>({ width: 0, height: 0 });
   const [fixedStyle, setFixedStyle] = useImmer<React.CSSProperties>({});
-  const [isDragging, setIsDragging] = useImmer(false);
-  const [showPlaceholder, setShowPlaceholder] = useImmer(false);
-  const [fixedDrag, setFixedDrag] = useImmer(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showPlaceholder, setShowPlaceholder] = useState(false);
+  const [fixedDrag, setFixedDrag] = useState(false);
 
   const inDrop = dropContext !== null;
 
-  const placeholderRef = useRefSelector(`[data-${dPrefix}drag-placeholder="${id}"]`);
+  const placeholderRef = useRefSelector(`[data-${dPrefix}drag-placeholder="${uniqueId}"]`);
 
-  const [containerEl] = useImmer(() => {
+  const [containerEl] = useState(() => {
     let el = document.getElementById(`${dPrefix}drag-root`);
     if (!el) {
       el = document.createElement('div');
@@ -49,6 +59,8 @@ export function DDrag(props: DDragProps) {
     }
     return el;
   });
+
+  useStateBackflow(dId, `[data-${dPrefix}drag="${uniqueId}"]`, `[data-${dPrefix}drag-placeholder="${uniqueId}"]`);
 
   //#region DidUpdate
   useEffect(() => {
@@ -200,17 +212,6 @@ export function DDrag(props: DDragProps) {
     onDragEnd,
     dId,
   ]);
-
-  useEffect(() => {
-    if (dId) {
-      dropCurrentData?.drags.set(dId, `[data-${dPrefix}drag="${id}"]`);
-      dropCurrentData?.placeholders.set(dId, `[data-${dPrefix}drag-placeholder="${id}"]`);
-      return () => {
-        dropCurrentData?.drags.delete(dId);
-        dropCurrentData?.placeholders.delete(dId);
-      };
-    }
-  }, [dId, dPrefix, dropCurrentData, id]);
   //#endregion
 
   const child = useMemo(() => {
@@ -226,7 +227,7 @@ export function DDrag(props: DDragProps) {
 
       draggable: true,
 
-      [`data-${dPrefix}drag`]: String(id),
+      [`data-${dPrefix}drag`]: uniqueId,
 
       onDragStart: (e) => {
         e.preventDefault();
@@ -275,7 +276,7 @@ export function DDrag(props: DDragProps) {
     fixedDrag,
     fixedStyle,
     dPrefix,
-    id,
+    uniqueId,
     onDragStart,
     dId,
     setDragSize,
@@ -298,12 +299,12 @@ export function DDrag(props: DDragProps) {
           width: dragSize.width,
           height: dragSize.height,
         },
-        [`data-${dPrefix}drag-placeholder`]: String(id),
+        [`data-${dPrefix}drag-placeholder`]: uniqueId,
       });
     }
 
     return null;
-  }, [dPlaceholder, dPrefix, dragSize.height, dragSize.width, dropPlaceholder, id]);
+  }, [dPlaceholder, dPrefix, dragSize.height, dragSize.width, dropPlaceholder, uniqueId]);
 
   return (
     <>

@@ -3,7 +3,7 @@
 ## DElementSelector
 
 ```tsx
-export type DElementSelector = HTMLElement | null | string | (() => HTMLElement | null);
+type DElementSelector = HTMLElement | null | string | (() => HTMLElement | null);
 ```
 
 ## DPopupProps
@@ -27,6 +27,7 @@ Extend `React.HTMLAttributes<HTMLDivElement>`.
 | dDestroy | Destroy the node after shutdown | boolean | false |
 | dMouseEnterDelay | How many milliseconds after the mouse is moved to display | number | 150 |
 | dMouseLeaveDelay | How many milliseconds after the mouse is moved out will it be displayed | number | 150 |
+| dEscClose | Whether to close by pressing Esc | boolean | true |
 | dCustomPopup | Custom popup | `(popupEl: HTMLElement, targetEl: HTMLElement) => { top: number; left: number; stateList: DTransitionStateList; arrowPosition?: React.CSSProperties }` | - |
 | onVisibleChange | popup display/hide callback | `(visible: boolean) => void` | - |
 | afterVisibleChange | Callback for the end of the popup show/hide animation | `(visible: boolean) => void` | - |
@@ -35,7 +36,7 @@ Extend `React.HTMLAttributes<HTMLDivElement>`.
 ## DPopupRef
 
 ```tsx
-export interface DPopupRef {
+interface DPopupRef {
   el: HTMLDivElement | null;
   triggerEl: HTMLElement | null;
   updatePosition: () => void;
@@ -45,7 +46,7 @@ export interface DPopupRef {
 ## DTriggerRenderProps
 
 ```tsx
-export interface DTriggerRenderProps {
+interface DTriggerRenderProps {
   [key: `data-${string}popup-trigger`]: string;
   onMouseEnter?: React.MouseEventHandler<HTMLElement>;
   onMouseLeave?: React.MouseEventHandler<HTMLElement>;
@@ -58,7 +59,7 @@ export interface DTriggerRenderProps {
 ## DTransitionStateList
 
 ```tsx
-export interface DTransitionStateList {
+interface DTransitionStateList {
   'enter-from'?: Partial<CSSStyleDeclaration>;
   'enter-active'?: Partial<CSSStyleDeclaration>;
   'enter-to'?: Partial<CSSStyleDeclaration>;
@@ -93,4 +94,24 @@ Extend `React.HTMLAttributes<HTMLDivElement>`.
 | dCancelButtonProps | Provide additional `Props` for the cancel button | [DButtonProps](/components/Button#DButtonProps) | - |
 | onOkClick | The callback of clicking the OK button | `() => void` | - |
 | onCancelClick | The callback of clicking the cancel button | `() => void` | - |
+<!-- prettier-ignore-end -->
+
+## DSelectBoxProps
+
+Extend `React.HTMLAttributes<HTMLDivElement>`.
+
+<!-- prettier-ignore-start -->
+| Property | Description | Type | Default | 
+| --- | --- | --- | --- | 
+| dSuffix | Select box suffix | React.ReactNode | - |
+| dExpanded | Whether to expand | boolean | false |
+| dShowClear | Whether to show the clear button | boolean | false |
+| dSearchable | Searchable | boolean | false |
+| dClearIcon | Custom clear button | React.ReactNode | - |
+| dSize | Select box size | 'smaller' \| 'larger' | - |
+| dPlaceholder | Placeholder content | string | - |
+| dDisabled | Whether to disable | boolean | false |
+| dLoading | Whether it is loading | boolean | false |
+| onClear | Callback for clicking the clear button | `() => void` | - |
+| onSearch | Search callback | `(value: string) => void` | - |
 <!-- prettier-ignore-end -->

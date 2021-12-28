@@ -19,6 +19,9 @@ export { DDrawer, DDrawerHeader, DDrawerFooter } from './drawer';
 export type { DDropdownProps, DDropdownItemProps, DDropdownSubProps, DDropdownGroupProps } from './dropdown';
 export { DDropdown, DDropdownItem, DDropdownSub, DDropdownGroup } from './dropdown';
 
+export type { DFormProps, DFormItemProps } from './form';
+export { DForm, DFormItem, DFormGroup, useForm, FormControl, FormGroup, Validators } from './form';
+
 export type { DRowProps, DColProps } from './grid';
 export { DRow, DCol } from './grid';
 
@@ -31,14 +34,23 @@ export { DInput, DInputAffix } from './input';
 export type { DMenuProps, DMenuGroupProps, DMenuItemProps, DMenuSubProps } from './menu';
 export { DMenu, DMenuGroup, DMenuItem, DMenuSub } from './menu';
 
+export type { DPaginationProps } from './pagination';
+export { DPagination } from './pagination';
+
 export type { DRadioProps, DRadioGroupProps } from './radio';
 export { DRadio, DRadioGroup } from './radio';
+
+export type { DSelectSingleProps, DSelectMultipleProps } from './select';
+export { DSelect } from './select';
 
 export type { DSeparatorProps } from './separator';
 export { DSeparator } from './separator';
 
 export type { DTabProps, DTabsProps } from './tabs';
 export { DTab, DTabs } from './tabs';
+
+export type { DTagProps } from './tag';
+export { DTag } from './tag';
 
 export type { DTextareaProps } from './textarea';
 export { DTextarea } from './textarea';

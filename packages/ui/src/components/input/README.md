@@ -13,20 +13,20 @@ When the user needs to enter content.
 
 ### DRadioProps
 
-Extend `React.InputHTMLAttributes<HTMLInputElement>`, [DFormControl](/components/Form#DFormControl).
+Extend `React.InputHTMLAttributes<HTMLInputElement>`.
 
 <!-- prettier-ignore-start -->
 | Property | Description | Type | Default | 
 | --- | --- | --- | --- | 
-| dValue | Bind value | [string, Updater\<string\>?] | - |
+| dModel | Bind value | [string, Updater\<string\>?] | - |
 | dSize | Set the size of the input box | 'smaller' \| 'larger' | - |
-| onValueChange | Callback for binding value change | `(value: string) => void` | - |
+| onModelChange | Callback for binding value change | `(value: string) => void` | - |
 <!-- prettier-ignore-end -->
 
 ### DInputRef
 
 ```tsx
-export type DInputRef = HTMLInputElement;
+type DInputRef = HTMLInputElement;
 ```
 
 ### DInputAffixProps

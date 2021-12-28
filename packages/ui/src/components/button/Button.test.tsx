@@ -1,15 +1,10 @@
 import { render, screen } from '@testing-library/react';
 
 import { PREFIX } from '../../tests';
-import { DCompose } from '../compose';
 import { DIcon } from '../icon';
 import { DButtonGroup, DButton } from './index';
 
-const icon = (
-  <DIcon data-testid="custom-icon" viewBox="64 64 896 896">
-    <path d="M563.8 512l262.5-312.9c4.4-5.2.7-13.1-6.1-13.1h-79.8c-4.7 0-9.2 2.1-12.3 5.7L511.6 449.8 295.1 191.7c-3-3.6-7.5-5.7-12.3-5.7H203c-6.8 0-10.5 7.9-6.1 13.1L459.4 512 196.9 824.9A7.95 7.95 0 00203 838h79.8c4.7 0 9.2-2.1 12.3-5.7l216.5-258.1 216.5 258.1c3 3.6 7.5 5.7 12.3 5.7h79.8c6.8 0 10.5-7.9 6.1-13.1L563.8 512z"></path>
-  </DIcon>
-);
+const icon = <DIcon data-testid="custom-icon"></DIcon>;
 
 describe('DButton', () => {
   const text = 'This is DButton';
@@ -24,15 +19,15 @@ describe('DButton', () => {
   });
 
   it('should `dType` work', () => {
-    const dType = 'secondary';
-    render(<DButton dType={dType} />);
-    expect(buttonClassList().contains(`${PREFIX}button--${dType}`)).toBeTruthy();
+    const type = 'secondary';
+    render(<DButton dType={type} />);
+    expect(buttonClassList().contains(`${PREFIX}button--${type}`)).toBeTruthy();
   });
 
-  it('should `dColor` work', () => {
-    const dColor = 'danger';
-    render(<DButton dColor={dColor} />);
-    expect(buttonClassList().contains(`t-${dColor}`)).toBeTruthy();
+  it('should `dTheme` work', () => {
+    const theme = 'danger';
+    render(<DButton dTheme={theme} />);
+    expect(buttonClassList().contains(`t-${theme}`)).toBeTruthy();
   });
 
   it('should `dLoading` work', () => {
@@ -107,16 +102,16 @@ describe('ButtonGroup', () => {
     expectBtnClass(`${PREFIX}button--${type}`);
   });
 
-  it('should `dColor` work', () => {
-    const color = 'warning';
+  it('should `dTheme` work', () => {
+    const theme = 'warning';
     render(
-      <DButtonGroup dColor={color}>
+      <DButtonGroup dTheme={theme}>
         <DButton>L</DButton>
         <DButton>M</DButton>
         <DButton>R</DButton>
       </DButtonGroup>
     );
-    expectBtnClass(`t-${color}`);
+    expectBtnClass(`t-${theme}`);
   });
 
   it('should `dSize` work', () => {
@@ -143,32 +138,5 @@ describe('ButtonGroup', () => {
     expect(buttons[0]).toBeDisabled();
     expect(buttons[1]).toBeDisabled();
     expect(buttons[2]).toBeDisabled();
-  });
-});
-
-describe('DCompose', () => {
-  const expectBtnClass = (className: string) => {
-    const Buttons = screen.getAllByRole('button');
-    for (const iterator of Buttons) {
-      expect(iterator.classList.contains(className)).toBeTruthy();
-    }
-  };
-  it('should `dSize` work', () => {
-    const size = 'smaller';
-    render(
-      <DCompose dSize={size}>
-        <DButton></DButton>
-      </DCompose>
-    );
-    expectBtnClass(`${PREFIX}button--${size}`);
-  });
-
-  it('should `dDisabled` work', () => {
-    const { getByRole } = render(
-      <DCompose dDisabled>
-        <DButton></DButton>
-      </DCompose>
-    );
-    expect(getByRole('button')).toBeDisabled();
   });
 });

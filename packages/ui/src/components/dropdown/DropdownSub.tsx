@@ -1,22 +1,29 @@
-import { isUndefined } from 'lodash';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import type { DStateBackflowContextData } from '../../hooks/state-backflow';
 
-import { usePrefixConfig, useComponentConfig, useCustomContext, useImmer, useRefCallback, useTranslation } from '../../hooks';
+import { isUndefined } from 'lodash';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+
+import {
+  usePrefixConfig,
+  useComponentConfig,
+  useCustomContext,
+  useRefCallback,
+  useTranslation,
+  DStateBackflowContext,
+  useStateBackflow,
+  useImmer,
+} from '../../hooks';
 import { getClassName, getHorizontalSideStyle, mergeStyle, toId } from '../../utils';
 import { DPopup } from '../_popup';
 import { DIcon } from '../icon';
 import { DDropdownContext } from './Dropdown';
-
-export interface DDropdownSubContextData {
-  onPopupTrigger: (visible: boolean) => void;
-}
-export const DDropdownSubContext = React.createContext<DDropdownSubContextData | null>(null);
 
 export interface DDropdownSubProps extends React.LiHTMLAttributes<HTMLLIElement> {
   dId: string;
   dIcon?: React.ReactNode;
   dTitle: React.ReactNode;
   dDisabled?: boolean;
+  dPopupClassName?: string;
   __level?: number;
 }
 
@@ -26,6 +33,7 @@ export function DDropdownSub(props: DDropdownSubProps) {
     dIcon,
     dTitle,
     dDisabled = false,
+    dPopupClassName,
     __level = 0,
     id,
     className,
@@ -41,7 +49,6 @@ export function DDropdownSub(props: DDropdownSubProps) {
   const dPrefix = usePrefixConfig();
   const [{ dropdownVisible, dropdownFocusId, dropdownPopupTrigger, onFocus: _onFocus, onBlur: _onBlur }] =
     useCustomContext(DDropdownContext);
-  const [{ onPopupTrigger }] = useCustomContext(DDropdownSubContext);
   //#endregion
 
   //#region Ref
@@ -51,11 +58,22 @@ export function DDropdownSub(props: DDropdownSubProps) {
 
   const [t] = useTranslation('Common');
 
-  const [activedescendant, setActiveDescendant] = useImmer<string | undefined>(undefined);
+  const [activedescendant, setActiveDescendant] = useState<string | undefined>(undefined);
 
-  const [currentPopupVisible, setCurrentPopupVisible] = useImmer(false);
-  const [childrenPopupVisiable, setChildrenPopupVisiable] = useImmer(false);
-  const popupVisible = currentPopupVisible || childrenPopupVisiable;
+  const [currentPopupVisible, setCurrentPopupVisible] = useState(false);
+  const [childrenPopupVisiable, setChildrenPopupVisiable] = useImmer(new Map<string, boolean>());
+  const popupVisible = useMemo(() => {
+    let visible = currentPopupVisible;
+    for (const childrenVisiable of childrenPopupVisiable.values()) {
+      if (childrenVisiable) {
+        visible = childrenVisiable;
+        break;
+      }
+    }
+    return visible;
+  }, [childrenPopupVisiable, currentPopupVisible]);
+
+  useStateBackflow(popupVisible);
 
   const _id = id ?? `${dPrefix}dropdown-sub-${toId(dId)}`;
 
@@ -115,23 +133,31 @@ export function DDropdownSub(props: DDropdownSubProps) {
       setCurrentPopupVisible(false);
     }
   }, [dropdownVisible, setCurrentPopupVisible]);
-
-  useEffect(() => {
-    onPopupTrigger?.(popupVisible);
-  }, [onPopupTrigger, popupVisible]);
   //#endregion
 
-  const contextValue = useMemo<DDropdownSubContextData>(
+  const stateBackflowContextValue = useMemo<DStateBackflowContextData>(
     () => ({
-      onPopupTrigger: (visible) => {
-        setChildrenPopupVisiable(visible);
+      addState: (identity, visible) => {
+        setChildrenPopupVisiable((draft) => {
+          draft.set(identity, visible);
+        });
+      },
+      updateState: (identity, visible) => {
+        setChildrenPopupVisiable((draft) => {
+          draft.set(identity, visible);
+        });
+      },
+      removeState: (identity) => {
+        setChildrenPopupVisiable((draft) => {
+          draft.delete(identity);
+        });
       },
     }),
     [setChildrenPopupVisiable]
   );
 
   return (
-    <DDropdownSubContext.Provider value={contextValue}>
+    <DStateBackflowContext.Provider value={stateBackflowContextValue}>
       <li
         {...restProps}
         ref={liRef}
@@ -158,7 +184,7 @@ export function DDropdownSub(props: DDropdownSubProps) {
       </li>
       {!dDisabled && (
         <DPopup
-          className={`${dPrefix}dropdown-sub__popup`}
+          className={getClassName(dPopupClassName, `${dPrefix}dropdown-sub-popup`)}
           dVisible={popupVisible}
           dPopupContent={
             <ul
@@ -191,6 +217,6 @@ export function DDropdownSub(props: DDropdownSubProps) {
           onVisibleChange={handlePopupVisibleChange}
         />
       )}
-    </DDropdownSubContext.Provider>
+    </DStateBackflowContext.Provider>
   );
 }

@@ -3,7 +3,7 @@
 ## DElementSelector
 
 ```tsx
-export type DElementSelector = HTMLElement | null | string | (() => HTMLElement | null);
+type DElementSelector = HTMLElement | null | string | (() => HTMLElement | null);
 ```
 
 ## DPopupProps
@@ -27,6 +27,7 @@ export type DElementSelector = HTMLElement | null | string | (() => HTMLElement 
 | dDestroy | 关闭后销毁节点 | boolean | false |
 | dMouseEnterDelay | 鼠标移入后多少毫秒后显示 | number | 150 |
 | dMouseLeaveDelay | 鼠标移出后多少毫秒后显示 | number | 150 |
+| dEscClose | 按下Esc是否关闭 | boolean | true |
 | dCustomPopup | 自定义 popup | `(popupEl: HTMLElement, targetEl: HTMLElement) => { top: number; left: number; stateList: DTransitionStateList; arrowPosition?: React.CSSProperties }` | - |
 | onVisibleChange | popup 显示/隐藏的回调 | `(visible: boolean) => void` | - |
 | afterVisibleChange |  popup 显示/隐藏动画结束的回调 | `(visible: boolean) => void` | - |
@@ -35,7 +36,7 @@ export type DElementSelector = HTMLElement | null | string | (() => HTMLElement 
 ## DPopupRef
 
 ```tsx
-export interface DPopupRef {
+interface DPopupRef {
   el: HTMLDivElement | null;
   triggerEl: HTMLElement | null;
   updatePosition: () => void;
@@ -45,7 +46,7 @@ export interface DPopupRef {
 ## DTriggerRenderProps
 
 ```tsx
-export interface DTriggerRenderProps {
+interface DTriggerRenderProps {
   [key: `data-${string}popup-trigger`]: string;
   onMouseEnter?: React.MouseEventHandler<HTMLElement>;
   onMouseLeave?: React.MouseEventHandler<HTMLElement>;
@@ -58,7 +59,7 @@ export interface DTriggerRenderProps {
 ## DTransitionStateList
 
 ```tsx
-export interface DTransitionStateList {
+interface DTransitionStateList {
   'enter-from'?: Partial<CSSStyleDeclaration>;
   'enter-active'?: Partial<CSSStyleDeclaration>;
   'enter-to'?: Partial<CSSStyleDeclaration>;
@@ -93,4 +94,24 @@ export interface DTransitionStateList {
 | dCancelButtonProps | 为取消按钮提供额外的 `Props` | [DButtonProps](/components/Button#DButtonProps) | - |
 | onOkClick | 点击确定按钮的回调 | `() => void` | - |
 | onCancelClick | 点击取消按钮的回调 | `() => void` | - |
+<!-- prettier-ignore-end -->
+
+## DSelectBoxProps
+
+继承 `React.HTMLAttributes<HTMLDivElement>`.
+
+<!-- prettier-ignore-start -->
+| 参数 | 说明 | 类型 | 默认值 | 
+| --- | --- | --- | --- | 
+| dSuffix | 选择框后缀 | React.ReactNode | - |
+| dExpanded | 是否展开 | boolean | false |
+| dShowClear | 是否显示清除按钮 | boolean | false |
+| dSearchable | 是否可搜索 | boolean | false |
+| dClearIcon | 自定义清除按钮 | React.ReactNode | - |
+| dSize | 选择框尺寸 | 'smaller' \| 'larger' | - |
+| dPlaceholder | 占位内容 | string | - |
+| dDisabled | 是否禁用 | boolean | false |
+| dLoading | 是否为加载状态 | boolean | false |
+| onClear | 点击清除按钮的回调 | `() => void` | - |
+| onSearch | 搜索的回调 | `(value: string) => void` | - |
 <!-- prettier-ignore-end -->

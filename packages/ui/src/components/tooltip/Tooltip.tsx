@@ -1,9 +1,9 @@
-import type { Updater } from '../../hooks/immer';
+import type { Updater } from '../../hooks/two-way-binding';
 import type { DPopupProps, DPopupRef, DTriggerRenderProps } from '../_popup';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useId } from 'react';
 
-import { usePrefixConfig, useComponentConfig, useId, useTwoWayBinding } from '../../hooks';
+import { usePrefixConfig, useComponentConfig, useTwoWayBinding } from '../../hooks';
 import { getClassName } from '../../utils';
 import { DPopup } from '../_popup';
 
@@ -14,15 +14,15 @@ export interface DTooltipProps extends Omit<DPopupProps, 'dVisible' | 'dPopupCon
   dTitle: React.ReactNode;
 }
 
-export const DTooltip = React.forwardRef<DTooltipRef, DTooltipProps>((props, ref) => {
+const Tooltip: React.ForwardRefRenderFunction<DTooltipRef, DTooltipProps> = (props, ref) => {
   const { dVisible, dTitle, onVisibleChange, id, className, children, ...restProps } = useComponentConfig(DTooltip.name, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
   //#endregion
 
-  const _id = useId();
-  const __id = id ?? `${dPrefix}tooltip-${_id}`;
+  const uniqueId = useId();
+  const _id = id ?? `${dPrefix}tooltip-${uniqueId}`;
 
   const [visible, changeVisible] = useTwoWayBinding(false, dVisible, onVisibleChange);
 
@@ -61,20 +61,20 @@ export const DTooltip = React.forwardRef<DTooltipRef, DTooltipProps>((props, ref
         return React.cloneElement(child, {
           ...child.props,
           ..._renderProps,
-          'aria-describedby': __id,
+          'aria-describedby': _id,
         });
       }
 
       return null;
     },
-    [__id, children]
+    [_id, children]
   );
 
   return (
     <DPopup
       {...restProps}
       ref={ref}
-      id={__id}
+      id={_id}
       className={getClassName(className, `${dPrefix}tooltip`)}
       role="tooltip"
       dVisible={visible}
@@ -83,4 +83,6 @@ export const DTooltip = React.forwardRef<DTooltipRef, DTooltipProps>((props, ref
       onVisibleChange={changeVisible}
     />
   );
-});
+};
+
+export const DTooltip = React.forwardRef(Tooltip);

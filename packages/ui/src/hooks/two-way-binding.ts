@@ -1,56 +1,120 @@
-import type { Updater } from './immer';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import type { Updater as IUpdater } from './immer';
 
-import { isEqual } from 'lodash';
-import { useCallback, useMemo } from 'react';
+import { freeze, produce } from 'immer';
+import { isFunction, isNull, isUndefined } from 'lodash';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { DFormItemContext } from '../components/form';
+import { DFormContext, DFormGroupContext } from '../components/form';
 import { useCustomContext } from './context';
-import { useImmer } from './immer';
+import { useStateBackflow } from './state-backflow';
+
+export type Updater<S> = (value: S) => void;
 
 export function useTwoWayBinding<T>(
   initialValue: T | (() => T),
   input?: [T, Updater<T>?],
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onValueChange?: (value: any) => void,
-  formControlOptions?: {
-    enable?: boolean;
-    name?: string;
+  opt?: {
+    id: string;
+    formControlName: string;
   }
-): [T, (value: T) => void] {
-  const [{ value: formControlValue, onValueChange: onFormControlValueChange }, formItemContext] = useCustomContext(DFormItemContext);
-  const formControlEnable = formControlOptions && (formControlOptions.enable ?? true) && formItemContext !== null;
-  const formControlName = formControlOptions?.name;
+) {
+  const [{ formInstance }] = useCustomContext(DFormContext);
+  const [{ formGroupPath }] = useCustomContext(DFormGroupContext);
+  const formControlName = opt?.formControlName;
+
+  const identity = useStateBackflow(formControlName, opt?.id);
+
+  const formControl = useMemo(() => {
+    if (formControlName && formInstance) {
+      const control = formInstance.form.get((formGroupPath ?? []).concat([formControlName]));
+      if (isNull(control)) {
+        throw new Error(`Cant find '${formControlName}', please check if name exists!`);
+      }
+      return control;
+    }
+
+    return null;
+  }, [formControlName, formGroupPath, formInstance]);
+  useEffect(() => {
+    if (formControl) {
+      const ob = formControl.asyncVerifyComplete.subscribe({
+        next: (control) => {
+          if (control.dirty) {
+            formInstance?.updateForm();
+          }
+        },
+      });
+
+      return () => {
+        ob.unsubscribe();
+      };
+    }
+  }, [formControl, formInstance]);
 
   const setValue = input?.[1];
-  const [autoValue, setAutoValue] = useImmer<T>(initialValue);
-  const value = input?.[0] ?? autoValue;
+  const [autoValue, setAutoValue] = useState<T>(initialValue);
+  const value = isUndefined(input?.[0]) ? autoValue : input![0];
 
-  const dataRef = useMemo(() => {
-    return { current: formControlEnable ? (formControlValue as T) : value };
-  }, [formControlEnable, formControlValue, value]);
+  const currentValue = formControl ? formControl.value : value;
 
   const changeValue = useCallback(
-    (val: T) => {
-      if (formControlEnable) {
-        if (formControlName) {
-          if (!isEqual(val, dataRef.current)) {
-            dataRef.current = val;
-            onFormControlValueChange?.(val, formControlName);
-          }
-        } else {
-          console.warn('Please add formControlName to component that in FormControl');
+    (updater: any) => {
+      const val = isFunction(updater) ? produce(currentValue, updater) : freeze(updater);
+
+      if (formControl) {
+        if (!Object.is(val, currentValue)) {
+          formControl.markAsDirty(true);
+          formControl.setValue(val);
+          formInstance!.updateForm();
         }
       } else {
         setValue?.(val);
         setAutoValue(val);
-        if (!isEqual(val, dataRef.current)) {
-          dataRef.current = val;
+        if (!Object.is(val, currentValue)) {
           onValueChange?.(val);
         }
       }
     },
-    [dataRef, formControlEnable, formControlName, onFormControlValueChange, onValueChange, setAutoValue, setValue]
+    [currentValue, formControl, formInstance, onValueChange, setValue]
   );
 
-  return [dataRef.current, changeValue];
+  const res = useMemo<
+    [
+      T,
+      IUpdater<T>,
+      {
+        validateClassName?: string;
+        ariaAttribute?: React.HTMLAttributes<HTMLElement>;
+        controlDisabled: boolean;
+      }
+    ]
+  >(
+    () => [
+      currentValue,
+      changeValue,
+      {
+        validateClassName:
+          formControl && formControl.dirty
+            ? formControl.pending
+              ? 'is-pending'
+              : formControl.invalid
+              ? 'is-invalid'
+              : undefined
+            : undefined,
+        ariaAttribute:
+          formControl && formControl.dirty
+            ? formControl.invalid
+              ? { 'aria-invalid': true, 'aria-describedby': formControl.errors ? identity : undefined }
+              : { 'aria-invalid': false }
+            : undefined,
+        controlDisabled: formControl && formControl.disabled ? true : false,
+      },
+    ],
+    [currentValue, changeValue, formControl, identity]
+  );
+
+  return res;
 }

@@ -1,21 +1,21 @@
+import type { DGeneralStateContextData } from '../../hooks/general-state';
 import type { DButtonProps } from './Button';
 
 import React, { useMemo } from 'react';
 
-import { usePrefixConfig, useComponentConfig } from '../../hooks';
+import { usePrefixConfig, useComponentConfig, useGeneralState, DGeneralStateContext } from '../../hooks';
 import { getClassName } from '../../utils';
 
 export interface DButtonGroupContextData {
   buttonGroupType: DButtonProps['dType'];
-  buttonGroupColor: DButtonProps['dColor'];
-  buttonGroupSize: DButtonProps['dSize'];
+  buttonGroupTheme: DButtonProps['dTheme'];
   buttonGroupDisabled: boolean;
 }
 export const DButtonGroupContext = React.createContext<DButtonGroupContextData | null>(null);
 
 export interface DButtonGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   dType?: DButtonProps['dType'];
-  dColor?: DButtonProps['dColor'];
+  dTheme?: DButtonProps['dTheme'];
   dSize?: DButtonProps['dSize'];
   dDisabled?: boolean;
 }
@@ -23,7 +23,7 @@ export interface DButtonGroupProps extends React.HTMLAttributes<HTMLDivElement> 
 export function DButtonGroup(props: DButtonGroupProps) {
   const {
     dType = 'secondary',
-    dColor = 'primary',
+    dTheme = 'primary',
     dDisabled = false,
     dSize,
     className,
@@ -33,23 +33,36 @@ export function DButtonGroup(props: DButtonGroupProps) {
 
   //#region Context
   const dPrefix = usePrefixConfig();
+  const { gSize, gDisabled } = useGeneralState();
   //#endregion
+
+  const size = dSize ?? gSize;
+  const disabled = dDisabled || gDisabled;
 
   const contextValue = useMemo<DButtonGroupContextData>(
     () => ({
       buttonGroupType: dType,
-      buttonGroupColor: dColor,
-      buttonGroupSize: dSize,
+      buttonGroupTheme: dTheme,
       buttonGroupDisabled: dDisabled,
     }),
-    [dType, dColor, dSize, dDisabled]
+    [dType, dTheme, dDisabled]
+  );
+
+  const generalStateContextValue = useMemo<DGeneralStateContextData>(
+    () => ({
+      gSize: size,
+      gDisabled: disabled,
+    }),
+    [disabled, size]
   );
 
   return (
-    <DButtonGroupContext.Provider value={contextValue}>
-      <div {...restProps} className={getClassName(className, `${dPrefix}button-group`)}>
-        {children}
-      </div>
-    </DButtonGroupContext.Provider>
+    <DGeneralStateContext.Provider value={generalStateContextValue}>
+      <DButtonGroupContext.Provider value={contextValue}>
+        <div {...restProps} className={getClassName(className, `${dPrefix}button-group`)}>
+          {children}
+        </div>
+      </DButtonGroupContext.Provider>
+    </DGeneralStateContext.Provider>
   );
 }

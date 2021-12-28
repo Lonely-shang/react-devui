@@ -1,18 +1,9 @@
-import type { Updater } from '../../hooks/immer';
+import type { Updater } from '../../hooks/two-way-binding';
 import type { DDropdownItemProps } from './DropdownItem';
 
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useId, useCallback, useEffect, useMemo, useState } from 'react';
 
-import {
-  usePrefixConfig,
-  useComponentConfig,
-  useImmer,
-  useRefCallback,
-  useTwoWayBinding,
-  useId,
-  useAsync,
-  useTranslation,
-} from '../../hooks';
+import { usePrefixConfig, useComponentConfig, useImmer, useRefCallback, useTwoWayBinding, useAsync, useTranslation } from '../../hooks';
 import { getClassName, getVerticalSideStyle } from '../../utils';
 import { DPopup } from '../_popup';
 
@@ -35,6 +26,7 @@ export interface DDropdownProps extends React.HTMLAttributes<HTMLElement> {
   dDestroy?: boolean;
   dArrow?: boolean;
   dCloseOnItemClick?: boolean;
+  dPopupClassName?: string;
   onVisibleChange?: (visible: boolean) => void;
   onItemClick?: (id: string) => void;
 }
@@ -49,6 +41,7 @@ export function DDropdown(props: DDropdownProps) {
     dDestroy = false,
     dArrow = false,
     dCloseOnItemClick = true,
+    dPopupClassName,
     onVisibleChange,
     onItemClick,
     id,
@@ -65,26 +58,21 @@ export function DDropdown(props: DDropdownProps) {
   const [navEl, navRef] = useRefCallback();
   //#endregion
 
-  const dataRef = useRef<{ navIds: Set<string>; ids: Map<string, Set<string>> }>({
-    navIds: new Set(),
-    ids: new Map(),
-  });
-
   const [t] = useTranslation('Common');
 
   const asyncCapture = useAsync();
 
   const [focusId, setFocusId] = useImmer<DDropdownContextData['dropdownFocusId']>(null);
-  const [activedescendant, setActiveDescendant] = useImmer<string | undefined>(undefined);
+  const [activedescendant, setActiveDescendant] = useState<string | undefined>(undefined);
 
   const [visible, changeVisible] = useTwoWayBinding(false, dVisible, onVisibleChange);
 
-  const _id = useId();
-  const __id = id ?? `${dPrefix}dropdown-${_id}`;
+  const uniqueId = useId();
+  const _id = id ?? `${dPrefix}dropdown-${uniqueId}`;
 
   const customTransition = useCallback(
     (popupEl, targetEl) => {
-      const { top, left, transformOrigin, arrowPosition } = getVerticalSideStyle(popupEl, targetEl, dPlacement, 12);
+      const { top, left, transformOrigin, arrowPosition } = getVerticalSideStyle(popupEl, targetEl, dPlacement, 8);
 
       return {
         top,
@@ -142,28 +130,7 @@ export function DDropdown(props: DDropdownProps) {
   );
 
   const childs = useMemo(() => {
-    dataRef.current.navIds.clear();
-    dataRef.current.ids.clear();
-
-    const getAllIds = (child: React.ReactElement) => {
-      if (child.props?.dId) {
-        const nodes = (React.Children.toArray(child.props?.children) as React.ReactElement[]).filter((node) => node.props?.dId);
-        const ids = nodes.map((node) => node.props?.dId);
-        dataRef.current.ids.set(child.props?.dId, new Set(ids));
-
-        nodes.forEach((node) => {
-          getAllIds(node);
-        });
-      }
-    };
-
-    React.Children.toArray(children).forEach((node) => {
-      getAllIds(node as React.ReactElement);
-    });
-
     return React.Children.map(children as Array<React.ReactElement<DDropdownItemProps>>, (child, index) => {
-      child.props.dId && dataRef.current.navIds.add(child.props.dId);
-
       let tabIndex = child.props.tabIndex;
       if (index === 0) {
         tabIndex = 0;
@@ -181,7 +148,7 @@ export function DDropdown(props: DDropdownProps) {
   return (
     <DDropdownContext.Provider value={contextValue}>
       <DPopup
-        className={`${dPrefix}dropdown__popup`}
+        className={getClassName(dPopupClassName, `${dPrefix}dropdown-popup`)}
         dVisible={visible}
         dTrigger={dTrigger}
         dPopupContent={
@@ -205,7 +172,7 @@ export function DDropdown(props: DDropdownProps) {
             role: 'button',
             'aria-haspopup': 'menu',
             'aria-expanded': visible ? true : undefined,
-            'aria-controls': __id,
+            'aria-controls': _id,
           })
         }
         dDestroy={dDestroy}

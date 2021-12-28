@@ -14,8 +14,6 @@
 }
 
 @include b(button) {
-  @include compose-item(':not([disabled]):not(.is-loading)');
-
   $selector: &;
 
   position: relative;
@@ -27,14 +25,14 @@
   height: var(--#{$variable-prefix}size);
   margin: 0;
   padding: 0 var(--#{$variable-prefix}padding-size);
-  border-radius: 2px;
+  border-radius: var(--#{$variable-prefix}border-radius);
 
   font-size: var(--#{$variable-prefix}font);
   font-family: inherit;
-  line-height: inherit;
   white-space: nowrap;
   text-align: unset;
   text-transform: none;
+  vertical-align: top;
 
   outline: none;
   cursor: pointer;
@@ -42,10 +40,6 @@
   transition: border-color 0.2s linear, color 0.2s linear, background-color 0.2s linear;
 
   appearance: none;
-
-  & + & {
-    margin-left: var(--#{$variable-prefix}margin-size);
-  }
 
   &:disabled {
     cursor: not-allowed;
@@ -96,7 +90,7 @@
 
     background-color: transparent;
 
-    @include utils-disabled(':disabled', true);
+    @include utils-disabled(true, ':disabled');
 
     @include button-hover {
       border-color: var(--#{$variable-prefix}button-color-lighter);
@@ -174,7 +168,7 @@
 
     background-color: transparent;
 
-    @include utils-disabled(':disabled', true);
+    @include utils-disabled(true, ':disabled');
 
     @include button-hover {
       color: var(--#{$variable-prefix}button-color-lighter);
@@ -214,21 +208,19 @@
   }
 
   @include m(round) {
-    border-radius: 32px;
+    border-radius: var(--#{$variable-prefix}size);
   }
 
   @include m(smaller) {
     --#{$variable-prefix}size: var(--#{$variable-prefix}size-smaller);
     --#{$variable-prefix}font: var(--#{$variable-prefix}font-smaller);
     --#{$variable-prefix}padding-size: var(--#{$variable-prefix}padding-size-smaller);
-    --#{$variable-prefix}margin-size: var(--#{$variable-prefix}margin-size-smaller);
   }
 
   @include m(larger) {
     --#{$variable-prefix}size: var(--#{$variable-prefix}size-larger);
     --#{$variable-prefix}font: var(--#{$variable-prefix}font-larger);
     --#{$variable-prefix}padding-size: var(--#{$variable-prefix}padding-size-larger);
-    --#{$variable-prefix}margin-size: var(--#{$variable-prefix}margin-size-larger);
   }
 
   @include m(block) {
@@ -263,12 +255,11 @@
   }
 
   @include e(icon) {
+    display: inline-flex;
     width: calc(1em + 8px);
 
-    line-height: 0;
-
     @include m(right) {
-      text-align: right;
+      justify-content: flex-end;
     }
   }
 }
@@ -277,9 +268,7 @@
   display: inline-flex;
   align-items: center;
 
-  & + & {
-    margin-left: 10px;
-  }
+  vertical-align: top;
 
   $button-selector: '.#{$variable-prefix}button';
   #{$button-selector} {

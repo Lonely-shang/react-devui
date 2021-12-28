@@ -1,36 +1,33 @@
-import type { DTransitionProps } from '../_transition';
+import { useEffect, useCallback } from 'react';
 
-import React, { useEffect, useCallback, useRef, useImperativeHandle } from 'react';
-
-import { usePrefixConfig, useId, useAsync, useRefCallback } from '../../hooks';
+import { usePrefixConfig, useAsync } from '../../hooks';
 import { getClassName, mergeStyle } from '../../utils';
-import { DTransition } from '../_transition';
 import { DMask } from './Mask';
 
-export interface DDialogRef {
-  id: number;
-  el: HTMLDivElement | null;
-  contentEl: HTMLDivElement | null;
-}
-
 export interface DDialogProps extends React.HTMLAttributes<HTMLDivElement> {
+  dId: string;
   dVisible: boolean;
-  dCallbackList?: NonNullable<DTransitionProps['dCallbackList']>;
+  dHidden: boolean;
   dContentProps?: React.HTMLAttributes<HTMLDivElement>;
   dMask?: boolean;
   dMaskClosable?: boolean;
   dDestroy?: boolean;
+  dDialogRef?: React.LegacyRef<HTMLDivElement>;
+  dDialogContentRef?: React.LegacyRef<HTMLDivElement>;
   onClose?: () => void;
 }
 
-export const DDialog = React.forwardRef<DDialogRef, DDialogProps>((props, ref) => {
+export function DDialog(props: DDialogProps) {
   const {
+    dId,
     dVisible,
-    dCallbackList,
+    dHidden,
     dContentProps,
     dMask = true,
     dMaskClosable = true,
     dDestroy = false,
+    dDialogRef,
+    dDialogContentRef,
     onClose,
     className,
     style,
@@ -42,17 +39,7 @@ export const DDialog = React.forwardRef<DDialogRef, DDialogProps>((props, ref) =
   const dPrefix = usePrefixConfig();
   //#endregion
 
-  //#region Ref
-  const [dialogEl, dialogRef] = useRefCallback<HTMLDivElement>();
-  const [dialogContentEl, dialogContentRef] = useRefCallback<HTMLDivElement>();
-  //#endregion
-
-  const dataRef = useRef<{ preActiveEl: HTMLElement | null }>({
-    preActiveEl: null,
-  });
-
   const asyncCapture = useAsync();
-  const id = useId();
 
   const handleMaskClose = useCallback(() => {
     if (dMaskClosable) {
@@ -72,57 +59,31 @@ export const DDialog = React.forwardRef<DDialogRef, DDialogProps>((props, ref) =
   }, [asyncCapture, dVisible, onClose]);
   //#endregion
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      id,
-      el: dialogEl,
-      contentEl: dialogContentEl,
-    }),
-    [dialogContentEl, dialogEl, id]
-  );
-
   return (
-    <DTransition
-      dEl={dialogContentEl}
-      dVisible={dVisible}
-      dCallbackList={{
-        ...dCallbackList,
-        beforeEnter: (el) => dCallbackList?.beforeEnter(el),
-        afterEnter: (el) => {
-          dCallbackList?.afterEnter?.(el);
-          dataRef.current.preActiveEl = document.activeElement as HTMLElement | null;
-          el.focus({ preventScroll: true });
-        },
-        beforeLeave: (el) => {
-          dataRef.current.preActiveEl?.focus({ preventScroll: true });
-          return dCallbackList?.beforeLeave(el);
-        },
-      }}
-      dRender={(hidden) =>
-        !(dDestroy && hidden) && (
+    // eslint-disable-next-line react/jsx-no-useless-fragment
+    <>
+      {!(dDestroy && dHidden) && (
+        <div
+          {...restProps}
+          ref={dDialogRef}
+          className={getClassName(className, `${dPrefix}dialog`)}
+          style={mergeStyle(style, { display: dHidden ? 'none' : undefined })}
+          role="dialog"
+          aria-modal="true"
+          aria-describedby={`${dPrefix}dialog-content-${dId}`}
+        >
+          {dMask && <DMask dVisible={dVisible} onClose={handleMaskClose} />}
           <div
-            {...restProps}
-            ref={dialogRef}
-            className={getClassName(className, `${dPrefix}dialog`)}
-            style={mergeStyle(style, { display: hidden ? 'none' : undefined })}
-            role="dialog"
-            aria-modal="true"
-            aria-describedby={`${dPrefix}dialog-content-${id}`}
+            {...dContentProps}
+            ref={dDialogContentRef}
+            id={`${dPrefix}dialog-content-${dId}`}
+            className={getClassName(dContentProps?.className, `${dPrefix}dialog__content`)}
+            tabIndex={-1}
           >
-            {dMask && <DMask dVisible={dVisible} onClose={handleMaskClose} />}
-            <div
-              {...dContentProps}
-              ref={dialogContentRef}
-              id={`${dPrefix}dialog-content-${id}`}
-              className={getClassName(dContentProps?.className, `${dPrefix}dialog__content`)}
-              tabIndex={-1}
-            >
-              {children}
-            </div>
+            {children}
           </div>
-        )
-      }
-    />
+        </div>
+      )}
+    </>
   );
-});
+}

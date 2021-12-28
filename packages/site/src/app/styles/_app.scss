@@ -99,20 +99,12 @@ pre code.hljs {
 code:not(pre > code) {
   margin: 0 1px;
   padding: 4px 6px;
-  border-radius: 3px;
+  /* stylelint-disable-next-line declaration-property-value-allowed-list */
+  border-radius: 2px;
 
   font-family: Consolas, Menlo, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
 
   background-color: var(--app-code-background-color);
-}
-
-p a[href] {
-  color: var(--d-color-primary);
-  text-decoration: none;
-
-  &:hover {
-    color: var(--d-color-primary-lighter);
-  }
 }
 
 h1 {
@@ -194,7 +186,26 @@ h3 {
 }
 
 // demo general style
-.app-demo-box__renderer {
+.app-component-route-article__demos {
+  section[id^='Button'],
+  section[id^='Dropdown'],
+  section[id^='Tooltip'] {
+    .d-button {
+      margin-right: 8px;
+      margin-bottom: 12px;
+    }
+
+    .d-button-group {
+      margin-right: 8px;
+      margin-bottom: 12px;
+
+      .d-button {
+        margin-right: 0;
+        margin-bottom: 0;
+      }
+    }
+  }
+
   .d-menu:not(.d-menu--horizontal) {
     width: 320px;
     max-width: 100%;
@@ -261,4 +272,10 @@ h3 {
 
 .app-demo-col--lighter {
   background-color: var(--d-color-primary-lighter);
+}
+
+.app-demo-flex-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
 }
