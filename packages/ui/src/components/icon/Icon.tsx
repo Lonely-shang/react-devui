@@ -3,18 +3,19 @@ import React, { useMemo, useContext } from 'react';
 
 import { usePrefixConfig, useComponentConfig } from '../../hooks';
 import { DConfigContext } from '../../hooks/d-config';
-import { getClassName, mergeStyle } from '../../utils';
+import { generateComponentMate, getClassName, mergeStyle } from '../../utils';
 
 export interface DIconProps extends React.SVGAttributes<SVGElement> {
   dName?: string;
   dType?: string;
-  dSize?: string | number;
+  dSize?: number | string | [number | string, number | string];
   dTheme?: 'primary' | 'success' | 'warning' | 'danger';
   dRotate?: number;
   dSpin?: boolean;
-  dSpinSpeed?: string | number;
+  dSpinSpeed?: number | string;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DIcon');
 export function DIcon(props: DIconProps) {
   const dPrefix = usePrefixConfig();
   const {
@@ -31,7 +32,7 @@ export function DIcon(props: DIconProps) {
     fill = 'currentColor',
     children,
     ...restProps
-  } = useComponentConfig(DIcon.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   const iconContext = useContext(DConfigContext).icons;
 
@@ -56,6 +57,9 @@ export function DIcon(props: DIconProps) {
     return [];
   }, [iconContext, dName, dType, children]);
 
+  const width = isArray(dSize) ? dSize[0] : dSize;
+  const height = isArray(dSize) ? dSize[1] : dSize;
+
   return (
     <svg
       {...restProps}
@@ -64,8 +68,8 @@ export function DIcon(props: DIconProps) {
       xmlnsXlink="http://www.w3.org/1999/xlink"
       viewBox={_viewBox ?? viewBox}
       fill={fill}
-      height={dSize}
-      width={dSize}
+      width={width}
+      height={height}
       className={getClassName(className, `${dPrefix}icon`, {
         [`t-${dTheme}`]: dTheme,
       })}

@@ -7,13 +7,31 @@
 
 @mixin utils-disabled($background: false, $disabled: '.is-disabled') {
   &#{$disabled} {
-    color: var(--#{$variable-prefix}disabled-color);
+    color: var(--#{$variable-prefix}color-disabled);
 
     cursor: not-allowed;
 
     @if $background {
-      background-color: var(--#{$variable-prefix}disabled-background-color);
+      background-color: var(--#{$variable-prefix}background-color-disabled);
     }
+  }
+}
+
+@mixin utils-loading($border: '0') {
+  &::after {
+    position: absolute;
+    top: -#{$border};
+    right: -#{$border};
+    bottom: -#{$border};
+    left: -#{$border};
+
+    border-radius: inherit;
+
+    /* stylelint-disable-next-line declaration-property-value-allowed-list */
+    background-color: rgb(255 255 255 / 30%);
+
+    content: '';
+    pointer-events: none;
   }
 }
 

@@ -1,7 +1,7 @@
 import type { DElementSelector } from '../../hooks/element-ref';
 import type { Updater } from '../../hooks/two-way-binding';
 
-import { isUndefined, toNumber } from 'lodash';
+import { isUndefined } from 'lodash';
 import React, { useCallback, useId, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 
@@ -15,7 +15,7 @@ import {
   useDTransition,
   useMaxIndex,
 } from '../../hooks';
-import { getClassName, mergeStyle } from '../../utils';
+import { generateComponentMate, getClassName, mergeStyle } from '../../utils';
 import { DDialog } from '../_dialog';
 
 export interface DDrawerContextData {
@@ -30,9 +30,10 @@ export interface DDrawerProps extends React.HTMLAttributes<HTMLDivElement> {
   dPlacement?: 'top' | 'right' | 'bottom' | 'left';
   dWidth?: number | string;
   dHeight?: number | string;
-  dZIndex?: number;
+  dZIndex?: number | string;
   dMask?: boolean;
   dMaskClosable?: boolean;
+  dEscClosable?: boolean;
   dHeader?: React.ReactNode;
   dFooter?: React.ReactNode;
   dDestroy?: boolean;
@@ -40,9 +41,10 @@ export interface DDrawerProps extends React.HTMLAttributes<HTMLDivElement> {
   onClose?: () => void;
   afterVisibleChange?: (visible: boolean) => void;
   __onVisibleChange?: (distance: { visible: boolean; top: number; right: number; bottom: number; left: number }) => void;
-  __zIndex?: number;
+  __zIndex?: number | string;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DDrawer');
 export function DDrawer(props: DDrawerProps) {
   const {
     dVisible,
@@ -53,6 +55,7 @@ export function DDrawer(props: DDrawerProps) {
     dZIndex,
     dMask = true,
     dMaskClosable = true,
+    dEscClosable = true,
     dHeader,
     dFooter,
     dDestroy = false,
@@ -65,7 +68,7 @@ export function DDrawer(props: DDrawerProps) {
     style,
     children,
     ...restProps
-  } = useComponentConfig(DDrawer.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
@@ -119,7 +122,7 @@ export function DDrawer(props: DDrawerProps) {
         dataRef.current.preActiveEl = document.activeElement as HTMLElement | null;
         el.focus({ preventScroll: true });
       },
-      beforeLeave: (el) => {
+      beforeLeave: () => {
         dataRef.current.preActiveEl?.focus({ preventScroll: true });
         __onVisibleChange?.({
           ...distance,
@@ -141,17 +144,20 @@ export function DDrawer(props: DDrawerProps) {
   const maxZIndex = useMaxIndex(!hidden);
   const zIndex = useMemo(() => {
     if (!hidden) {
+      if (!isUndefined(dZIndex)) {
+        return dZIndex;
+      }
       if (isUndefined(__zIndex)) {
         if (isFixed) {
           return maxZIndex;
         } else {
-          return toNumber(getComputedStyle(document.body).getPropertyValue(`--${dPrefix}absolute-z-index`));
+          return `var(--${dPrefix}zindex-absolute)`;
         }
       } else {
         return __zIndex;
       }
     }
-  }, [__zIndex, dPrefix, hidden, isFixed, maxZIndex]);
+  }, [__zIndex, dPrefix, dZIndex, hidden, isFixed, maxZIndex]);
 
   const handleContainer = useCallback(() => {
     if (isFixed) {
@@ -186,13 +192,13 @@ export function DDrawer(props: DDrawerProps) {
 
   const childDrawer = useMemo(() => {
     if (dChildDrawer) {
-      const _childDrawer = React.Children.only(dChildDrawer) as React.ReactElement<DDrawerProps>;
-      return React.cloneElement<DDrawerProps>(_childDrawer, {
-        ..._childDrawer.props,
+      const childDrawer = React.Children.only(dChildDrawer) as React.ReactElement<DDrawerProps>;
+      return React.cloneElement<DDrawerProps>(childDrawer, {
+        ...childDrawer.props,
         __onVisibleChange: (distance) => {
           setDistance(distance);
         },
-        __zIndex: isUndefined(zIndex) ? zIndex : zIndex + 1,
+        __zIndex: isUndefined(zIndex) ? zIndex : `calc(${zIndex} + 1)`,
       });
     }
     return null;
@@ -204,17 +210,6 @@ export function DDrawer(props: DDrawerProps) {
       closeDrawer,
     }),
     [closeDrawer, uniqueId]
-  );
-
-  const contentProps = useMemo<React.HTMLAttributes<HTMLDivElement>>(
-    () => ({
-      className: getClassName(`${dPrefix}drawer__content`, `${dPrefix}drawer__content--${dPlacement}`),
-      style: {
-        width: dPlacement === 'left' || dPlacement === 'right' ? dWidth : undefined,
-        height: dPlacement === 'bottom' || dPlacement === 'top' ? dHeight : undefined,
-      },
-    }),
-    [dHeight, dPlacement, dPrefix, dWidth]
   );
 
   const drawerNode = (
@@ -236,21 +231,31 @@ export function DDrawer(props: DDrawerProps) {
           zIndex,
         })}
         aria-labelledby={dHeader ? `${dPrefix}drawer-header-${uniqueId}` : undefined}
-        dId={uniqueId}
+        aria-describedby={`${dPrefix}dialog-content-${uniqueId}`}
         dVisible={visible}
         dHidden={hidden}
-        dContentProps={contentProps}
         dMask={dMask}
         dMaskClosable={dMaskClosable}
+        dEscClosable={dEscClosable}
         dDestroy={dDestroy}
         dDialogRef={dialogRef}
-        dDialogContentRef={dialogContentRef}
         onClose={closeDrawer}
       >
         <DDrawerContext.Provider value={contextValue}>
-          {dHeader}
-          <div className={`${dPrefix}drawer__body`}>{children}</div>
-          {dFooter}
+          <div
+            ref={dialogContentRef}
+            id={`${dPrefix}dialog-content-${uniqueId}`}
+            className={getClassName(`${dPrefix}drawer__content`, `${dPrefix}drawer__content--${dPlacement}`)}
+            style={{
+              width: dPlacement === 'left' || dPlacement === 'right' ? dWidth : undefined,
+              height: dPlacement === 'bottom' || dPlacement === 'top' ? dHeight : undefined,
+            }}
+            tabIndex={-1}
+          >
+            {dHeader}
+            <div className={`${dPrefix}drawer__body`}>{children}</div>
+            {dFooter}
+          </div>
         </DDrawerContext.Provider>
       </DDialog>
       {childDrawer}

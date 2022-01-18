@@ -1,4 +1,3 @@
-import type { DStateBackflowContextData } from '../../hooks/state-backflow';
 import type { DMenuItemProps } from './MenuItem';
 
 import { isString, isUndefined } from 'lodash';
@@ -13,15 +12,20 @@ import {
   useDCollapseTransition,
   useImmer,
   useStateBackflow,
-  DStateBackflowContext,
 } from '../../hooks';
-import { getClassName, getHorizontalSideStyle, getVerticalSideStyle, toId, mergeStyle } from '../../utils';
+import { getClassName, getHorizontalSideStyle, getVerticalSideStyle, toId, mergeStyle, generateComponentMate } from '../../utils';
 import { DPopup } from '../_popup';
 import { DTrigger } from '../_trigger';
 import { DIcon } from '../icon';
 import { DMenuContext } from './Menu';
 
 type DIds = Map<string, string | DIds>;
+
+export interface DMenuSubContextData {
+  updateChildren: (identity: string, ids: DIds | string, visible: boolean) => void;
+  removeChildren: (identity: string) => void;
+}
+export const DMenuSubContext = React.createContext<DMenuSubContextData | null>(null);
 
 export interface DMenuSubProps extends React.LiHTMLAttributes<HTMLLIElement> {
   dId: string;
@@ -33,6 +37,7 @@ export interface DMenuSubProps extends React.LiHTMLAttributes<HTMLLIElement> {
   __inNav?: boolean;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DMenuSub');
 export function DMenuSub(props: DMenuSubProps) {
   const {
     dId,
@@ -50,12 +55,13 @@ export function DMenuSub(props: DMenuSubProps) {
     onFocus,
     onBlur,
     ...restProps
-  } = useComponentConfig(DMenuSub.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
   const [{ menuMode, menuExpandTrigger, menuActiveId, menuExpandIds, menuFocusId, onExpandChange, onFocus: _onFocus, onBlur: _onBlur }] =
     useCustomContext(DMenuContext);
+  const [{ updateChildren, removeChildren }] = useCustomContext(DMenuSubContext);
   //#endregion
 
   //#region Ref
@@ -86,7 +92,7 @@ export function DMenuSub(props: DMenuSubProps) {
     return visible;
   }, [childrenPopupVisiable, currentPopupVisible]);
 
-  useStateBackflow(popupVisible, childrenIds);
+  useStateBackflow(updateChildren, removeChildren, childrenIds, popupVisible);
 
   const inHorizontalNav = menuMode === 'horizontal' && __inNav;
   const _id = id ?? `${dPrefix}menu-sub-${toId(dId)}`;
@@ -179,12 +185,12 @@ export function DMenuSub(props: DMenuSubProps) {
   const handleBlur = useCallback(
     (e) => {
       onBlur?.(e);
+
       _onBlur?.();
     },
     [_onBlur, onBlur]
   );
 
-  //#region DidUpdate
   useEffect(() => {
     let isFocus = false;
     if (menuFocusId) {
@@ -202,7 +208,6 @@ export function DMenuSub(props: DMenuSubProps) {
       setCurrentPopupVisible(false);
     }
   }, [popupMode, setCurrentPopupVisible]);
-  //#endregion
 
   const childs = useMemo(() => {
     const length = React.Children.count(children);
@@ -234,7 +239,7 @@ export function DMenuSub(props: DMenuSubProps) {
       aria-activedescendant={activedescendant}
     >
       {React.Children.count(childs) === 0 ? (
-        <span className={`${dPrefix}menu-sub__empty`} style={{ paddingLeft: 16 + (__level + 1) * 20 }}>
+        <span className={`${dPrefix}menu-sub__empty`} style={{ paddingLeft: 16 + (popupMode ? 0 : __level + 1) * 20 }}>
           {t('No Data')}
         </span>
       ) : (
@@ -243,44 +248,51 @@ export function DMenuSub(props: DMenuSubProps) {
     </ul>
   );
 
-  const stateBackflowContextValue = useMemo<DStateBackflowContextData>(
+  const stateBackflow = useMemo<Pick<DMenuSubContextData, 'updateChildren' | 'removeChildren'>>(
     () => ({
-      addState: (identity, visible, id) => {
+      updateChildren: (identity, ids, visible) => {
+        setChildrenIds((draft) => {
+          draft.set(identity, ids);
+        });
         setChildrenPopupVisiable((draft) => {
           draft.set(identity, visible);
         });
-        setChildrenIds((draft) => {
-          draft.set(identity, id);
-        });
       },
-      updateState: (identity, visible, id) => {
-        setChildrenPopupVisiable((draft) => {
-          draft.set(identity, visible);
-        });
+      removeChildren: (identity) => {
         setChildrenIds((draft) => {
-          draft.set(identity, id);
-        });
-      },
-      removeState: (identity) => {
-        setChildrenPopupVisiable((draft) => {
           draft.delete(identity);
         });
-        setChildrenIds((draft) => {
+        setChildrenPopupVisiable((draft) => {
           draft.delete(identity);
         });
       },
     }),
     [setChildrenIds, setChildrenPopupVisiable]
   );
+  const contextValue = useMemo<DMenuSubContextData>(
+    () => ({
+      ...stateBackflow,
+    }),
+    [stateBackflow]
+  );
 
+  const transitionState = {
+    'enter-from': { height: '0' },
+    'enter-to': { transition: 'height 0.2s linear' },
+    'leave-to': { height: '0', transition: 'height 0.2s linear' },
+  };
   const hidden = useDCollapseTransition({
     dEl: menuCollapseEl,
     dVisible: popupMode ? false : expand,
+    dCallbackList: {
+      beforeEnter: () => transitionState,
+      beforeLeave: () => transitionState,
+    },
     dDuring: 200,
   });
 
   return (
-    <DStateBackflowContext.Provider value={stateBackflowContextValue}>
+    <DMenuSubContext.Provider value={contextValue}>
       <li
         {...restProps}
         ref={liRef}
@@ -336,6 +348,6 @@ export function DMenuSub(props: DMenuSubProps) {
               })}
         </>
       )}
-    </DStateBackflowContext.Provider>
+    </DMenuSubContext.Provider>
   );
 }

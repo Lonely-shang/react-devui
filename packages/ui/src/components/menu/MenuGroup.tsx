@@ -3,16 +3,16 @@ import type { DMenuItemProps } from './MenuItem';
 import React, { useMemo } from 'react';
 
 import { usePrefixConfig, useComponentConfig, useTranslation } from '../../hooks';
-import { getClassName, mergeStyle } from '../../utils';
+import { generateComponentMate, getClassName, mergeStyle } from '../../utils';
 
 export interface DMenuGroupProps extends React.LiHTMLAttributes<HTMLLIElement> {
-  dId: string;
   dTitle: React.ReactNode;
   __level?: number;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DMenuGroup');
 export function DMenuGroup(props: DMenuGroupProps) {
-  const { dId, dTitle, __level = 0, className, style, children, ...restProps } = useComponentConfig(DMenuGroup.name, props);
+  const { dTitle, __level = 0, className, style, children, ...restProps } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();

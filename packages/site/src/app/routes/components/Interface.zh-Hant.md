@@ -27,7 +27,7 @@ type DElementSelector = HTMLElement | null | string | (() => HTMLElement | null)
 | dDestroy | 关闭后销毁节点 | boolean | false |
 | dMouseEnterDelay | 鼠标移入后多少毫秒后显示 | number | 150 |
 | dMouseLeaveDelay | 鼠标移出后多少毫秒后显示 | number | 150 |
-| dEscClose | 按下Esc是否关闭 | boolean | true |
+| dEscClosable | 按下Esc是否关闭 | boolean | true |
 | dCustomPopup | 自定义 popup | `(popupEl: HTMLElement, targetEl: HTMLElement) => { top: number; left: number; stateList: DTransitionStateList; arrowPosition?: React.CSSProperties }` | - |
 | onVisibleChange | popup 显示/隐藏的回调 | `(visible: boolean) => void` | - |
 | afterVisibleChange |  popup 显示/隐藏动画结束的回调 | `(visible: boolean) => void` | - |
@@ -76,7 +76,8 @@ interface DTransitionStateList {
 <!-- prettier-ignore-start -->
 | 参数 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| dCloseIcon | 设置关闭按钮的图标， `null` 表示隐藏按钮 | React.ReactNode | - |
+| dClosable | 是否可关闭 | boolean | false |
+| dCloseIcon | 设置关闭按钮的图标 | React.ReactNode | - |
 | dExtraIcons | 添加一些额外的操作按钮 | React.ReactNode[] | - |
 | onClose | 点击关闭按钮的回调 | `() => void` | - |
 <!-- prettier-ignore-end -->

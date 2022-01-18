@@ -10,46 +10,9 @@
 
   outline: none;
 
-  @include font-size(0.95rem);
-
-  &:not(.is-disabled) {
-    .#{$variable-prefix}pagination__item--button:not(.is-disabled) {
-      &:hover,
-      &:focus {
-        border-color: var(--#{$variable-prefix}color-primary-lighter);
-
-        color: var(--#{$variable-prefix}color-primary-lighter);
-      }
-
-      @include when(active) {
-        border-color: var(--#{$variable-prefix}color-primary);
-
-        color: var(--#{$variable-prefix}color-primary);
-      }
-    }
-  }
-
   @include when(change) {
     .#{$variable-prefix}pagination__item--button {
       transition: none;
-    }
-  }
-
-  @include when(disabled) {
-    cursor: not-allowed;
-
-    .#{$variable-prefix}pagination__item--button {
-      color: var(--#{$variable-prefix}disabled-color);
-
-      background-color: var(--#{$variable-prefix}disabled-background-color);
-
-      pointer-events: none;
-
-      @include when(active) {
-        color: rgb(var(--#{$variable-prefix}color-primary-rgb) / 50%);
-
-        background-color: var(--#{$variable-prefix}color-step-100);
-      }
     }
   }
 
@@ -101,10 +64,25 @@
       user-select: none;
 
       @include utils-disabled;
+
+      &:not(.is-disabled) {
+        &:hover,
+        &:focus {
+          border-color: var(--#{$variable-prefix}color-primary-lighter);
+
+          color: var(--#{$variable-prefix}color-primary-lighter);
+        }
+
+        @include when(active) {
+          border-color: var(--#{$variable-prefix}color-primary);
+
+          color: var(--#{$variable-prefix}color-primary);
+        }
+      }
     }
 
     @include m(border) {
-      border: 1px solid var(--#{$variable-prefix}border-color);
+      border: 1px solid var(--#{$variable-prefix}color-border);
     }
 
     @include m(jump5) {

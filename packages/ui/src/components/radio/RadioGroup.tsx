@@ -1,31 +1,32 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { DGeneralStateContextData } from '../../hooks/general-state';
 import type { Updater } from '../../hooks/two-way-binding';
-import type { DValue } from './Radio';
 
-import React, { useId, useMemo } from 'react';
+import React, { useMemo } from 'react';
 
-import { usePrefixConfig, useComponentConfig, useTwoWayBinding, useGeneralState } from '../../hooks';
-import { getClassName } from '../../utils';
+import { usePrefixConfig, useComponentConfig, useTwoWayBinding, useGeneralState, DGeneralStateContext } from '../../hooks';
+import { generateComponentMate, getClassName } from '../../utils';
 
 export interface DRadioGroupContextData {
   radioGroupName?: string;
-  radioGroupValue: DValue;
-  radioGroupDisabled: boolean;
+  radioGroupValue: any;
   radioGroupType: DRadioGroupProps['dType'];
-  onCheckedChange: (checked: DValue) => void;
+  onCheckedChange: (value: any) => void;
 }
 export const DRadioGroupContext = React.createContext<DRadioGroupContextData | null>(null);
 
 export interface DRadioGroupProps extends React.HTMLAttributes<HTMLDivElement> {
-  dModel?: [DValue, Updater<DValue>?];
+  dModel?: [any, Updater<any>?];
   dFormControlName?: string;
   dName?: string;
   dDisabled?: boolean;
   dType?: 'outline' | 'fill';
   dSize?: 'smaller' | 'larger';
   dVertical?: boolean;
-  onModelChange?: (checked: DValue) => void;
+  onModelChange?: (value: any) => void;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DRadioGroup');
 export function DRadioGroup(props: DRadioGroupProps) {
   const {
     dModel,
@@ -36,58 +37,61 @@ export function DRadioGroup(props: DRadioGroupProps) {
     dSize,
     dVertical = false,
     onModelChange,
-    id,
     className,
     children,
     ...restProps
-  } = useComponentConfig(DRadioGroup.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
   const { gSize, gDisabled } = useGeneralState();
   //#endregion
 
-  const uniqueId = useId();
-  const _id = id ?? `${dPrefix}radio-group-${uniqueId}`;
-
   const [value, changeValue, { ariaAttribute, controlDisabled }] = useTwoWayBinding(
     undefined,
     dModel,
     onModelChange,
-    dFormControlName ? { formControlName: dFormControlName, id: _id } : undefined
+    dFormControlName ? { formControlName: dFormControlName } : undefined
   );
 
   const size = dSize ?? gSize;
   const disabled = dDisabled || gDisabled || controlDisabled;
+
+  const generalStateContextValue = useMemo<DGeneralStateContextData>(
+    () => ({
+      gDisabled: disabled,
+    }),
+    [disabled]
+  );
 
   const contextValue = useMemo<DRadioGroupContextData>(
     () => ({
       radioGroupName: dName,
       radioGroupValue: value,
       radioGroupType: dType,
-      radioGroupDisabled: disabled,
       onCheckedChange: (value) => {
         changeValue(value);
       },
     }),
-    [changeValue, dName, dType, disabled, value]
+    [changeValue, dName, dType, value]
   );
 
   return (
-    <DRadioGroupContext.Provider value={contextValue}>
-      <div
-        {...restProps}
-        {...ariaAttribute}
-        id={_id}
-        className={getClassName(className, `${dPrefix}radio-group`, {
-          [`${dPrefix}radio-group--${dType}`]: dType,
-          [`${dPrefix}radio-group--${size}`]: size,
-          [`${dPrefix}radio-group--vertical`]: dVertical,
-        })}
-        role="radiogroup"
-      >
-        {children}
-      </div>
-    </DRadioGroupContext.Provider>
+    <DGeneralStateContext.Provider value={generalStateContextValue}>
+      <DRadioGroupContext.Provider value={contextValue}>
+        <div
+          {...restProps}
+          {...ariaAttribute}
+          className={getClassName(className, `${dPrefix}radio-group`, {
+            [`${dPrefix}radio-group--${dType}`]: dType,
+            [`${dPrefix}radio-group--${size}`]: size,
+            [`${dPrefix}radio-group--vertical`]: dVertical,
+          })}
+          role="radiogroup"
+        >
+          {children}
+        </div>
+      </DRadioGroupContext.Provider>
+    </DGeneralStateContext.Provider>
   );
 }

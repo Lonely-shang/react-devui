@@ -16,7 +16,6 @@ export interface DSelectBoxProps extends React.HTMLAttributes<HTMLDivElement> {
   dPlaceholder?: string;
   dDisabled?: boolean;
   dLoading?: boolean;
-  dAriaAttribute?: React.HTMLAttributes<HTMLElement>;
   onClear?: () => void;
   onSearch?: (value: string) => void;
 }
@@ -32,13 +31,11 @@ const SelectBox: React.ForwardRefRenderFunction<HTMLDivElement, DSelectBoxProps>
     dPlaceholder,
     dDisabled = false,
     dLoading = false,
-    dAriaAttribute,
     onClear,
     onSearch,
     className,
     tabIndex = 0,
     children,
-    onClick,
     ...restProps
   } = props;
 
@@ -94,7 +91,7 @@ const SelectBox: React.ForwardRefRenderFunction<HTMLDivElement, DSelectBoxProps>
     const [asyncGroup, asyncId] = asyncCapture.createGroup();
 
     if (dSearchable && dExpanded) {
-      asyncCapture.requestAnimationFrame(() => searchEl?.focus({ preventScroll: true }));
+      asyncCapture.setTimeout(() => searchEl?.focus({ preventScroll: true }));
       asyncGroup.fromEvent<MouseEvent>(window, 'mousedown').subscribe({
         next: (e) => {
           if (e.button === 0) {
@@ -123,15 +120,14 @@ const SelectBox: React.ForwardRefRenderFunction<HTMLDivElement, DSelectBoxProps>
         'is-expanded': dExpanded,
         'is-disabled': disabled,
       })}
+      role="button"
       tabIndex={disabled ? undefined : tabIndex}
       aria-disabled={disabled}
       aria-haspopup="listbox"
       aria-expanded={dExpanded}
-      onClick={disabled ? undefined : onClick}
     >
       {dSearchable && dExpanded ? (
         <input
-          {...dAriaAttribute}
           ref={searchRef}
           className={`${dPrefix}select-box__search`}
           type="search"

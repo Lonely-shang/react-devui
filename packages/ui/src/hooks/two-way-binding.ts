@@ -1,31 +1,31 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { Updater as IUpdater } from './immer';
 
 import { freeze, produce } from 'immer';
 import { isFunction, isNull, isUndefined } from 'lodash';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { DFormContext, DFormGroupContext } from '../components/form';
+import { DFormContext, DFormGroupContext, DFormItemContext } from '../components/form';
 import { useCustomContext } from './context';
 import { useStateBackflow } from './state-backflow';
 
 export type Updater<S> = (value: S) => void;
 
-export function useTwoWayBinding<T>(
+export function useTwoWayBinding<T, S = T>(
   initialValue: T | (() => T),
-  input?: [T, Updater<T>?],
-  onValueChange?: (value: any) => void,
+  input?: [T, Updater<S>?],
+  onValueChange?: (value: S) => void,
   opt?: {
-    id: string;
+    id?: string;
     formControlName: string;
   }
 ) {
   const [{ formInstance }] = useCustomContext(DFormContext);
   const [{ formGroupPath }] = useCustomContext(DFormGroupContext);
+  const [{ updateFormItems, removeFormItems }] = useCustomContext(DFormItemContext);
   const formControlName = opt?.formControlName;
 
-  const identity = useStateBackflow(formControlName, opt?.id);
+  const identity = useStateBackflow(updateFormItems, removeFormItems, formControlName, opt?.id);
 
   const formControl = useMemo(() => {
     if (formControlName && formInstance) {
@@ -56,7 +56,7 @@ export function useTwoWayBinding<T>(
 
   const setValue = input?.[1];
   const [autoValue, setAutoValue] = useState<T>(initialValue);
-  const value = isUndefined(input?.[0]) ? autoValue : input![0];
+  const value = isUndefined(input) ? autoValue : input[0];
 
   const currentValue = formControl ? formControl.value : value;
 
@@ -65,17 +65,14 @@ export function useTwoWayBinding<T>(
       const val = isFunction(updater) ? produce(currentValue, updater) : freeze(updater);
 
       if (formControl) {
-        if (!Object.is(val, currentValue)) {
-          formControl.markAsDirty(true);
-          formControl.setValue(val);
-          formInstance!.updateForm();
-        }
+        formControl.markAsDirty(true);
+        formControl.setValue(val);
+        onValueChange?.(val);
+        formInstance?.updateForm();
       } else {
         setValue?.(val);
         setAutoValue(val);
-        if (!Object.is(val, currentValue)) {
-          onValueChange?.(val);
-        }
+        onValueChange?.(val);
       }
     },
     [currentValue, formControl, formInstance, onValueChange, setValue]
@@ -84,7 +81,7 @@ export function useTwoWayBinding<T>(
   const res = useMemo<
     [
       T,
-      IUpdater<T>,
+      IUpdater<S>,
       {
         validateClassName?: string;
         ariaAttribute?: React.HTMLAttributes<HTMLElement>;

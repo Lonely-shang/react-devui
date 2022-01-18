@@ -11,14 +11,11 @@ $select-option-height: 32px;
   @include when(disabled) {
     .#{$variable-prefix}tag {
       &.#{$variable-prefix}select__multiple-count {
-        background-color: var(--#{$variable-prefix}color-step-100);
         cursor: pointer;
       }
 
       &:not(.#{$variable-prefix}select__multiple-count) {
-        color: var(--#{$variable-prefix}disabled-color);
-
-        background-color: var(--#{$variable-prefix}color-step-70);
+        color: var(--#{$variable-prefix}color-disabled);
       }
     }
 
@@ -42,6 +39,7 @@ $select-option-height: 32px;
 
   @include e(option) {
     display: flex;
+    gap: 0 8px;
     align-items: center;
     width: 100%;
     height: $select-option-height;
@@ -54,43 +52,50 @@ $select-option-height: 32px;
 
     @include utils-disabled;
 
-    &:not(.#{$variable-prefix}select__option--empty):not(.#{$variable-prefix}select__option--group):not(.#{$variable-prefix}select__option--loading):not(.is-disabled) {
+    &:not(.#{$variable-prefix}select__option--loading):not(.is-disabled) {
       &:focus,
       &.is-focus {
         color: var(--#{$variable-prefix}color-primary-lighter);
       }
 
       &:not(.is-selected):hover {
-        background-color: var(--#{$variable-prefix}color-step-50);
+        background-color: var(--#{$variable-prefix}background-color-hover);
       }
     }
 
     @include when(selected) {
-      font-weight: 600;
-
-      background-color: var(--#{$variable-prefix}color-primary-background);
-    }
-
-    @include m(group) {
-      color: var(--#{$variable-prefix}color-step-400);
-
-      @include font-size(0.85rem);
-    }
-
-    @include m(empty) {
-      padding-left: 24px;
-
-      color: var(--#{$variable-prefix}color-step-400);
-    }
-
-    @include m(group-item) {
-      padding-left: 24px;
+      background-color: var(--#{$variable-prefix}background-color-primary);
     }
   }
 
-  @include e(option-add) {
-    flex-shrink: 0;
-    margin-right: 4px;
+  @include e(option-group) {
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+
+    & > li {
+      padding-left: 24px;
+    }
+
+    & > li[role='presentation'] {
+      display: flex;
+      align-items: center;
+      height: $select-option-height;
+      padding: 0 12px;
+
+      color: var(--#{$variable-prefix}color-step-400);
+      font-size: 0.9em;
+    }
+  }
+
+  @include e(option-empty) {
+    display: flex;
+    align-items: center;
+    height: $select-option-height;
+    padding: 0 12px;
+
+    color: var(--#{$variable-prefix}color-step-400);
   }
 
   @include e(option-content) {
@@ -136,5 +141,5 @@ $select-option-height: 32px;
   min-height: 40px;
   border-radius: var(--#{$variable-prefix}border-radius);
 
-  box-shadow: 0 4px 20px 0 var(--#{$variable-prefix}shadow-color);
+  box-shadow: var(--#{$variable-prefix}shadow-popup);
 }

@@ -1,9 +1,7 @@
-import React from 'react';
-
 import { usePrefixConfig, useDCollapseTransition, useRefCallback } from '../../hooks';
 import { getClassName } from '../../utils';
 
-export interface DErrorProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface DErrorProps {
   dVisible: boolean;
   dMessage: string;
   dStatus?: 'error' | 'warning';
@@ -11,7 +9,7 @@ export interface DErrorProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function DError(props: DErrorProps) {
-  const { dVisible, dMessage, dStatus = 'error', onHidden, className, children, ...restProps } = props;
+  const { dVisible, dMessage, dStatus = 'error', onHidden } = props;
 
   //#region Context
   const dPrefix = usePrefixConfig();
@@ -21,11 +19,19 @@ export function DError(props: DErrorProps) {
   const [el, ref] = useRefCallback<HTMLDivElement>();
   //#endregion
 
+  const transitionState = {
+    'enter-from': { height: '0', opacity: '0' },
+    'enter-to': { transition: 'height 133ms ease-out, opacity 133ms ease-out' },
+    'leave-to': { height: '0', opacity: '0', transition: 'height 133ms ease-in, opacity 133ms ease-in' },
+  };
   const hidden = useDCollapseTransition({
     dEl: el,
     dVisible,
     dSkipFirst: false,
-    dDuring: 133,
+    dCallbackList: {
+      beforeEnter: () => transitionState,
+      beforeLeave: () => transitionState,
+    },
     afterLeave: () => {
       onHidden?.();
     },
@@ -33,7 +39,6 @@ export function DError(props: DErrorProps) {
 
   return hidden ? null : (
     <div
-      {...restProps}
       ref={ref}
       className={getClassName(`${dPrefix}form-error`, {
         [`${dPrefix}form-error--error`]: dStatus === 'error',

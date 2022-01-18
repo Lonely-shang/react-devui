@@ -6,7 +6,7 @@
 
   list-style: none;
 
-  @include font-size(0.85rem);
+  @include font-size(0.95rem);
 
   @include e(indicator) {
     position: absolute;
@@ -15,7 +15,7 @@
 
     width: 2px;
 
-    background-color: var(--#{$variable-prefix}indicator-background-color);
+    background-color: var(--#{$variable-prefix}background-color-indicator);
   }
 
   @include e(dot-indicator) {
@@ -53,8 +53,10 @@
   padding-left: 4px;
 
   @include e(link) {
-    display: block;
-    padding: 8px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    min-height: 28px;
 
     color: var(--#{$variable-prefix}text-color);
     text-decoration: none;
@@ -70,7 +72,6 @@
 
     @include when(active) {
       color: var(--#{$variable-prefix}color-primary);
-      font-weight: 500;
     }
   }
 }

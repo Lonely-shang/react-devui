@@ -1,7 +1,6 @@
 @include b(tag) {
   --#{$variable-prefix}tag-padding-size: 8px;
-  --#{$variable-prefix}tag-size: 24px;
-  @include rfs(0.8rem, --#{$variable-prefix}tag-font);
+  --#{$variable-prefix}tag-size: 28px;
 
   display: inline-flex;
   align-items: center;
@@ -9,14 +8,14 @@
   padding: 0 var(--#{$variable-prefix}tag-padding-size);
   border-radius: var(--#{$variable-prefix}border-radius);
 
-  font-size: var(--#{$variable-prefix}tag-font);
-
   vertical-align: top;
+
+  @include font-size(0.9rem);
 
   @include m(primary) {
     color: var(--#{$variable-prefix}tag-color, var(--#{$variable-prefix}text-color));
 
-    background-color: var(--#{$variable-prefix}tag-background-color, var(--#{$variable-prefix}color-step-40));
+    background-color: var(--#{$variable-prefix}tag-background-color, var(--#{$variable-prefix}tag-background-color));
   }
 
   @include m(fill) {
@@ -29,7 +28,7 @@
   @include m(outline) {
     padding: 0 calc(var(--#{$variable-prefix}tag-padding-size) - 1px);
 
-    border: 1px solid var(--#{$variable-prefix}tag-border-color, var(--#{$variable-prefix}border-color));
+    border: 1px solid var(--#{$variable-prefix}tag-border-color, var(--#{$variable-prefix}color-border));
 
     color: var(--#{$variable-prefix}tag-color, var(--#{$variable-prefix}color-step-600));
   }
@@ -38,25 +37,34 @@
     @include theme(#{$theme}) {
       --#{$variable-prefix}tag-color: var(--#{$variable-prefix}color-#{$theme});
       --#{$variable-prefix}tag-border-color: var(--#{$variable-prefix}color-#{$theme}-lighter);
-      --#{$variable-prefix}tag-background-color: var(--#{$variable-prefix}color-#{$theme}-background-2);
+      --#{$variable-prefix}tag-background-color: var(--#{$variable-prefix}background-color-#{$theme});
     }
   }
 
   @include m(smaller) {
     --#{$variable-prefix}tag-padding-size: 6px;
-    --#{$variable-prefix}tag-size: 20px;
-    @include rfs(0.6rem, --#{$variable-prefix}tag-font);
+    --#{$variable-prefix}tag-size: 24px;
+
+    @include font-size(0.75rem);
   }
 
   @include m(larger) {
     --#{$variable-prefix}tag-padding-size: 10px;
-    --#{$variable-prefix}tag-size: 28px;
-    @include rfs(0.9rem, --#{$variable-prefix}tag-font);
+    --#{$variable-prefix}tag-size: 32px;
+
+    @include font-size(1rem);
   }
 
   @include e(close) {
     margin-left: 4px;
 
     cursor: pointer;
+
+    transition: color 0.1s linear;
+
+    &:hover,
+    &:focus {
+      color: var(--#{$variable-prefix}color-primary-lighter);
+    }
   }
 }

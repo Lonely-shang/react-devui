@@ -19,15 +19,11 @@ title: 单选组
 | --- | --- | --- | --- | 
 | dModel | 手动控制是否选中 | [boolean, Updater\<boolean\>?] | - |
 | dDisabled | 是否禁用 | boolean | false |
-| dValue | 单选组中作为标识传递 | DValue  | - |
+| dValue | 单选组中作为标识传递 | any  | - |
+| dInputProps | 应用于 `input` 元素的属性 | React.InputHTMLAttributes\<HTMLInputElement\>  | - |
+| dInputRef | 将 `ref` 传递给 `input` 元素 | React.LegacyRef\<HTMLInputElement\>  | - |
 | onModelChange | 选中改变的回调 | `(checked: boolean) => void` | - |
 <!-- prettier-ignore-end -->
-
-### DRadioRef
-
-```tsx
-type DRadioRef = HTMLInputElement;
-```
 
 ### DRadioGroupProps
 
@@ -36,17 +32,11 @@ type DRadioRef = HTMLInputElement;
 <!-- prettier-ignore-start -->
 | 参数 | 说明 | 类型 | 默认值 | 
 | --- | --- | --- | --- | 
-| dModel | 手动控制选择 | [DValue, Updater\<DValue\>?] | - |
+| dModel | 手动控制选择 | [any, Updater\<any\>?] | - |
 | dName | 单选项的 `name` 属性 | string | - |
 | dDisabled | 是否禁用 | boolean | false |
 | dType | 单选组样式 | 'outline' \| 'fill' | - |
-| dSize | 单选组按钮尺寸 | 'smaller' \| 'larger' | - |
+| dSize | 单选组尺寸 | 'smaller' \| 'larger' | - |
 | dVertical | 单选组垂直排布 | boolean | false |
-| onModelChange | 选中项改变的回调 | `(checked: DValue) => void` | - |
+| onModelChange | 选中项改变的回调 | `(value: any) => void` | - |
 <!-- prettier-ignore-end -->
-
-### DValue
-
-```tsx
-type DValue = React.InputHTMLAttributes<HTMLInputElement>['value'];
-```

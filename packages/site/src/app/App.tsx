@@ -1,7 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import type { DLang, DTheme } from '@react-devui/ui/hooks/d-config';
 
-import { DConfigRoot } from '@react-devui/ui';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
+
+import { DRoot, NotificationService, ToastService } from '@react-devui/ui';
 import { useAsync } from '@react-devui/ui/hooks';
 
 import { environment } from '../environments/environment';
@@ -12,6 +15,8 @@ import { AppRoutes } from './routes/Routes';
 export interface AppContextData {
   menuOpen: boolean;
   pageMounted: boolean;
+  theme: DTheme;
+  changeTheme: (theme: DTheme) => void;
   onMount: () => void;
   onMenuOpenChange: (open: boolean) => void;
 }
@@ -23,6 +28,7 @@ export function App() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [pageMounted, setPageMounted] = useState(false);
+  const [theme, setTheme] = useState<DTheme>(() => (localStorage.getItem('theme') as DTheme) ?? 'light');
 
   const [mainEl, setMainEl] = useState<HTMLElement | null>(null);
   const mainRef = useCallback(
@@ -34,7 +40,7 @@ export function App() {
     [setMainEl]
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     localStorage.setItem('language', i18n.language);
     document.documentElement.lang = i18n.language;
   }, [i18n.language]);
@@ -55,10 +61,21 @@ export function App() {
     }
   }, [asyncCapture, mainEl]);
 
+  const location = useLocation();
+  useEffect(() => {
+    NotificationService.closeAll(false);
+    ToastService.closeAll(false);
+  }, [location]);
+
   const contextValue = useMemo<AppContextData>(
     () => ({
       menuOpen,
       pageMounted,
+      theme,
+      changeTheme: (theme) => {
+        setTheme(theme);
+        localStorage.setItem('theme', theme);
+      },
       onMount: () => {
         setPageMounted(true);
         if (mainEl) {
@@ -75,19 +92,19 @@ export function App() {
         setMenuOpen(open);
       },
     }),
-    [mainEl, menuOpen, pageMounted, setMenuOpen, setPageMounted]
+    [mainEl, menuOpen, pageMounted, theme]
   );
 
   return (
-    <AppContext.Provider value={contextValue}>
-      <DConfigRoot content="main .app-route-article" i18n={{ lang: i18n.language as 'en-US' | 'zh-Hant' }} icons={icons}>
+    <DRoot theme={theme} i18n={{ lang: i18n.language as DLang }} icons={icons} contentSelector="main .app-route-article">
+      <AppContext.Provider value={contextValue}>
         <AppHeader />
         <AppSidebar />
         <main ref={mainRef} className="app-main">
           <AppRoutes />
         </main>
-      </DConfigRoot>
-    </AppContext.Provider>
+      </AppContext.Provider>
+    </DRoot>
   );
 }
 

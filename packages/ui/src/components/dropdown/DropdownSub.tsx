@@ -1,5 +1,3 @@
-import type { DStateBackflowContextData } from '../../hooks/state-backflow';
-
 import { isUndefined } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -9,14 +7,19 @@ import {
   useCustomContext,
   useRefCallback,
   useTranslation,
-  DStateBackflowContext,
   useStateBackflow,
   useImmer,
 } from '../../hooks';
-import { getClassName, getHorizontalSideStyle, mergeStyle, toId } from '../../utils';
+import { generateComponentMate, getClassName, getHorizontalSideStyle, mergeStyle, toId } from '../../utils';
 import { DPopup } from '../_popup';
 import { DIcon } from '../icon';
 import { DDropdownContext } from './Dropdown';
+
+export interface DDropdownSubContextData {
+  updateChildren: (identity: string, visible: boolean) => void;
+  removeChildren: (identity: string) => void;
+}
+export const DDropdownSubContext = React.createContext<DDropdownSubContextData | null>(null);
 
 export interface DDropdownSubProps extends React.LiHTMLAttributes<HTMLLIElement> {
   dId: string;
@@ -27,6 +30,7 @@ export interface DDropdownSubProps extends React.LiHTMLAttributes<HTMLLIElement>
   __level?: number;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DDropdownSub');
 export function DDropdownSub(props: DDropdownSubProps) {
   const {
     dId,
@@ -43,7 +47,7 @@ export function DDropdownSub(props: DDropdownSubProps) {
     onFocus,
     onBlur,
     ...restProps
-  } = useComponentConfig(DDropdownSub.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
@@ -54,6 +58,7 @@ export function DDropdownSub(props: DDropdownSubProps) {
   //#region Ref
   const [ulEl, ulRef] = useRefCallback<HTMLUListElement>();
   const [liEl, liRef] = useRefCallback<HTMLLIElement>();
+  const [{ updateChildren, removeChildren }] = useCustomContext(DDropdownSubContext);
   //#endregion
 
   const [t] = useTranslation('Common');
@@ -73,7 +78,7 @@ export function DDropdownSub(props: DDropdownSubProps) {
     return visible;
   }, [childrenPopupVisiable, currentPopupVisible]);
 
-  useStateBackflow(popupVisible);
+  useStateBackflow(updateChildren, removeChildren, popupVisible);
 
   const _id = id ?? `${dPrefix}dropdown-sub-${toId(dId)}`;
 
@@ -110,12 +115,12 @@ export function DDropdownSub(props: DDropdownSubProps) {
   const handleBlur = useCallback(
     (e) => {
       onBlur?.(e);
+
       _onBlur?.();
     },
     [_onBlur, onBlur]
   );
 
-  //#region DidUpdate
   useEffect(() => {
     let isFocus = false;
     if (dropdownFocusId) {
@@ -133,21 +138,15 @@ export function DDropdownSub(props: DDropdownSubProps) {
       setCurrentPopupVisible(false);
     }
   }, [dropdownVisible, setCurrentPopupVisible]);
-  //#endregion
 
-  const stateBackflowContextValue = useMemo<DStateBackflowContextData>(
+  const stateBackflow = useMemo<Pick<DDropdownSubContextData, 'updateChildren' | 'removeChildren'>>(
     () => ({
-      addState: (identity, visible) => {
+      updateChildren: (identity, visible) => {
         setChildrenPopupVisiable((draft) => {
           draft.set(identity, visible);
         });
       },
-      updateState: (identity, visible) => {
-        setChildrenPopupVisiable((draft) => {
-          draft.set(identity, visible);
-        });
-      },
-      removeState: (identity) => {
+      removeChildren: (identity) => {
         setChildrenPopupVisiable((draft) => {
           draft.delete(identity);
         });
@@ -155,9 +154,15 @@ export function DDropdownSub(props: DDropdownSubProps) {
     }),
     [setChildrenPopupVisiable]
   );
+  const contextValue = useMemo<DDropdownSubContextData>(
+    () => ({
+      ...stateBackflow,
+    }),
+    [stateBackflow]
+  );
 
   return (
-    <DStateBackflowContext.Provider value={stateBackflowContextValue}>
+    <DDropdownSubContext.Provider value={contextValue}>
       <li
         {...restProps}
         ref={liRef}
@@ -217,6 +222,6 @@ export function DDropdownSub(props: DDropdownSubProps) {
           onVisibleChange={handlePopupVisibleChange}
         />
       )}
-    </DStateBackflowContext.Provider>
+    </DDropdownSubContext.Provider>
   );
 }

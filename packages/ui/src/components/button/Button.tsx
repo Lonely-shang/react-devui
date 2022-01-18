@@ -10,7 +10,7 @@ import {
   useDCollapseTransition,
   useRefCallback,
 } from '../../hooks';
-import { getClassName } from '../../utils';
+import { generateComponentMate, getClassName } from '../../utils';
 import { DIcon } from '../icon';
 import { DButtonGroupContext } from './ButtonGroup';
 
@@ -27,6 +27,7 @@ export interface DButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
   dIconRight?: boolean;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DButton');
 const Button: React.ForwardRefRenderFunction<DButtonRef, DButtonProps> = (props, ref) => {
   const {
     dType = 'primary',
@@ -43,7 +44,7 @@ const Button: React.ForwardRefRenderFunction<DButtonRef, DButtonProps> = (props,
     children,
     onClick,
     ...restProps
-  } = useComponentConfig(DButton.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
@@ -55,22 +56,22 @@ const Button: React.ForwardRefRenderFunction<DButtonRef, DButtonProps> = (props,
   const [loadingEl, loadingRef] = useRefCallback<HTMLDivElement>();
   //#endregion
 
-  const wave = useWave();
+  const [waveNode, wave] = useWave();
 
   const buttonType = isUndefined(props.dType) ? buttonGroupType ?? dType : dType;
   const theme = isUndefined(props.dTheme) ? buttonGroupTheme ?? dTheme : dTheme;
   const size = dSize ?? gSize;
-  const _disabled = disabled || buttonGroupDisabled || gDisabled;
+  const _disabled = disabled || dLoading || buttonGroupDisabled || gDisabled;
 
   const handleClick = useCallback(
     (e) => {
       onClick?.(e);
 
-      if (!dLoading && (buttonType === 'primary' || buttonType === 'secondary' || buttonType === 'outline' || buttonType === 'dashed')) {
-        wave(e.currentTarget, `var(--${dPrefix}color-${theme})`);
+      if (buttonType === 'primary' || buttonType === 'secondary' || buttonType === 'outline' || buttonType === 'dashed') {
+        wave(`var(--${dPrefix}color-${theme})`);
       }
     },
-    [theme, dLoading, dPrefix, onClick, buttonType, wave]
+    [theme, dPrefix, onClick, buttonType, wave]
   );
 
   const buttonIcon = (loading: boolean, ref?: React.LegacyRef<HTMLSpanElement>) => (
@@ -90,9 +91,18 @@ const Button: React.ForwardRefRenderFunction<DButtonRef, DButtonProps> = (props,
     </span>
   );
 
+  const transitionState = {
+    'enter-from': { width: '0' },
+    'enter-to': { transition: 'width 0.3s linear' },
+    'leave-to': { width: '0', transition: 'width 0.3s linear' },
+  };
   const hidden = useDCollapseTransition({
     dEl: loadingEl,
     dVisible: dLoading,
+    dCallbackList: {
+      beforeEnter: () => transitionState,
+      beforeLeave: () => transitionState,
+    },
     dDirection: 'horizontal',
   });
 
@@ -115,6 +125,7 @@ const Button: React.ForwardRefRenderFunction<DButtonRef, DButtonProps> = (props,
       {dIconRight && children}
       {dIcon ? buttonIcon(dLoading) : !hidden && buttonIcon(true, loadingRef)}
       {!dIconRight && children}
+      {waveNode}
     </button>
   );
 };

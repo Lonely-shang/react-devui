@@ -1,4 +1,3 @@
-import type { DStateBackflowContextData } from '../../hooks/state-backflow';
 import type { DBreakpoints } from '../grid';
 import type { DFormContextData } from './Form';
 import type { AbstractControl, FormControlStatus } from './form';
@@ -6,9 +5,8 @@ import type { AbstractControl, FormControlStatus } from './form';
 import { isArray, isBoolean, isNull, isNumber, isString, isUndefined } from 'lodash';
 import React, { useCallback, useContext, useMemo, useRef } from 'react';
 
-import { usePrefixConfig, useComponentConfig, useCustomContext, useImmer, DStateBackflowContext, useTranslation } from '../../hooks';
-import { getClassName } from '../../utils';
-import { MEDIA_QUERY_LIST } from '../grid';
+import { usePrefixConfig, useComponentConfig, useCustomContext, useImmer, useTranslation, useGridConfig } from '../../hooks';
+import { generateComponentMate, getClassName } from '../../utils';
 import { DIcon } from '../icon';
 import { DTooltip } from '../tooltip';
 import { DError } from './Error';
@@ -25,6 +23,12 @@ export type DErrorInfo =
   | { message: string; status: 'warning' | 'error' }
   | { [index: string]: string | { message: string; status: 'warning' | 'error' } };
 
+export interface DFormItemContextData {
+  updateFormItems: (identity: string, formControlName: string | undefined, id: string | undefined) => void;
+  removeFormItems: (identity: string) => void;
+}
+export const DFormItemContext = React.createContext<DFormItemContextData | null>(null);
+
 export interface DFormItemProps extends React.HTMLAttributes<HTMLDivElement> {
   dLabel?: React.ReactNode;
   dLabelWidth?: number | string;
@@ -35,12 +39,14 @@ export interface DFormItemProps extends React.HTMLAttributes<HTMLDivElement> {
   dResponsiveProps?: Record<DBreakpoints, Pick<DFormItemProps, 'dLabelWidth' | 'dSpan'>>;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DFormItem');
 export function DFormItem(props: DFormItemProps) {
   const { dLabel, dLabelWidth, dLabelExtra, dShowRequired, dErrors, dSpan, dResponsiveProps, className, children, ...restProps } =
-    useComponentConfig(DFormItem.name, props);
+    useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
+  const { colNum } = useGridConfig();
   const {
     formBreakpointMatchs,
     formLabelWidth,
@@ -61,30 +67,30 @@ export function DFormItem(props: DFormItemProps) {
   });
 
   const { span, labelWidth } = (() => {
-    const _props = {
-      span: dSpan ?? (formLayout === 'inline' ? formInlineSpan : 12),
+    const props = {
+      span: dSpan ?? (formLayout === 'inline' ? formInlineSpan : colNum),
       labelWidth: dLabelWidth ?? formLabelWidth,
     };
 
     if (dResponsiveProps) {
-      const keys = Object.keys(dResponsiveProps);
       const mergeProps = (point: string, targetKey: string, sourceKey: string) => {
         const value = dResponsiveProps[point][sourceKey];
         if (!isUndefined(value)) {
-          _props[targetKey] = value;
+          props[targetKey] = value;
         }
       };
-      for (const point of [...MEDIA_QUERY_LIST].reverse()) {
-        if (keys.includes(point) && formBreakpointMatchs.includes(point)) {
-          mergeProps(point, 'span', 'dSpan');
-          mergeProps(point, 'labelWidth', 'dLabelWidth');
+      for (const breakpoint of formBreakpointMatchs) {
+        if (breakpoint in dResponsiveProps) {
+          mergeProps(breakpoint, 'span', 'dSpan');
+          mergeProps(breakpoint, 'labelWidth', 'dLabelWidth');
+          break;
         }
       }
     }
-    return _props;
+    return props;
   })();
 
-  const [formItems, setFormItems] = useImmer(new Map<string, { formControlName: string; id: string }>());
+  const [formItems, setFormItems] = useImmer(new Map<string, { formControlName: string; id?: string }>());
 
   const getControl = useCallback(
     (formControlName: string) => {
@@ -178,6 +184,26 @@ export function DFormItem(props: DFormItemProps) {
     return [_errors, hasError, errorStyle, status];
   }, [dErrors, formItems, getControl]);
 
+  const errorsNode = useMemo(
+    () =>
+      errors.map((errors) => (
+        <div key={errors.identity} id={errors.identity}>
+          {errors.errors.map((error) => (
+            <DError
+              key={error.key}
+              dVisible={!error.hidden}
+              dMessage={error.message}
+              dStatus={error.status}
+              onHidden={() => {
+                dataRef.current.preErrors = dataRef.current.preErrors.filter((item) => item.key !== error.key);
+              }}
+            ></DError>
+          ))}
+        </div>
+      )),
+    [errors]
+  );
+
   const feedbackIcon = useMemo(() => {
     if (isUndefined(status)) {
       return null;
@@ -253,25 +279,28 @@ export function DFormItem(props: DFormItemProps) {
     }
   }, [dLabelExtra]);
 
-  const stateBackflowContextValue = useMemo<DStateBackflowContextData>(
+  const handleLabelClick = useCallback<React.MouseEventHandler<HTMLLabelElement>>((e) => {
+    const id = e.currentTarget.getAttribute('for');
+    if (id) {
+      const el = document.getElementById(id);
+      if (el && el.tagName !== 'INPUT') {
+        e.preventDefault();
+        el.focus({ preventScroll: true });
+        el.click();
+      }
+    }
+  }, []);
+
+  const stateBackflow = useMemo<Pick<DFormItemContextData, 'updateFormItems' | 'removeFormItems'>>(
     () => ({
-      addState: (identity, formControlName, id) => {
+      updateFormItems: (identity, formControlName, id) => {
         if (isString(formControlName)) {
           setFormItems((draft) => {
             draft.set(identity, { formControlName, id });
           });
         }
       },
-      updateState: (identity, formControlName, id) => {
-        setFormItems((draft) => {
-          if (isString(formControlName)) {
-            draft.set(identity, { formControlName, id });
-          } else {
-            draft.delete(identity);
-          }
-        });
-      },
-      removeState: (identity) => {
+      removeFormItems: (identity) => {
         setFormItems((draft) => {
           draft.delete(identity);
         });
@@ -279,8 +308,15 @@ export function DFormItem(props: DFormItemProps) {
     }),
     [setFormItems]
   );
+  const contextValue = useMemo<DFormItemContextData>(
+    () => ({
+      ...stateBackflow,
+    }),
+    [stateBackflow]
+  );
+
   return (
-    <DStateBackflowContext.Provider value={stateBackflowContextValue}>
+    <DFormItemContext.Provider value={contextValue}>
       <div
         {...restProps}
         className={getClassName(
@@ -298,7 +334,8 @@ export function DFormItem(props: DFormItemProps) {
           }
         )}
         style={{
-          flex: span === true ? '1 0 auto' : `0 0 ${isNumber(span) ? `calc((100% / 12) * ${span})` : span}`,
+          flexGrow: span === true ? 1 : undefined,
+          width: span === true ? undefined : isNumber(span) ? `calc((100% / ${colNum}) * ${span})` : span,
         }}
       >
         <div className={`${dPrefix}form-item__container`}>
@@ -309,9 +346,9 @@ export function DFormItem(props: DFormItemProps) {
                   [`${dPrefix}form-item__label--required`]: formCustomLabel === 'required' && dLabel && required,
                   [`${dPrefix}form-item__label--colon`]: dLabel && formLabelColon,
                 })}
-                style={{ width: labelWidth }}
+                style={{ width: formLayout === 'vertical' ? undefined : labelWidth }}
               >
-                <label htmlFor={id}>
+                <label htmlFor={id} onClick={handleLabelClick}>
                   {dLabel}
                   {(extraNode || formCustomLabel === 'optional') && (
                     <div className={`${dPrefix}form-item__extra`}>
@@ -324,7 +361,10 @@ export function DFormItem(props: DFormItemProps) {
             ) : (
               <div style={{ width: labelWidth }}></div>
             ))}
-          <div className={`${dPrefix}form-item__content`}>
+          <div
+            className={`${dPrefix}form-item__content`}
+            style={{ width: formLayout === 'vertical' ? '100%' : `calc(100% - ${isNumber(labelWidth) ? labelWidth + 'px' : labelWidth})` }}
+          >
             {status === 'pending' && (
               <>
                 <span className={`${dPrefix}form-item__pending`}></span>
@@ -334,23 +374,6 @@ export function DFormItem(props: DFormItemProps) {
               </>
             )}
             {children}
-            <div className={`${dPrefix}form-item__errors`}>
-              {errors.map((errors) => (
-                <div key={errors.identity} id={errors.identity}>
-                  {errors.errors.map((error) => (
-                    <DError
-                      key={error.key}
-                      dVisible={!error.hidden}
-                      dMessage={error.message}
-                      dStatus={error.status}
-                      onHidden={() => {
-                        dataRef.current.preErrors = dataRef.current.preErrors.filter((item) => item.key !== error.key);
-                      }}
-                    ></DError>
-                  ))}
-                </div>
-              ))}
-            </div>
           </div>
           {formFeedbackIcon && (
             <div
@@ -362,24 +385,13 @@ export function DFormItem(props: DFormItemProps) {
             </div>
           )}
         </div>
+        <div className={`${dPrefix}form-item__errors`} style={{ left: formLayout === 'vertical' ? undefined : labelWidth }}>
+          {errorsNode}
+        </div>
         <div className={`${dPrefix}form-item__errors-height`} aria-hidden={true}>
-          {errors.map((errors) => (
-            <div key={errors.identity}>
-              {errors.errors.map((error) => (
-                <DError
-                  key={error.key}
-                  dVisible={!error.hidden}
-                  dMessage={error.message}
-                  dStatus={error.status}
-                  onHidden={() => {
-                    dataRef.current.preErrors = dataRef.current.preErrors.filter((item) => item.key !== error.key);
-                  }}
-                ></DError>
-              ))}
-            </div>
-          ))}
+          {errorsNode}
         </div>
       </div>
-    </DStateBackflowContext.Provider>
+    </DFormItemContext.Provider>
   );
 }

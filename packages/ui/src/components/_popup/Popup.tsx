@@ -2,7 +2,7 @@ import type { DElementSelector } from '../../hooks/element-ref';
 import type { DTransitionStateList } from '../../hooks/transition';
 import type { DPlacement } from '../../utils/position';
 
-import { isUndefined, toNumber } from 'lodash';
+import { isUndefined } from 'lodash';
 import React, { useId, useCallback, useEffect, useMemo, useImperativeHandle, useRef, useState } from 'react';
 import ReactDOM, { flushSync } from 'react-dom';
 import { filter } from 'rxjs';
@@ -13,7 +13,7 @@ import {
   useRefSelector,
   useImmer,
   useRefCallback,
-  useRootContentConfig,
+  useContentRefConfig,
   useDTransition,
   useMaxIndex,
 } from '../../hooks';
@@ -50,12 +50,13 @@ export interface DPopupProps extends React.HTMLAttributes<HTMLDivElement> {
   dDestroy?: boolean;
   dMouseEnterDelay?: number;
   dMouseLeaveDelay?: number;
-  dEscClose?: boolean;
+  dEscClosable?: boolean;
   dCustomPopup?: (
     popupEl: HTMLElement,
     triggerEl: HTMLElement
   ) => { top: number; left: number; stateList: DTransitionStateList; arrowPosition?: React.CSSProperties };
   onVisibleChange?: (visible: boolean) => void;
+  onRendered?: () => void;
   afterVisibleChange?: (visible: boolean) => void;
 }
 
@@ -75,9 +76,10 @@ const Popup: React.ForwardRefRenderFunction<DPopupRef, DPopupProps> = (props, re
     dDestroy = false,
     dMouseEnterDelay = 150,
     dMouseLeaveDelay = 200,
-    dEscClose = true,
+    dEscClosable = true,
     dCustomPopup,
     onVisibleChange,
+    onRendered,
     afterVisibleChange,
     className,
     style,
@@ -91,7 +93,7 @@ const Popup: React.ForwardRefRenderFunction<DPopupRef, DPopupProps> = (props, re
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const rootContentRef = useRootContentConfig();
+  const rootContentRef = useContentRefConfig();
   //#endregion
 
   //#region Ref
@@ -287,6 +289,7 @@ const Popup: React.ForwardRefRenderFunction<DPopupRef, DPopupProps> = (props, re
       beforeEnter: () => {
         dataRef.current.hasCancelLeave = false;
         updatePosition();
+        onRendered?.();
 
         return dataRef.current.transitionState;
       },
@@ -317,7 +320,7 @@ const Popup: React.ForwardRefRenderFunction<DPopupRef, DPopupProps> = (props, re
         if (isFixed) {
           return maxZIndex;
         } else {
-          return toNumber(getComputedStyle(document.body).getPropertyValue(`--${dPrefix}absolute-z-index`));
+          return `var(--${dPrefix}zindex-absolute)`;
         }
       } else {
         return dZIndex;
@@ -406,7 +409,6 @@ const Popup: React.ForwardRefRenderFunction<DPopupRef, DPopupProps> = (props, re
     [onClick, dTrigger, changeVisible]
   );
 
-  //#region DidUpdate
   useEffect(() => {
     if (!isUndefined(dTriggerEl)) {
       const [asyncGroup, asyncId] = asyncCapture.createGroup();
@@ -487,7 +489,7 @@ const Popup: React.ForwardRefRenderFunction<DPopupRef, DPopupProps> = (props, re
   useEffect(() => {
     const [asyncGroup, asyncId] = asyncCapture.createGroup();
 
-    if (dVisible && dEscClose) {
+    if (dVisible && dEscClosable) {
       asyncGroup
         .fromEvent<KeyboardEvent>(window, 'keydown')
         .pipe(filter((e) => e.code === 'Escape'))
@@ -501,7 +503,7 @@ const Popup: React.ForwardRefRenderFunction<DPopupRef, DPopupProps> = (props, re
     return () => {
       asyncCapture.deleteGroup(asyncId);
     };
-  }, [asyncCapture, dEscClose, dVisible, changeVisible]);
+  }, [asyncCapture, dEscClosable, dVisible, changeVisible]);
 
   useEffect(() => {
     const [asyncGroup, asyncId] = asyncCapture.createGroup();
@@ -522,7 +524,6 @@ const Popup: React.ForwardRefRenderFunction<DPopupRef, DPopupProps> = (props, re
       asyncCapture.deleteGroup(asyncId);
     };
   }, [afterEnter, asyncCapture, dVisible, isFixed, popupEl, rootContentRef, triggerRef, updatePosition]);
-  //#endregion
 
   useImperativeHandle(
     ref,
@@ -535,16 +536,16 @@ const Popup: React.ForwardRefRenderFunction<DPopupRef, DPopupProps> = (props, re
   );
 
   const triggerRenderProps = useMemo<DTriggerRenderProps>(() => {
-    const _triggerRenderProps: DTriggerRenderProps = { [`data-${dPrefix}popup-trigger`]: uniqueId };
+    const triggerRenderProps: DTriggerRenderProps = { [`data-${dPrefix}popup-trigger`]: uniqueId };
     if (dTrigger === 'hover') {
-      _triggerRenderProps.onMouseEnter = () => {
+      triggerRenderProps.onMouseEnter = () => {
         dataRef.current.clearTid && dataRef.current.clearTid();
         dataRef.current.clearTid = asyncCapture.setTimeout(() => {
           dataRef.current.clearTid = null;
           changeVisible(true);
         }, dMouseEnterDelay);
       };
-      _triggerRenderProps.onMouseLeave = () => {
+      triggerRenderProps.onMouseLeave = () => {
         dataRef.current.clearTid && dataRef.current.clearTid();
         dataRef.current.clearTid = asyncCapture.setTimeout(() => {
           dataRef.current.clearTid = null;
@@ -557,22 +558,22 @@ const Popup: React.ForwardRefRenderFunction<DPopupRef, DPopupProps> = (props, re
       };
     }
     if (dTrigger === 'focus') {
-      _triggerRenderProps.onFocus = () => {
+      triggerRenderProps.onFocus = () => {
         dataRef.current.clearTid && dataRef.current.clearTid();
         changeVisible(true);
       };
-      _triggerRenderProps.onBlur = () => {
+      triggerRenderProps.onBlur = () => {
         dataRef.current.clearTid = asyncCapture.setTimeout(() => changeVisible(false), 20);
       };
     }
     if (dTrigger === 'click') {
-      _triggerRenderProps.onClick = () => {
+      triggerRenderProps.onClick = () => {
         dataRef.current.clearTid && dataRef.current.clearTid();
         changeVisible();
       };
     }
 
-    return _triggerRenderProps;
+    return triggerRenderProps;
   }, [asyncCapture, checkMouseLeave, dMouseEnterDelay, dMouseLeaveDelay, dPrefix, dTrigger, uniqueId, changeVisible]);
 
   return (

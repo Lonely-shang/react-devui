@@ -1,14 +1,12 @@
 @include b(select-box) {
-  --#{$variable-prefix}select-box-space: 11px;
-
   position: relative;
 
   display: inline-flex;
   align-items: center;
   width: 100%;
   height: var(--#{$variable-prefix}size);
-  padding: 0 var(--#{$variable-prefix}select-box-space);
-  border: 1px solid var(--#{$variable-prefix}border-color);
+  padding: 0 calc(var(--#{$variable-prefix}horizontal-space-size) - 1px);
+  border: 1px solid var(--#{$variable-prefix}color-border);
   border-radius: var(--#{$variable-prefix}border-radius);
 
   font-size: var(--#{$variable-prefix}font);
@@ -18,7 +16,7 @@
   text-transform: none;
   vertical-align: top;
 
-  background-color: var(--#{$variable-prefix}background-color);
+  background-color: var(--#{$variable-prefix}background-color-input);
 
   outline: none;
   cursor: pointer;
@@ -42,43 +40,46 @@
     @include form-validate;
 
     &:hover {
-      z-index: var(--#{$variable-prefix}hover-z-index);
+      z-index: var(--#{$variable-prefix}zindex-hover);
 
       border-color: var(--#{$variable-prefix}color-primary-lighter);
     }
 
     &:focus {
-      z-index: var(--#{$variable-prefix}hover-z-index);
+      z-index: var(--#{$variable-prefix}zindex-hover);
 
       border-color: var(--#{$variable-prefix}color-primary);
     }
   }
 
   @include when(expanded) {
-    z-index: var(--#{$variable-prefix}hover-z-index);
+    z-index: var(--#{$variable-prefix}zindex-hover);
 
     border-color: var(--#{$variable-prefix}color-primary);
   }
 
   @include when(disabled) {
+    .#{$variable-prefix}select-box__content {
+      pointer-events: none;
+    }
     .#{$variable-prefix}select-box__icon {
-      color: var(--#{$variable-prefix}disabled-color);
+      color: var(--#{$variable-prefix}color-disabled);
     }
     .#{$variable-prefix}select-box__placeholder {
-      color: var(--#{$variable-prefix}color-step-100);
+      color: rgb(var(--#{$variable-prefix}text-color-rgb) / 10%);
     }
   }
 
   @include m(smaller) {
-    --#{$variable-prefix}select-box-space: 7px;
     --#{$variable-prefix}size: var(--#{$variable-prefix}size-smaller);
     --#{$variable-prefix}font: var(--#{$variable-prefix}font-smaller);
+    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-smaller);
   }
 
   @include m(larger) {
-    --#{$variable-prefix}select-box-space: 15px;
     --#{$variable-prefix}size: var(--#{$variable-prefix}size-larger);
     --#{$variable-prefix}font: var(--#{$variable-prefix}font-larger);
+    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-larger);
   }
 
   @include e(content) {
@@ -103,13 +104,17 @@
     padding: 0;
     border: none;
 
+    color: var(--#{$variable-prefix}text-color);
+
     font: inherit;
-    font-size: var(--#{$variable-prefix}font);
     letter-spacing: inherit;
+
+    background-color: transparent;
 
     outline: none;
 
     appearance: none;
+    caret-color: var(--#{$variable-prefix}color-primary);
 
     &::-webkit-search-cancel-button {
       display: none;
@@ -121,14 +126,14 @@
   @include e(placeholder) {
     position: absolute;
     top: 0;
-    right: var(--#{$variable-prefix}select-box-space);
+    right: calc(var(--#{$variable-prefix}horizontal-space-size) - 1px);
     bottom: 0;
-    left: var(--#{$variable-prefix}select-box-space);
+    left: calc(var(--#{$variable-prefix}horizontal-space-size) - 1px);
 
     display: flex;
     align-items: center;
 
-    color: var(--#{$variable-prefix}color-step-400);
+    color: rgb(var(--#{$variable-prefix}text-color-rgb) / 40%);
 
     & > span {
       @include utils-ellipsis;
@@ -137,7 +142,7 @@
 
   @include e(clear) {
     position: absolute;
-    right: var(--#{$variable-prefix}select-box-space);
+    right: calc(var(--#{$variable-prefix}horizontal-space-size) - 1px);
     z-index: 5;
 
     display: inline-flex;

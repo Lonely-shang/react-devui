@@ -10,10 +10,10 @@ import {
   useRefSelector,
   useImmer,
   useRefCallback,
-  useRootContentConfig,
+  useContentRefConfig,
   useValueChange,
 } from '../../hooks';
-import { getClassName, toPx, mergeStyle } from '../../utils';
+import { getClassName, toPx, mergeStyle, generateComponentMate } from '../../utils';
 
 export interface DAffixRef {
   el: HTMLDivElement | null;
@@ -22,28 +22,29 @@ export interface DAffixRef {
 
 export interface DAffixProps extends React.HTMLAttributes<HTMLDivElement> {
   dTarget?: DElementSelector;
-  dTop?: string | number;
-  dBottom?: string | number;
-  dZIndex?: number;
+  dTop?: number | string;
+  dBottom?: number | string;
+  dZIndex?: number | string;
   onFixedChange?: (fixed: boolean) => void;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DAffix');
 const Affix: React.ForwardRefRenderFunction<DAffixRef, DAffixProps> = (props, ref) => {
   const {
     dTarget,
     dTop = 0,
     dBottom = 0,
-    dZIndex = 900,
+    dZIndex,
     onFixedChange,
     className,
     style,
     children,
     ...restProps
-  } = useComponentConfig(DAffix.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const rootContentRef = useRootContentConfig();
+  const rootContentRef = useContentRefConfig();
   //#endregion
 
   //#region Ref
@@ -86,7 +87,7 @@ const Affix: React.ForwardRefRenderFunction<DAffixRef, DAffixProps> = (props, re
       if (fixedCondition) {
         setFixedStyle({
           position: 'fixed',
-          zIndex: dZIndex,
+          zIndex: dZIndex ?? `var(--${dPrefix}zindex-sticky)`,
           width: offsetRect.width,
           height: offsetRect.height,
           left: offsetRect.left,
@@ -102,10 +103,8 @@ const Affix: React.ForwardRefRenderFunction<DAffixRef, DAffixProps> = (props, re
         setFixed(false);
       }
     }
-  }, [dTarget, targetRef, affixEl, referenceEl, fixed, top, props.dBottom, bottom, setFixedStyle, dZIndex, setReferenceStyle, setFixed]);
-  //#endregion
+  }, [dTarget, targetRef, affixEl, referenceEl, fixed, top, props.dBottom, bottom, setFixedStyle, dZIndex, dPrefix, setReferenceStyle]);
 
-  //#region DidUpdate
   useEffect(() => {
     const [asyncGroup, asyncId] = asyncCapture.createGroup();
     if (fixed && referenceEl) {
@@ -130,7 +129,6 @@ const Affix: React.ForwardRefRenderFunction<DAffixRef, DAffixProps> = (props, re
   useEffect(() => {
     updatePosition();
   }, [updatePosition]);
-  //#endregion
 
   useImperativeHandle(
     ref,

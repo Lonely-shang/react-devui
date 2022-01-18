@@ -2,7 +2,7 @@ import { isUndefined } from 'lodash';
 import React, { useCallback, useEffect } from 'react';
 
 import { usePrefixConfig, useComponentConfig, useCustomContext, useRefCallback, useTranslation, useStateBackflow } from '../../hooks';
-import { getClassName, toId } from '../../utils';
+import { generateComponentMate, getClassName, toId } from '../../utils';
 import { DButton } from '../button';
 import { DIcon } from '../icon';
 import { DTabsContext } from './Tabs';
@@ -16,6 +16,7 @@ export interface DTabProps extends React.HTMLAttributes<HTMLDivElement> {
   __dropdown?: boolean;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DTab');
 export function DTab(props: DTabProps) {
   const {
     dId,
@@ -28,11 +29,12 @@ export function DTab(props: DTabProps) {
     className,
     onClick,
     ...restProps
-  } = useComponentConfig(DTab.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
   const [{ tabsActiveId, getDotStyle, onActiveChange, onClose }] = useCustomContext(DTabsContext);
+  const [{ updateTabEls, removeTabEls }] = useCustomContext(DTabsContext);
   //#endregion
 
   //#region Ref
@@ -45,7 +47,7 @@ export function DTab(props: DTabProps) {
 
   const panelId = `${dPrefix}tabpanel-${toId(dId)}`;
 
-  useStateBackflow(dId, tabEl);
+  useStateBackflow(updateTabEls, removeTabEls, dId, tabEl);
 
   const handleClick = useCallback(
     (e) => {
@@ -66,13 +68,11 @@ export function DTab(props: DTabProps) {
     [dId, onClose]
   );
 
-  //#region DidUpdate
   useEffect(() => {
     if (!__dropdown && tabsActiveId === dId) {
       getDotStyle?.();
     }
   }, [__dropdown, dId, getDotStyle, tabsActiveId]);
-  //#endregion
 
   return (
     <div

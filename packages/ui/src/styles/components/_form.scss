@@ -57,7 +57,7 @@
 }
 
 @include b(form-item) {
-  overflow: hidden;
+  position: relative;
 
   @include m(vertical) {
     @include e(container) {
@@ -75,6 +75,7 @@
   @include e(container) {
     display: flex;
     align-items: center;
+    width: 100%;
   }
 
   @include e(label) {
@@ -99,8 +100,6 @@
 
     @include m(colon) {
       &::after {
-        position: relative;
-
         margin-left: 2px;
 
         content: ':';
@@ -116,7 +115,7 @@
 
     color: var(--#{$variable-prefix}color-step-400);
     font-size: 0.9em;
-    line-height: 0;
+    line-height: 1;
 
     .#{$variable-prefix}icon {
       cursor: help;
@@ -126,11 +125,13 @@
   @include e(content) {
     position: relative;
 
-    flex-grow: 1;
+    display: inline-flex;
+    align-items: center;
   }
 
   @include e(pending) {
     position: absolute;
+    z-index: calc(var(--#{$variable-prefix}zindex-active) + 1);
 
     display: block;
     overflow: hidden;
@@ -156,7 +157,7 @@
         background: linear-gradient(90deg, transparent, var(--#{$variable-prefix}color-primary));
 
         animation: form-pending-top 1s linear infinite;
-        animation-fill-mode: both;
+        animation-fill-mode: backwards;
 
         content: '';
       }
@@ -176,7 +177,7 @@
 
         animation: form-pending-right 1s linear infinite;
         animation-delay: 0.25s;
-        animation-fill-mode: both;
+        animation-fill-mode: backwards;
 
         content: '';
       }
@@ -196,7 +197,7 @@
 
         animation: form-pending-bottom 1s linear infinite;
         animation-delay: 0.5s;
-        animation-fill-mode: both;
+        animation-fill-mode: backwards;
 
         content: '';
       }
@@ -216,7 +217,7 @@
 
         animation: form-pending-left 1s linear infinite;
         animation-delay: 0.75s;
-        animation-fill-mode: both;
+        animation-fill-mode: backwards;
 
         content: '';
       }
@@ -282,10 +283,9 @@
   width: 100%;
   margin-bottom: 20px;
   padding-bottom: var(--#{$variable-prefix}margin-size);
-  border-bottom: 1px solid var(--#{$variable-prefix}border-color);
+  border-bottom: 1px solid var(--#{$variable-prefix}color-border);
 
   color: var(--#{$variable-prefix}color-step-600);
 
-  font-weight: 600;
   font-size: 1.1em;
 }

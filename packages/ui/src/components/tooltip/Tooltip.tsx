@@ -4,7 +4,7 @@ import type { DPopupProps, DPopupRef, DTriggerRenderProps } from '../_popup';
 import React, { useCallback, useId } from 'react';
 
 import { usePrefixConfig, useComponentConfig, useTwoWayBinding } from '../../hooks';
-import { getClassName } from '../../utils';
+import { generateComponentMate, getClassName } from '../../utils';
 import { DPopup } from '../_popup';
 
 export type DTooltipRef = DPopupRef;
@@ -14,8 +14,9 @@ export interface DTooltipProps extends Omit<DPopupProps, 'dVisible' | 'dPopupCon
   dTitle: React.ReactNode;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DTooltip');
 const Tooltip: React.ForwardRefRenderFunction<DTooltipRef, DTooltipProps> = (props, ref) => {
-  const { dVisible, dTitle, onVisibleChange, id, className, children, ...restProps } = useComponentConfig(DTooltip.name, props);
+  const { dVisible, dTitle, onVisibleChange, id, className, children, ...restProps } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
@@ -31,36 +32,36 @@ const Tooltip: React.ForwardRefRenderFunction<DTooltipRef, DTooltipProps> = (pro
       if (children) {
         const child = React.Children.only(children) as React.ReactElement<React.HTMLAttributes<HTMLElement>>;
 
-        const _renderProps: DTriggerRenderProps = renderProps;
+        const props: DTriggerRenderProps = renderProps;
         if (onMouseEnter) {
-          _renderProps.onMouseEnter = (e) => {
+          props.onMouseEnter = (e) => {
             child.props.onMouseEnter?.(e);
             onMouseEnter?.(e);
           };
-          _renderProps.onMouseLeave = (e) => {
+          props.onMouseLeave = (e) => {
             child.props.onMouseLeave?.(e);
             onMouseLeave?.(e);
           };
         }
         if (onFocus) {
-          _renderProps.onFocus = (e) => {
+          props.onFocus = (e) => {
             child.props.onFocus?.(e);
             onFocus?.(e);
           };
-          _renderProps.onBlur = (e) => {
+          props.onBlur = (e) => {
             child.props.onBlur?.(e);
             onBlur?.(e);
           };
         }
         if (onClick) {
-          _renderProps.onClick = (e) => {
+          props.onClick = (e) => {
             child.props.onClick?.(e);
             onClick?.(e);
           };
         }
         return React.cloneElement(child, {
           ...child.props,
-          ..._renderProps,
+          ...props,
           'aria-describedby': _id,
         });
       }

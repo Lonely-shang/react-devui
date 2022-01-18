@@ -5,7 +5,7 @@ import { isUndefined } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { usePrefixConfig, useComponentConfig, useImmer, useRefCallback, useTwoWayBinding, useDCollapseTransition } from '../../hooks';
-import { getClassName } from '../../utils';
+import { generateComponentMate, getClassName, mergeStyle } from '../../utils';
 import { DTrigger } from '../_trigger';
 import { DMenuItem } from './MenuItem';
 import { DMenuSub } from './MenuSub';
@@ -35,6 +35,7 @@ export interface DMenuProps extends React.HTMLAttributes<HTMLElement> {
   onExpandsChange?: (ids: Set<string>) => void;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DMenu');
 export function DMenu(props: DMenuProps) {
   const {
     dActive,
@@ -45,14 +46,13 @@ export function DMenu(props: DMenuProps) {
     onActiveChange,
     onExpandsChange,
     className,
+    style,
     children,
     onMouseEnter,
     onMouseLeave,
-    onFocus,
-    onBlur,
     onClick,
     ...restProps
-  } = useComponentConfig(DMenu.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
@@ -65,7 +65,7 @@ export function DMenu(props: DMenuProps) {
   const [focusId, setFocusId] = useImmer<DMenuContextData['menuFocusId']>(null);
   const [activedescendant, setActiveDescendant] = useState<string | undefined>(undefined);
 
-  const [activeId, changeActiveId] = useTwoWayBinding<string | null>(null, dActive, onActiveChange);
+  const [activeId, changeActiveId] = useTwoWayBinding<string | null, string>(null, dActive, onActiveChange);
   const [expandIds, changeExpandIds] = useTwoWayBinding(new Set<string>(), dExpands, onExpandsChange);
 
   const expandTrigger = isUndefined(dExpandTrigger) ? (dMode === 'vertical' ? 'click' : 'hover') : dExpandTrigger;
@@ -79,7 +79,6 @@ export function DMenu(props: DMenuProps) {
     [dMode, expandTrigger, changeExpandIds]
   );
 
-  //#region DidUpdate
   useEffect(() => {
     let isFocus = false;
     if (focusId) {
@@ -91,7 +90,6 @@ export function DMenu(props: DMenuProps) {
     }
     setActiveDescendant(isFocus ? focusId?.[1] : undefined);
   }, [focusId, navEl?.childNodes, setActiveDescendant]);
-  //#endregion
 
   const contextValue = useMemo<DMenuContextData>(
     () => ({
@@ -159,12 +157,19 @@ export function DMenu(props: DMenuProps) {
     });
   }, [children]);
 
-  useDCollapseTransition({
+  const transitionState = {
+    'enter-from': { width: '80px' },
+    'enter-to': { transition: 'width 0.2s linear' },
+    'leave-to': { width: '80px', transition: 'width 0.2s linear' },
+  };
+  const hidden = useDCollapseTransition({
     dEl: navEl,
     dVisible: dMode !== 'icon',
+    dCallbackList: {
+      beforeEnter: () => transitionState,
+      beforeLeave: () => transitionState,
+    },
     dDirection: 'horizontal',
-    dDuring: 200,
-    dSpace: 80,
   });
 
   return (
@@ -178,20 +183,24 @@ export function DMenu(props: DMenuProps) {
             className={getClassName(className, `${dPrefix}menu`, {
               [`${dPrefix}menu--horizontal`]: dMode === 'horizontal',
             })}
+            style={mergeStyle(style, { width: hidden ? 80 : undefined })}
             tabIndex={-1}
             role="menubar"
             aria-orientation={dMode === 'horizontal' ? 'horizontal' : 'vertical'}
             aria-activedescendant={activedescendant}
             onMouseEnter={(e) => {
               onMouseEnter?.(e);
+
               triggerRenderProps.onMouseEnter?.(e);
             }}
             onMouseLeave={(e) => {
               onMouseLeave?.(e);
+
               triggerRenderProps.onMouseLeave?.(e);
             }}
             onClick={(e) => {
               onClick?.(e);
+
               triggerRenderProps.onClick?.(e);
             }}
           >

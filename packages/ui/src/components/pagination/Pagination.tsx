@@ -3,7 +3,7 @@ import type { Updater } from '../../hooks/two-way-binding';
 import React, { useCallback, useMemo, useState } from 'react';
 
 import { usePrefixConfig, useComponentConfig, useTwoWayBinding, useTranslation, useAsync } from '../../hooks';
-import { getClassName } from '../../utils';
+import { generateComponentMate, getClassName } from '../../utils';
 import { DIcon } from '../icon';
 import { DInput, DInputAffix } from '../input';
 import { DSelect } from '../select';
@@ -23,11 +23,11 @@ export interface DPaginationProps extends React.HTMLAttributes<HTMLElement> {
     jump?: (input: React.ReactNode) => React.ReactNode;
   };
   dMini?: boolean;
-  dDisabled?: boolean;
   onActiveChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DPagination');
 const DEFAULT_PROPS = {
   dCompose: ['pages'],
   dPageSizeOptions: [10, 20, 50, 100],
@@ -41,13 +41,11 @@ export function DPagination(props: DPaginationProps) {
     dCompose = DEFAULT_PROPS.dCompose,
     dCustomRender,
     dMini = false,
-    dDisabled = false,
     onActiveChange,
     onPageSizeChange,
     className,
-    children,
     ...restProps
-  } = useComponentConfig(DPagination.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
@@ -67,7 +65,7 @@ export function DPagination(props: DPaginationProps) {
       _changeActive(active);
 
       setIsChange(true);
-      asyncCapture.requestAnimationFrame(() => asyncCapture.setTimeout(() => setIsChange(false)));
+      asyncCapture.setTimeout(() => setIsChange(false));
     },
     [_changeActive, asyncCapture]
   );
@@ -119,7 +117,7 @@ export function DPagination(props: DPaginationProps) {
             }
           )}
           role="button"
-          tabIndex={dDisabled ? undefined : 0}
+          tabIndex={0}
           title={t('Previous page')}
           aria-disabled={active === 1}
           onClick={() => {
@@ -141,7 +139,7 @@ export function DPagination(props: DPaginationProps) {
       } else {
         nextNode = (
           <DIcon viewBox="64 64 896 896" dSize={iconSize}>
-            <path d="M765.7 486.8L314.9 134.7A7.97 7.97 0 00302 141v77.3c0 4.9 2.3 9.6 6.1 12.6l360 281.1-360 281.1c-3.9 3-6.1 7.7-6.1 12.6V883c0 6.7 7.7 10.4 12.9 6.3l450.8-352.1a31.96 31.96 0 000-50.4z"></path>{' '}
+            <path d="M765.7 486.8L314.9 134.7A7.97 7.97 0 00302 141v77.3c0 4.9 2.3 9.6 6.1 12.6l360 281.1-360 281.1c-3.9 3-6.1 7.7-6.1 12.6V883c0 6.7 7.7 10.4 12.9 6.3l450.8-352.1a31.96 31.96 0 000-50.4z"></path>
           </DIcon>
         );
       }
@@ -152,7 +150,7 @@ export function DPagination(props: DPaginationProps) {
             [`${dPrefix}pagination__item--border`]: !(dCustomRender && dCustomRender.next),
           })}
           role="button"
-          tabIndex={dDisabled ? undefined : 0}
+          tabIndex={0}
           title={t('Next page')}
           aria-disabled={active === lastPage}
           onClick={() => {
@@ -180,7 +178,7 @@ export function DPagination(props: DPaginationProps) {
       },
       nextNode,
     ];
-  }, [active, changeActive, dCompose, dCustomRender, dDisabled, dPrefix, lastPage, t]);
+  }, [active, changeActive, dCompose, dCustomRender, dPrefix, lastPage, t]);
 
   const sizeNode = useMemo(() => {
     const options = dPageSizeOptions.map((size) => ({
@@ -198,13 +196,12 @@ export function DPagination(props: DPaginationProps) {
         dModel={[pageSize]}
         dCustomSelected={(select) => `${select.dLabel} ${t(' / Page')}`}
         dOptionRender={(option) => (dCustomRender && dCustomRender.sizeOption ? dCustomRender.sizeOption(option.dValue) : option.dLabel)}
-        dDisabled={dDisabled}
         onModelChange={(select) => {
           changePageSize(select as number);
         }}
       ></DSelect>
     );
-  }, [changePageSize, dCustomRender, dDisabled, dMini, dPageSizeOptions, dPrefix, pageSize, t]);
+  }, [changePageSize, dCustomRender, dMini, dPageSizeOptions, dPrefix, pageSize, t]);
 
   const jumpNode = useMemo(() => {
     if (dCompose.includes('jump')) {
@@ -216,7 +213,6 @@ export function DPagination(props: DPaginationProps) {
           min={1}
           max={lastPage}
           step={1}
-          disabled={dDisabled}
           dModel={[jumpValue, setJumpValue]}
           onKeyDown={(e) => {
             if (e.code === 'Enter') {
@@ -230,13 +226,7 @@ export function DPagination(props: DPaginationProps) {
           }}
         />
       );
-      const jumpInput = dMini ? (
-        inputNode
-      ) : (
-        <DInputAffix dDisabled={dDisabled} dNumber>
-          {inputNode}
-        </DInputAffix>
-      );
+      const jumpInput = dMini ? inputNode : <DInputAffix dNumber>{inputNode}</DInputAffix>;
 
       if (dCustomRender && dCustomRender.jump) {
         return dCustomRender.jump(jumpInput);
@@ -249,17 +239,16 @@ export function DPagination(props: DPaginationProps) {
       }
     }
     return null;
-  }, [changeActive, dCompose, dCustomRender, dDisabled, dMini, dPrefix, jumpValue, lastPage, t]);
+  }, [changeActive, dCompose, dCustomRender, dMini, dPrefix, jumpValue, lastPage, t]);
 
   return (
     <nav
       {...restProps}
       className={getClassName(className, `${dPrefix}pagination`, {
         [`${dPrefix}pagination--mini`]: dMini,
-        'is-disabled': dDisabled,
         'is-change': isChange,
       })}
-      tabIndex={dDisabled ? undefined : -1}
+      tabIndex={-1}
       role="navigation"
       aria-label="Pagination Navigation"
     >
@@ -316,7 +305,7 @@ export function DPagination(props: DPaginationProps) {
                         `${dPrefix}pagination__item--jump5`
                       )}
                       role="button"
-                      tabIndex={dDisabled ? undefined : 0}
+                      tabIndex={0}
                       title={t('5 pages forward')}
                       onClick={() => {
                         changeActive(Math.max(active - 5, 1));
@@ -329,7 +318,7 @@ export function DPagination(props: DPaginationProps) {
                       }}
                     >
                       <DIcon viewBox="64 64 896 896" dSize={iconSize}>
-                        <path d="M272.9 512l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L186.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H532c6.7 0 10.4-7.7 6.3-12.9L272.9 512zm304 0l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L490.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H836c6.7 0 10.4-7.7 6.3-12.9L576.9 512z"></path>{' '}
+                        <path d="M272.9 512l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L186.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H532c6.7 0 10.4-7.7 6.3-12.9L272.9 512zm304 0l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L490.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H836c6.7 0 10.4-7.7 6.3-12.9L576.9 512z"></path>
                       </DIcon>
                       <div className={`${dPrefix}pagination__ellipsis`}>•••</div>
                     </li>
@@ -344,7 +333,7 @@ export function DPagination(props: DPaginationProps) {
                         `${dPrefix}pagination__item--jump5`
                       )}
                       role="button"
-                      tabIndex={dDisabled ? undefined : 0}
+                      tabIndex={0}
                       title={t('5 pages backward')}
                       onClick={() => {
                         changeActive(Math.min(active + 5, lastPage));
@@ -374,7 +363,7 @@ export function DPagination(props: DPaginationProps) {
                           'is-active': active === n,
                         }
                       )}
-                      tabIndex={dDisabled ? undefined : 0}
+                      tabIndex={0}
                       onClick={() => {
                         changeActive(n);
                       }}

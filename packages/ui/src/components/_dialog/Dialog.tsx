@@ -5,29 +5,25 @@ import { getClassName, mergeStyle } from '../../utils';
 import { DMask } from './Mask';
 
 export interface DDialogProps extends React.HTMLAttributes<HTMLDivElement> {
-  dId: string;
   dVisible: boolean;
   dHidden: boolean;
-  dContentProps?: React.HTMLAttributes<HTMLDivElement>;
   dMask?: boolean;
   dMaskClosable?: boolean;
+  dEscClosable?: boolean;
   dDestroy?: boolean;
   dDialogRef?: React.LegacyRef<HTMLDivElement>;
-  dDialogContentRef?: React.LegacyRef<HTMLDivElement>;
   onClose?: () => void;
 }
 
 export function DDialog(props: DDialogProps) {
   const {
-    dId,
     dVisible,
     dHidden,
-    dContentProps,
     dMask = true,
     dMaskClosable = true,
+    dEscClosable = true,
     dDestroy = false,
     dDialogRef,
-    dDialogContentRef,
     onClose,
     className,
     style,
@@ -47,17 +43,15 @@ export function DDialog(props: DDialogProps) {
     }
   }, [dMaskClosable, onClose]);
 
-  //#region DidUpdate
   useEffect(() => {
     const [asyncGroup, asyncId] = asyncCapture.createGroup();
-    if (dVisible) {
+    if (dVisible && dEscClosable) {
       asyncGroup.onEscKeydown(() => onClose?.());
     }
     return () => {
       asyncCapture.deleteGroup(asyncId);
     };
-  }, [asyncCapture, dVisible, onClose]);
-  //#endregion
+  }, [asyncCapture, dEscClosable, dVisible, onClose]);
 
   return (
     // eslint-disable-next-line react/jsx-no-useless-fragment
@@ -70,18 +64,9 @@ export function DDialog(props: DDialogProps) {
           style={mergeStyle(style, { display: dHidden ? 'none' : undefined })}
           role="dialog"
           aria-modal="true"
-          aria-describedby={`${dPrefix}dialog-content-${dId}`}
         >
           {dMask && <DMask dVisible={dVisible} onClose={handleMaskClose} />}
-          <div
-            {...dContentProps}
-            ref={dDialogContentRef}
-            id={`${dPrefix}dialog-content-${dId}`}
-            className={getClassName(dContentProps?.className, `${dPrefix}dialog__content`)}
-            tabIndex={-1}
-          >
-            {children}
-          </div>
+          {children}
         </div>
       )}
     </>

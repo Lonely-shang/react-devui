@@ -1,10 +1,11 @@
 import type { Updater } from '../../hooks/two-way-binding';
+import type { DTriggerRenderProps } from '../_popup';
 import type { DDropdownItemProps } from './DropdownItem';
 
 import React, { useId, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { usePrefixConfig, useComponentConfig, useImmer, useRefCallback, useTwoWayBinding, useAsync, useTranslation } from '../../hooks';
-import { getClassName, getVerticalSideStyle } from '../../utils';
+import { generateComponentMate, getClassName, getVerticalSideStyle } from '../../utils';
 import { DPopup } from '../_popup';
 
 export interface DDropdownContextData {
@@ -31,6 +32,7 @@ export interface DDropdownProps extends React.HTMLAttributes<HTMLElement> {
   onItemClick?: (id: string) => void;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DDropdown');
 export function DDropdown(props: DDropdownProps) {
   const {
     dTriggerNode,
@@ -48,7 +50,7 @@ export function DDropdown(props: DDropdownProps) {
     className,
     children,
     ...restProps
-  } = useComponentConfig(DDropdown.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
@@ -89,7 +91,6 @@ export function DDropdown(props: DDropdownProps) {
     [dPlacement]
   );
 
-  //#region DidUpdate
   useEffect(() => {
     let isFocus = false;
     if (focusId) {
@@ -101,7 +102,6 @@ export function DDropdown(props: DDropdownProps) {
     }
     setActiveDescendant(isFocus ? focusId?.[1] : undefined);
   }, [focusId, navEl?.childNodes, setActiveDescendant]);
-  //#endregion
 
   const contextValue = useMemo<DDropdownContextData>(
     () => ({
@@ -143,7 +143,52 @@ export function DDropdown(props: DDropdownProps) {
     });
   }, [children]);
 
-  const triggerNode = React.Children.only(dTriggerNode) as React.ReactElement<React.HTMLAttributes<HTMLElement>>;
+  const renderTrigger = useCallback(
+    ({ onMouseEnter, onMouseLeave, onFocus, onBlur, onClick, ...renderProps }: DTriggerRenderProps) => {
+      if (dTriggerNode) {
+        const triggerNode = React.Children.only(dTriggerNode) as React.ReactElement<React.HTMLAttributes<HTMLElement>>;
+        const props: DTriggerRenderProps = renderProps;
+        if (onMouseEnter) {
+          props.onMouseEnter = (e) => {
+            triggerNode.props.onMouseEnter?.(e);
+            onMouseEnter?.(e);
+          };
+          props.onMouseLeave = (e) => {
+            triggerNode.props.onMouseLeave?.(e);
+            onMouseLeave?.(e);
+          };
+        }
+        if (onFocus) {
+          props.onFocus = (e) => {
+            triggerNode.props.onFocus?.(e);
+            onFocus?.(e);
+          };
+          props.onBlur = (e) => {
+            triggerNode.props.onBlur?.(e);
+            onBlur?.(e);
+          };
+        }
+        if (onClick) {
+          props.onClick = (e) => {
+            triggerNode.props.onClick?.(e);
+            onClick?.(e);
+          };
+        }
+
+        return React.cloneElement(triggerNode, {
+          ...triggerNode.props,
+          ...props,
+          role: 'button',
+          'aria-haspopup': 'menu',
+          'aria-expanded': visible ? true : undefined,
+          'aria-controls': _id,
+        });
+      }
+
+      return null;
+    },
+    [_id, dTriggerNode, visible]
+  );
 
   return (
     <DDropdownContext.Provider value={contextValue}>
@@ -165,16 +210,7 @@ export function DDropdown(props: DDropdownProps) {
           </nav>
         }
         dCustomPopup={customTransition}
-        dTriggerRender={(renderProps) =>
-          React.cloneElement(triggerNode, {
-            ...triggerNode.props,
-            ...renderProps,
-            role: 'button',
-            'aria-haspopup': 'menu',
-            'aria-expanded': visible ? true : undefined,
-            'aria-controls': _id,
-          })
-        }
+        dTriggerRender={renderTrigger}
         dDestroy={dDestroy}
         dArrow={dArrow}
         onVisibleChange={changeVisible}

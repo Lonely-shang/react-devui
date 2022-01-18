@@ -33,7 +33,6 @@ export function DTrigger(props: DTriggerProps) {
 
   const asyncCapture = useAsync();
 
-  //#region DidUpdate
   useEffect(() => {
     if (!isUndefined(dTriggerEl)) {
       const [asyncGroup, asyncId] = asyncCapture.createGroup();
@@ -88,19 +87,18 @@ export function DTrigger(props: DTriggerProps) {
       };
     }
   }, [asyncCapture, dMouseEnterDelay, dMouseLeaveDelay, dTrigger, dTriggerEl, onTrigger]);
-  //#endregion
 
   const renderProps = useMemo<DRenderProps>(() => {
-    const _renderProps: DRenderProps = {};
+    const renderProps: DRenderProps = {};
     if (dTrigger === 'hover') {
-      _renderProps.onMouseEnter = () => {
+      renderProps.onMouseEnter = () => {
         dataRef.current.clearTid && dataRef.current.clearTid();
         dataRef.current.clearTid = asyncCapture.setTimeout(() => {
           dataRef.current.clearTid = null;
           onTrigger?.(true);
         }, dMouseEnterDelay);
       };
-      _renderProps.onMouseLeave = () => {
+      renderProps.onMouseLeave = () => {
         dataRef.current.clearTid && dataRef.current.clearTid();
         dataRef.current.clearTid = asyncCapture.setTimeout(() => {
           dataRef.current.clearTid = null;
@@ -109,22 +107,22 @@ export function DTrigger(props: DTriggerProps) {
       };
     }
     if (dTrigger === 'focus') {
-      _renderProps.onFocus = () => {
+      renderProps.onFocus = () => {
         dataRef.current.clearTid && dataRef.current.clearTid();
         onTrigger?.(true);
       };
-      _renderProps.onBlur = () => {
+      renderProps.onBlur = () => {
         dataRef.current.clearTid = asyncCapture.setTimeout(() => onTrigger?.(false), 20);
       };
     }
     if (dTrigger === 'click') {
-      _renderProps.onClick = () => {
+      renderProps.onClick = () => {
         dataRef.current.clearTid && dataRef.current.clearTid();
         onTrigger?.();
       };
     }
 
-    return _renderProps;
+    return renderProps;
   }, [asyncCapture, dMouseEnterDelay, dMouseLeaveDelay, dTrigger, onTrigger]);
 
   // eslint-disable-next-line react/jsx-no-useless-fragment

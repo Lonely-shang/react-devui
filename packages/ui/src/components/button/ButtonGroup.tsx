@@ -4,7 +4,7 @@ import type { DButtonProps } from './Button';
 import React, { useMemo } from 'react';
 
 import { usePrefixConfig, useComponentConfig, useGeneralState, DGeneralStateContext } from '../../hooks';
-import { getClassName } from '../../utils';
+import { generateComponentMate, getClassName } from '../../utils';
 
 export interface DButtonGroupContextData {
   buttonGroupType: DButtonProps['dType'];
@@ -20,6 +20,7 @@ export interface DButtonGroupProps extends React.HTMLAttributes<HTMLDivElement> 
   dDisabled?: boolean;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DButtonGroup');
 export function DButtonGroup(props: DButtonGroupProps) {
   const {
     dType = 'secondary',
@@ -29,7 +30,7 @@ export function DButtonGroup(props: DButtonGroupProps) {
     className,
     children,
     ...restProps
-  } = useComponentConfig(DButtonGroup.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
@@ -39,6 +40,14 @@ export function DButtonGroup(props: DButtonGroupProps) {
   const size = dSize ?? gSize;
   const disabled = dDisabled || gDisabled;
 
+  const generalStateContextValue = useMemo<DGeneralStateContextData>(
+    () => ({
+      gSize: size,
+      gDisabled: disabled,
+    }),
+    [disabled, size]
+  );
+
   const contextValue = useMemo<DButtonGroupContextData>(
     () => ({
       buttonGroupType: dType,
@@ -46,14 +55,6 @@ export function DButtonGroup(props: DButtonGroupProps) {
       buttonGroupDisabled: dDisabled,
     }),
     [dType, dTheme, dDisabled]
-  );
-
-  const generalStateContextValue = useMemo<DGeneralStateContextData>(
-    () => ({
-      gSize: size,
-      gDisabled: disabled,
-    }),
-    [disabled, size]
   );
 
   return (

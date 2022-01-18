@@ -1,5 +1,5 @@
 import type { DElementSelector } from '../../hooks/element-ref';
-import type { DStateBackflowContextData } from '../../hooks/state-backflow';
+import type { Draft } from 'immer';
 
 import { isUndefined } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -11,13 +11,14 @@ import {
   useImmer,
   useAsync,
   useRefCallback,
-  useRootContentConfig,
+  useContentRefConfig,
   useValueChange,
-  DStateBackflowContext,
 } from '../../hooks';
-import { getClassName, CustomScroll } from '../../utils';
+import { getClassName, CustomScroll, generateComponentMate } from '../../utils';
 
 export interface DAnchorContextData {
+  updateLinks: (identity: string, href: string | undefined, el: HTMLLIElement | null) => void;
+  removeLinks: (identity: string) => void;
   anchorActiveHref: string | null;
   onLinkClick: (href: string) => void;
 }
@@ -27,25 +28,29 @@ export interface DAnchorProps extends React.HTMLAttributes<HTMLUListElement> {
   dDistance?: number;
   dPage?: DElementSelector;
   dScrollBehavior?: 'instant' | 'smooth';
-  dIndicator?: React.ReactNode;
+  dIndicator?: React.ReactNode | symbol;
   onHrefChange?: (href: string | null) => void;
 }
 
-export function DAnchor(props: DAnchorProps) {
+const DOT_INDICATOR = Symbol('dot');
+const LINE_INDICATOR = Symbol('line');
+
+const { COMPONENT_NAME } = generateComponentMate('DAnchor');
+export const DAnchor = (props: DAnchorProps) => {
   const {
     dDistance = 0,
     dPage,
     dScrollBehavior = 'instant',
-    dIndicator = 'dot',
+    dIndicator = DOT_INDICATOR,
     onHrefChange,
     className,
     children,
     ...restProps
-  } = useComponentConfig(DAnchor.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const rootContentRef = useRootContentConfig();
+  const rootContentRef = useContentRefConfig();
   //#endregion
 
   //#region Ref
@@ -55,7 +60,7 @@ export function DAnchor(props: DAnchorProps) {
   const asyncCapture = useAsync();
   const [customScroll] = useState(() => new CustomScroll());
   const [dotStyle, setDotStyle] = useImmer<React.CSSProperties>({});
-  const [links, setLinks] = useImmer(new Map<string, { href: string; el: HTMLLIElement | null }>());
+  const [links, setLinks] = useImmer(new Map<string, { href: string; el: HTMLLIElement }>());
   const [activeHref, setActiveHref] = useState<string | null>(null);
 
   const pageRef = useRefSelector(dPage ?? null);
@@ -97,8 +102,8 @@ export function DAnchor(props: DAnchorProps) {
       if (newHref) {
         for (const { href, el } of links.values()) {
           if (href === newHref) {
-            const rect = el?.getBoundingClientRect();
-            if (rect && anchorEl) {
+            const rect = el.getBoundingClientRect();
+            if (anchorEl) {
               draft.top = rect.top + rect.height / 2 - anchorEl.getBoundingClientRect().top;
             }
             break;
@@ -140,7 +145,6 @@ export function DAnchor(props: DAnchorProps) {
     [dPage, dScrollBehavior, dDistance, customScroll, pageRef]
   );
 
-  //#region DidUpdate
   useEffect(() => {
     updateAnchor();
   }, [updateAnchor]);
@@ -155,29 +159,17 @@ export function DAnchor(props: DAnchorProps) {
       asyncCapture.deleteGroup(asyncId);
     };
   }, [asyncCapture, rootContentRef, updateAnchor]);
-  //#endregion
 
-  const contextValue = useMemo<DAnchorContextData>(
+  const stateBackflow = useMemo<Pick<DAnchorContextData, 'updateLinks' | 'removeLinks'>>(
     () => ({
-      anchorActiveHref: activeHref,
-      onLinkClick,
-    }),
-    [activeHref, onLinkClick]
-  );
-
-  const stateBackflowContextValue = useMemo<DStateBackflowContextData>(
-    () => ({
-      addState: (identity, href, el) => {
-        setLinks((draft) => {
-          draft.set(identity, { href, el });
-        });
+      updateLinks: (identity, href, el) => {
+        if (href && el) {
+          setLinks((draft) => {
+            draft.set(identity, { href, el: el as Draft<HTMLLIElement> });
+          });
+        }
       },
-      updateState: (identity, href, el) => {
-        setLinks((draft) => {
-          draft.set(identity, { href, el });
-        });
-      },
-      removeState: (identity) => {
+      removeLinks: (identity) => {
         setLinks((draft) => {
           draft.delete(identity);
         });
@@ -185,23 +177,31 @@ export function DAnchor(props: DAnchorProps) {
     }),
     [setLinks]
   );
+  const contextValue = useMemo<DAnchorContextData>(
+    () => ({
+      ...stateBackflow,
+      anchorActiveHref: activeHref,
+      onLinkClick,
+    }),
+    [activeHref, onLinkClick, stateBackflow]
+  );
 
   return (
-    <DStateBackflowContext.Provider value={stateBackflowContextValue}>
-      <DAnchorContext.Provider value={contextValue}>
-        <ul {...restProps} ref={anchorRef} className={getClassName(className, `${dPrefix}anchor`)}>
-          <div className={`${dPrefix}anchor__indicator`}>
-            {dIndicator === 'dot' ? (
-              <span className={`${dPrefix}anchor__dot-indicator`} style={dotStyle}></span>
-            ) : dIndicator === 'line' ? (
-              <span className={`${dPrefix}anchor__line-indicator`} style={dotStyle}></span>
-            ) : (
-              dIndicator
-            )}
-          </div>
-          {children}
-        </ul>
-      </DAnchorContext.Provider>
-    </DStateBackflowContext.Provider>
+    <DAnchorContext.Provider value={contextValue}>
+      <ul {...restProps} ref={anchorRef} className={getClassName(className, `${dPrefix}anchor`)}>
+        <div className={`${dPrefix}anchor__indicator`}>
+          {dIndicator === DOT_INDICATOR ? (
+            <span className={`${dPrefix}anchor__dot-indicator`} style={dotStyle}></span>
+          ) : dIndicator === LINE_INDICATOR ? (
+            <span className={`${dPrefix}anchor__line-indicator`} style={dotStyle}></span>
+          ) : (
+            dIndicator
+          )}
+        </div>
+        {children}
+      </ul>
+    </DAnchorContext.Provider>
   );
-}
+};
+DAnchor.DOT_INDICATOR = DOT_INDICATOR;
+DAnchor.LINE_INDICATOR = LINE_INDICATOR;

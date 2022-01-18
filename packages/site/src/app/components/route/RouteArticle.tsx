@@ -1,7 +1,7 @@
 import { isString, isUndefined } from 'lodash';
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
-import { DIcon, DAnchor, DAnchorLink, DRow } from '@react-devui/ui';
+import { DIcon, DAnchor, DAnchorLink, useMediaMatch } from '@react-devui/ui';
 import { useImmer, useDTransition, useRefCallback } from '@react-devui/ui/hooks';
 
 import './RouteArticle.scss';
@@ -52,7 +52,7 @@ m -673.67664,1221.6502 -231.2455,-231.24803 55.6165,
     'leave-to': { opacity: '0', transform: 'translateY(120px)', transition: 'opacity 0.2s linear, transform 0.2s ease-out' },
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isUndefined(props.links)) {
       const arr: Array<{ href: string; title: string }> = [];
       document.querySelectorAll('.app-route-article h2').forEach((el) => {
@@ -67,13 +67,13 @@ m -673.67664,1221.6502 -231.2455,-231.24803 55.6165,
     }
   }, [props.links, setLinks]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isString(html)) {
       const el = document.querySelector(`.app-route-article > h1:first-child`);
-      const _title = document.title;
+      const title = document.title;
       document.title = el?.id + ' - React DevUI';
       return () => {
-        document.title = _title;
+        document.title = title;
       };
     }
   }, [html]);
@@ -87,45 +87,42 @@ m -673.67664,1221.6502 -231.2455,-231.24803 55.6165,
     },
   });
 
-  return (
-    <DRow
-      dAsListener
-      dRender={(match, matchs) => (
-        <>
-          {matchs.includes('md') && links.length > 0 && (
-            <DAnchor className="app-route-article__anchor" dPage=".app-main">
-              {links.map((link) => (
-                <DAnchorLink key={link.href} href={link.href} title={link.title}>
-                  {link.title}
-                </DAnchorLink>
-              ))}
-            </DAnchor>
-          )}
-          {!matchs.includes('md') && (
-            <>
-              {links.length > 0 && (
-                <div ref={ref} className="app-route-article__anchor-conatiner" style={{ visibility: hidden ? 'hidden' : undefined }}>
-                  <DAnchor dPage=".app-main" dIndicator="line">
-                    {links.map((link) => (
-                      <DAnchorLink key={link.href} href={link.href} title={link.title} onClick={() => setMenuOpen(false)}>
-                        {link.title}
-                      </DAnchorLink>
-                    ))}
-                  </DAnchor>
-                </div>
-              )}
-              <div className="app-route-article__anchor-button" role="button" tabIndex={0} onClick={() => setMenuOpen(!menuOpen)}>
-                {icon(true)}
-                {icon(false)}
-              </div>
-            </>
-          )}
+  const mediaMatch = useMediaMatch();
 
-          <article className="app-route-article" dangerouslySetInnerHTML={html ? { __html: html } : undefined}>
-            {props.children}
-          </article>
+  return (
+    <>
+      {mediaMatch.includes('md') && links.length > 0 && (
+        <DAnchor className="app-route-article__anchor" dPage=".app-main">
+          {links.map((link) => (
+            <DAnchorLink key={link.href} href={link.href} title={link.title}>
+              {link.title}
+            </DAnchorLink>
+          ))}
+        </DAnchor>
+      )}
+      {!mediaMatch.includes('md') && (
+        <>
+          {links.length > 0 && (
+            <div ref={ref} className="app-route-article__anchor-conatiner" style={{ visibility: hidden ? 'hidden' : undefined }}>
+              <DAnchor dPage=".app-main" dIndicator={DAnchor.LINE_INDICATOR}>
+                {links.map((link) => (
+                  <DAnchorLink key={link.href} href={link.href} title={link.title} onClick={() => setMenuOpen(false)}>
+                    {link.title}
+                  </DAnchorLink>
+                ))}
+              </DAnchor>
+            </div>
+          )}
+          <div className="app-route-article__anchor-button" role="button" tabIndex={0} onClick={() => setMenuOpen(!menuOpen)}>
+            {icon(true)}
+            {icon(false)}
+          </div>
         </>
       )}
-    ></DRow>
+
+      <article className="app-route-article" dangerouslySetInnerHTML={html ? { __html: html } : undefined}>
+        {props.children}
+      </article>
+    </>
   );
 }

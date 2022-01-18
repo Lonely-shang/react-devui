@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 
 import { usePrefixConfig, useComponentConfig, useCustomContext, useRefCallback, useStateBackflow } from '../../hooks';
-import { getClassName } from '../../utils';
+import { generateComponentMate, getClassName } from '../../utils';
 import { DAnchorContext } from './Anchor';
 
 export interface DAnchorLinkProps extends React.LiHTMLAttributes<HTMLLIElement> {
@@ -9,19 +9,20 @@ export interface DAnchorLinkProps extends React.LiHTMLAttributes<HTMLLIElement> 
   href?: string;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DAnchorLink');
 export function DAnchorLink(props: DAnchorLinkProps) {
-  const { dLevel = 0, href, className, children, onClick, ...restProps } = useComponentConfig(DAnchorLink.name, props);
+  const { dLevel = 0, href, className, children, onClick, ...restProps } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const [{ anchorActiveHref, onLinkClick }] = useCustomContext(DAnchorContext);
+  const [{ updateLinks, removeLinks, anchorActiveHref, onLinkClick }] = useCustomContext(DAnchorContext);
   //#endregion
 
   //#region Ref
   const [linkEl, linkRef] = useRefCallback<HTMLLIElement>();
   //#endregion
 
-  useStateBackflow(href, linkEl);
+  useStateBackflow(updateLinks, removeLinks, href, linkEl);
 
   const handleClick = useCallback(
     (e) => {

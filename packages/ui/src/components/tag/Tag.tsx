@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
-import { usePrefixConfig, useComponentConfig, useTranslation, useGeneralState } from '../../hooks';
-import { getClassName, pSBC } from '../../utils';
+import { usePrefixConfig, useComponentConfig, useTranslation, useGeneralState, useThemeConfig } from '../../hooks';
+import { convertHex, generateComponentMate, getClassName, pSBC } from '../../utils';
 import { DIcon } from '../icon';
 
 export interface DTagProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -13,6 +13,7 @@ export interface DTagProps extends React.HTMLAttributes<HTMLDivElement> {
   onClose?: React.MouseEventHandler<HTMLSpanElement>;
 }
 
+const { COMPONENT_NAME } = generateComponentMate('DTag');
 export function DTag(props: DTagProps) {
   const {
     dType = 'primary',
@@ -23,12 +24,12 @@ export function DTag(props: DTagProps) {
     onClose,
     className,
     children,
-    onClick,
     ...restProps
-  } = useComponentConfig(DTag.name, props);
+  } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
+  const theme = useThemeConfig();
   const { gDisabled } = useGeneralState();
   //#endregion
 
@@ -55,7 +56,7 @@ export function DTag(props: DTagProps) {
           ? {
               [`--${dPrefix}tag-color`]: dColor,
               [`--${dPrefix}tag-border-color`]: pSBC(0.3, dColor),
-              [`--${dPrefix}tag-background-color`]: pSBC(0.92, dColor),
+              [`--${dPrefix}tag-background-color`]: convertHex(dColor, theme === 'light' ? 0.1 : 0.16),
             }
           : undefined
       }

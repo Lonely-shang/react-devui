@@ -1,7 +1,9 @@
 @import '~rfs/scss';
 
 .app-demo-box {
-  border: 1px solid var(--d-divider-color);
+  border: 1px solid var(--d-color-divider);
+
+  background-color: var(--app-demo-box-background-color);
 
   &.is-active {
     border-color: var(--d-color-primary);
@@ -22,7 +24,7 @@
 .app-demo-box__info {
   position: relative;
 
-  border-top: 1px solid var(--d-divider-color);
+  border-top: 1px solid var(--d-color-divider);
 }
 
 .app-demo-box__title {
@@ -35,7 +37,7 @@
 
   padding: 1px 8px;
 
-  background-color: var(--d-background-color);
+  background-color: var(--app-demo-box-background-color);
 }
 
 .app-demo-box__description {
@@ -47,7 +49,7 @@
   justify-content: center;
   width: 100%;
   padding: 12px 0;
-  border-top: 1px dashed var(--d-divider-color);
+  border-top: 1px dashed var(--d-color-divider);
 
   .app-icon-button {
     color: var(--d-color-step-300);
@@ -75,13 +77,15 @@
 }
 
 .app-demo-box__code {
-  border-top: 1px dashed var(--d-divider-color);
+  border-top: 1px dashed var(--d-color-divider);
 
   pre {
     margin: 0;
   }
 
-  pre code.hljs {
+  pre > code.hljs {
     padding: 24px;
+
+    background-color: transparent !important;
   }
 }

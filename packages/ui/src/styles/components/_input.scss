@@ -5,13 +5,16 @@
   width: 100%;
   height: var(--#{$variable-prefix}size);
   margin: 0;
-  padding: 3px 9px;
-  border: 1px solid var(--#{$variable-prefix}border-color);
+  padding: 3px calc(var(--#{$variable-prefix}horizontal-space-size) - 1px);
+  border: 1px solid var(--#{$variable-prefix}color-border);
   border-radius: var(--#{$variable-prefix}border-radius);
 
+  color: var(--#{$variable-prefix}text-color);
   font: inherit;
   font-size: var(--#{$variable-prefix}font);
   letter-spacing: inherit;
+
+  background-color: var(--#{$variable-prefix}background-color-input);
 
   outline: none;
 
@@ -48,52 +51,54 @@
     @include form-validate;
 
     &:hover {
-      z-index: var(--#{$variable-prefix}hover-z-index);
+      z-index: var(--#{$variable-prefix}zindex-hover);
 
       border-color: var(--#{$variable-prefix}color-primary-lighter);
     }
 
     &:focus {
-      z-index: var(--#{$variable-prefix}hover-z-index);
+      z-index: var(--#{$variable-prefix}zindex-hover);
 
       border-color: var(--#{$variable-prefix}color-primary);
     }
   }
 
   &::placeholder {
-    color: var(--#{$variable-prefix}color-step-400);
+    color: rgb(var(--#{$variable-prefix}text-color-rgb) / 40%);
 
     transform: translateX(1px);
   }
 
   &:disabled::placeholder {
-    color: var(--#{$variable-prefix}color-step-100);
+    color: rgb(var(--#{$variable-prefix}text-color-rgb) / 10%);
   }
 
   @include m(smaller) {
     --#{$variable-prefix}size: var(--#{$variable-prefix}size-smaller);
     --#{$variable-prefix}font: var(--#{$variable-prefix}font-smaller);
+    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-smaller);
   }
 
   @include m(larger) {
     --#{$variable-prefix}size: var(--#{$variable-prefix}size-larger);
     --#{$variable-prefix}font: var(--#{$variable-prefix}font-larger);
+    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-larger);
   }
 }
 
 @include b(input-affix) {
-  --#{$variable-prefix}input-affix-space: 11px;
-
   $selector: &;
 
   display: inline-flex;
   align-items: center;
   width: 100%;
-  padding: 0 var(--#{$variable-prefix}input-affix-space);
-  border: 1px solid var(--#{$variable-prefix}border-color);
+  padding: 0 calc(var(--#{$variable-prefix}horizontal-space-size) - 1px);
+  border: 1px solid var(--#{$variable-prefix}color-border);
   border-radius: var(--#{$variable-prefix}border-radius);
 
   font-size: var(--#{$variable-prefix}font);
+
+  background-color: var(--#{$variable-prefix}background-color-input);
 
   transition: border-color 0.2s linear;
 
@@ -117,13 +122,13 @@
     @include form-validate;
 
     &:hover {
-      z-index: var(--#{$variable-prefix}hover-z-index);
+      z-index: var(--#{$variable-prefix}zindex-hover);
 
       border-color: var(--#{$variable-prefix}color-primary-lighter);
     }
 
     @include when(focus) {
-      z-index: var(--#{$variable-prefix}hover-z-index);
+      z-index: var(--#{$variable-prefix}zindex-hover);
 
       border-color: var(--#{$variable-prefix}color-primary);
     }
@@ -145,19 +150,19 @@
     &:not(.is-disabled) {
       padding-right: 0;
       .#{$variable-prefix}input-affix__suffix {
-        margin-right: var(--#{$variable-prefix}input-affix-space);
+        margin-right: calc(var(--#{$variable-prefix}horizontal-space-size) - 1px);
       }
     }
   }
 
   @include m(smaller) {
-    --#{$variable-prefix}input-affix-space: 7px;
     --#{$variable-prefix}font: var(--#{$variable-prefix}font-smaller);
+    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-smaller);
   }
 
   @include m(larger) {
-    --#{$variable-prefix}input-affix-space: 15px;
     --#{$variable-prefix}font: var(--#{$variable-prefix}font-larger);
+    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-larger);
   }
 
   @include e(prefix) {
@@ -204,9 +209,5 @@
     height: unset;
 
     color: var(--d-color-step-400);
-
-    & + & {
-      margin: 0;
-    }
   }
 }
