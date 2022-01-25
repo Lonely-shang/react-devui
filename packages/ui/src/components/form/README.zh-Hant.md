@@ -20,12 +20,12 @@ title: 表单
 | dForm | 绑定 [useForm](#useForm) 返回的实例 | DFormInstance | - |
 | dLabelWidth | 标签长度 | number \| string | - |
 | dLabelColon | 标签是否显示冒号 | boolean | - |
-| dCustomLabel | 自定义标签 | 'required' \| 'optional' \| 'hidden' | 'required' |
+| dRequiredType | 必填样式 | 'required' \| 'optional' \| 'hidden' | 'required' |
 | dLayout | 表单布局 | 'horizontal' \| 'vertical' \| 'inline' | 'horizontal' |
 | dInlineSpan | 设置行内布局每个表单项占据的格数，共有 12 格 | number \| true | 6 |
 | dFeedbackIcon | 设置校验结果反馈图标 | boolean \| `{ success?: React.ReactNode; warning?: React.ReactNode; error?: React.ReactNode; pending?: React.ReactNode; }` | false |
 | dSize | 设置表单尺寸 | 'smaller' \| 'larger' | - |
-| dResponsiveProps | 响应式布局 | `Record<DBreakpoints, Pick<DFormProps, 'dLabelWidth' \| 'dCustomLabel' \| 'dLayout' \| 'dInlineSpan'>>` | - |
+| dResponsiveProps | 响应式布局 | `Record<DBreakpoints, Pick<DFormProps, 'dLabelWidth' \| 'dRequiredType' \| 'dLayout' \| 'dInlineSpan'>>` | - |
 <!-- prettier-ignore-end -->
 
 ### DFormGroupProps
@@ -82,10 +82,10 @@ interface DFormInstance {
 /**
  * A form can have several different statuses. Each possible status is returned as a string literal.
  *
- * * **VALID**: Reports that a FormControl is valid, meaning that no errors exist in the input value.
- * * **INVALID**: Reports that a FormControl is invalid, meaning that an error exists in the input value.
- * * **PENDING**: Reports that a FormControl is pending, meaning that that async validation is occurring and errors are not yet available for the input value.
- * * **DISABLED**: Reports that a FormControl is disabled, meaning that the control is exempt from ancestor calculations of validity or value.
+ * **VALID**: Reports that a FormControl is valid, meaning that no errors exist in the input value.
+ * **INVALID**: Reports that a FormControl is invalid, meaning that an error exists in the input value.
+ * **PENDING**: Reports that a FormControl is pending, meaning that that async validation is occurring and errors are not yet available for the input value.
+ * **DISABLED**: Reports that a FormControl is disabled, meaning that the control is exempt from ancestor calculations of validity or value.
  *
  */
 type FormControlStatus = 'VALID' | 'INVALID' | 'PENDING' | 'DISABLED';

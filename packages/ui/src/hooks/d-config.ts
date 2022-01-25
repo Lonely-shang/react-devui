@@ -4,6 +4,7 @@ import type {
   DAnchorLinkProps,
   DButtonProps,
   DButtonGroupProps,
+  DCascaderProps,
   DCheckboxProps,
   DCheckboxGroupProps,
   DComposeProps,
@@ -65,6 +66,7 @@ export interface DComponentConfig {
   DAnchorLink: DAnchorLinkProps;
   DButton: DButtonProps;
   DButtonGroup: DButtonGroupProps;
+  DCascader: DCascaderProps;
   DCheckbox: DCheckboxProps;
   DCheckboxGroup: DCheckboxGroupProps;
   DCompose: DComposeProps;
@@ -118,14 +120,14 @@ export interface DConfigContextData {
     lang?: DLang;
     resources?: Resources;
   };
-  icons?: Array<{
+  icons?: {
     name: string;
-    list: Array<{
+    list: {
       viewBox: string;
       paths: string[];
       type?: string;
-    }>;
-  }>;
+    }[];
+  }[];
   contentSelector?: string;
 }
 export const DConfigContext = React.createContext<DConfigContextData>({});

@@ -87,19 +87,17 @@ export function DInputAffix(props: DInputAffixProps) {
   const handleClearMouseDown = useCallback<React.MouseEventHandler<HTMLButtonElement>>(
     (e) => {
       if (e.button === 0) {
-        if (document.activeElement === inputEl) {
-          e.preventDefault();
-        }
+        e.preventDefault();
+
         notification.next('');
       }
     },
-    [inputEl, notification]
+    [notification]
   );
 
   const handleNumberChange = useCallback(
     (isIncrease = true) => {
       const handleFunc = () => {
-        /* istanbul ignore next */
         if (inputEl) {
           const step = getNumberAttribute(inputEl.step, 1);
           const max = getNumberAttribute(inputEl.max, Infinity);
@@ -123,55 +121,46 @@ export function DInputAffix(props: DInputAffixProps) {
   const handlePasswordMouseDown = useCallback<React.MouseEventHandler<HTMLButtonElement>>(
     (e) => {
       if (e.button === 0) {
-        if (document.activeElement === inputEl) {
-          e.preventDefault();
-        }
+        e.preventDefault();
+
         if (dPasswordToggle) {
           setPassword(!password);
         }
       }
     },
-    [dPasswordToggle, inputEl, password]
+    [dPasswordToggle, password]
   );
 
   const handleNumberIncreaseMouseDown = useCallback<React.MouseEventHandler<HTMLButtonElement>>(
     (e) => {
       if (e.button === 0) {
-        if (document.activeElement === inputEl) {
-          e.preventDefault();
-        }
+        e.preventDefault();
 
         handleNumberChange();
       }
     },
-    [handleNumberChange, inputEl]
+    [handleNumberChange]
   );
 
   const handleNumberDecreaseMouseDown = useCallback<React.MouseEventHandler<HTMLButtonElement>>(
     (e) => {
       if (e.button === 0) {
-        if (document.activeElement === inputEl) {
-          e.preventDefault();
-        }
+        e.preventDefault();
 
         handleNumberChange(false);
       }
     },
-    [handleNumberChange, inputEl]
+    [handleNumberChange]
   );
 
-  const handleMouseUp = useCallback(
-    (e) => {
-      /* istanbul ignore next */
-      if (document.activeElement === inputEl) {
-        e.preventDefault();
-      }
+  const handleMouseUp = useCallback((e) => {
+    if (e.button === 0) {
+      e.preventDefault();
 
       dataRef.current.clearLoop?.();
       dataRef.current.clearTid?.();
-    },
-    [inputEl]
-  );
+    }
+  }, []);
 
   const generalStateContextValue = useMemo<DGeneralStateContextData>(
     () => ({

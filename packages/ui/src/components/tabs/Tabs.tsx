@@ -1,13 +1,11 @@
 import type { Updater } from '../../hooks/two-way-binding';
 import type { DDropdownProps } from '../dropdown';
 import type { DTabProps } from './Tab';
-import type { Draft } from 'immer';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { usePrefixConfig, useComponentConfig, useImmer, useTwoWayBinding, useRefCallback, useAsync, useTranslation } from '../../hooks';
 import { generateComponentMate, getClassName, toId } from '../../utils';
-import { DDragPlaceholder, DDrop } from '../drag-drop';
 import { DDropdown, DDropdownItem } from '../dropdown';
 import { DIcon } from '../icon';
 
@@ -27,13 +25,11 @@ export interface DTabsProps extends React.HTMLAttributes<HTMLDivElement> {
   dCenter?: boolean;
   dType?: 'wrap' | 'slider';
   dSize?: 'smaller' | 'larger';
-  dDraggable?: boolean;
   dDropdownProps?: DDropdownProps;
   dTabAriaLabel?: string;
   onActiveChange?: (id: string | null) => void;
   onAddClick?: () => void;
   onClose?: (id: string) => void;
-  onOrderChange?: (order: string[]) => void;
 }
 
 const { COMPONENT_NAME } = generateComponentMate('DTabs');
@@ -44,13 +40,11 @@ export function DTabs(props: DTabsProps) {
     dCenter = false,
     dType,
     dSize,
-    dDraggable = false,
     dDropdownProps,
     dTabAriaLabel,
     onActiveChange,
     onAddClick,
     onClose,
-    onOrderChange,
     className,
     children,
     ...restProps
@@ -75,14 +69,14 @@ export function DTabs(props: DTabsProps) {
   const asyncCapture = useAsync();
   const [dotStyle, setDotStyle] = useImmer<React.CSSProperties>({});
   const [listOverflow, setListOverflow] = useState(true);
-  const [dropdownList, setDropdownList] = useImmer<Array<React.ReactElement<DTabProps>>>([]);
+  const [dropdownList, setDropdownList] = useImmer<React.ReactElement<DTabProps>[]>([]);
   const [scrollEnd, setScrollEnd] = useState(false);
   const [tabEls, setTabEls] = useImmer(new Map<string, { id: string; el: HTMLElement }>());
 
   const isHorizontal = dPlacement === 'top' || dPlacement === 'bottom';
   const [activeId, changeActiveId] = useTwoWayBinding<string | null>(
     () => {
-      const childs = React.Children.toArray(children) as Array<React.ReactElement<DTabProps>>;
+      const childs = React.Children.toArray(children) as React.ReactElement<DTabProps>[];
       if (childs[0]) {
         return childs[0].props.dId;
       }
@@ -102,8 +96,8 @@ export function DTabs(props: DTabsProps) {
 
       if (isOverflow) {
         const tablistWrapperRect = tablistWrapperEl.getBoundingClientRect();
-        const dropdownList: Array<React.ReactElement<DTabProps>> = [];
-        React.Children.forEach(children as Array<React.ReactElement<DTabProps>>, (child) => {
+        const dropdownList: React.ReactElement<DTabProps>[] = [];
+        React.Children.forEach(children as React.ReactElement<DTabProps>[], (child) => {
           for (const { id, el } of tabEls.values()) {
             if (id === child.props.dId) {
               const elRect = el.getBoundingClientRect();
@@ -159,19 +153,6 @@ export function DTabs(props: DTabsProps) {
     }, 20);
   }, [asyncCapture, dPrefix, isHorizontal, setDotStyle, tablistEl]);
 
-  const handleListChange = useCallback(
-    (list: Array<{ id: string }>) => {
-      onOrderChange?.(list.map((item) => item.id));
-    },
-    [onOrderChange]
-  );
-  const handleDragStart = useCallback(() => {
-    setDotStyle({});
-  }, [setDotStyle]);
-  const handleDragEnd = useCallback(() => {
-    getDotStyle();
-  }, [getDotStyle]);
-
   const handleAddClick = useCallback(() => {
     onAddClick?.();
   }, [onAddClick]);
@@ -210,8 +191,8 @@ export function DTabs(props: DTabsProps) {
   }, [asyncCapture, checkScrollEnd, tablistEl, tablistWrapperEl, updateDropdown]);
 
   const [childs, tabpanels] = useMemo(() => {
-    const tabpanels: Array<{ dId: string; id: string; labelledby: string; node: React.ReactNode }> = [];
-    const childs = React.Children.map(children as Array<React.ReactElement<DTabProps>>, (child, index) => {
+    const tabpanels: { dId: string; id: string; labelledby: string; node: React.ReactNode }[] = [];
+    const childs = React.Children.map(children as React.ReactElement<DTabProps>[], (child, index) => {
       tabpanels.push({
         dId: child.props.dId,
         id: `${dPrefix}tabpanel-${toId(child.props.dId)}`,
@@ -229,18 +210,18 @@ export function DTabs(props: DTabsProps) {
         tabIndex,
       });
 
-      return dDraggable ? { id: child.props.dId, node } : node;
+      return node;
     });
 
     return [childs, tabpanels] as const;
-  }, [children, dDraggable, dPrefix]);
+  }, [children, dPrefix]);
 
   const stateBackflow = useMemo<Pick<DTabsContextData, 'updateTabEls' | 'removeTabEls'>>(
     () => ({
       updateTabEls: (identity, id, el) => {
         if (el) {
           setTabEls((draft) => {
-            draft.set(identity, { id, el: el as Draft<HTMLElement> });
+            draft.set(identity, { id, el });
           });
         }
       },
@@ -288,26 +269,7 @@ export function DTabs(props: DTabsProps) {
             aria-label={dTabAriaLabel}
             aria-orientation={isHorizontal ? 'horizontal' : 'vertical'}
           >
-            {dDraggable ? (
-              <DDrop
-                dContainer={tablistWrapperEl}
-                dDirection={isHorizontal ? 'horizontal' : 'vertical'}
-                dPlaceholder={<DDragPlaceholder />}
-                dList={[
-                  childs as Array<{
-                    id: string;
-                    node: React.ReactElement;
-                  }>,
-                ]}
-                dItemRender={(item) => item.node}
-                dGetId={(item) => item.id}
-                onListChange={handleListChange}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-              ></DDrop>
-            ) : (
-              childs
-            )}
+            {childs}
             {(listOverflow || onAddClick) && (
               <div className={`${dPrefix}tabs__button-container`}>
                 {listOverflow && (

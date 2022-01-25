@@ -9,21 +9,21 @@ import marked, { toString } from './utils';
 
 export interface AppRouteArticleProps {
   html?: number[];
-  links?: Array<{ href: string; title: string }>;
+  links?: { href: string; title: string }[];
   children?: React.ReactNode;
 }
 
 export function AppRouteArticle(props: AppRouteArticleProps) {
   const html = props.html ? marked(toString(props.html)) : undefined;
 
-  const [links, setLinks] = useImmer<Array<{ href: string; title: string }>>(props.links ?? []);
+  const [links, setLinks] = useImmer<{ href: string; title: string }[]>(props.links ?? []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [el, ref] = useRefCallback();
 
   const icon = (top: boolean) => (
     <DIcon
       style={{
-        transform: menuOpen ? (top ? 'translateY(12px)' : 'translateY(-12px)') : undefined,
+        transform: menuOpen ? 'translateY(-12px)' : undefined,
         transition: 'transform 0.2s ease',
       }}
       viewBox="0 0 926.23699 573.74994"
@@ -54,7 +54,7 @@ m -673.67664,1221.6502 -231.2455,-231.24803 55.6165,
 
   useLayoutEffect(() => {
     if (isUndefined(props.links)) {
-      const arr: Array<{ href: string; title: string }> = [];
+      const arr: { href: string; title: string }[] = [];
       document.querySelectorAll('.app-route-article h2').forEach((el) => {
         arr.push({ href: '#' + el.id, title: el.id });
       });

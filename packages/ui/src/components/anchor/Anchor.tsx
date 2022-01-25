@@ -1,19 +1,9 @@
 import type { DElementSelector } from '../../hooks/element-ref';
-import type { Draft } from 'immer';
 
 import { isUndefined } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import {
-  usePrefixConfig,
-  useComponentConfig,
-  useRefSelector,
-  useImmer,
-  useAsync,
-  useRefCallback,
-  useContentRefConfig,
-  useValueChange,
-} from '../../hooks';
+import { usePrefixConfig, useComponentConfig, useRefSelector, useImmer, useAsync, useRefCallback, useContentRefConfig } from '../../hooks';
 import { getClassName, CustomScroll, generateComponentMate } from '../../utils';
 
 export interface DAnchorContextData {
@@ -57,15 +47,27 @@ export const DAnchor = (props: DAnchorProps) => {
   const [anchorEl, anchorRef] = useRefCallback<HTMLUListElement>();
   //#endregion
 
+  const dataRef = useRef<{
+    top?: { href: string; num: number };
+  }>({});
+
   const asyncCapture = useAsync();
   const [customScroll] = useState(() => new CustomScroll());
   const [dotStyle, setDotStyle] = useImmer<React.CSSProperties>({});
   const [links, setLinks] = useImmer(new Map<string, { href: string; el: HTMLLIElement }>());
+
   const [activeHref, setActiveHref] = useState<string | null>(null);
+  const changeActiveHref = useCallback(
+    (value) => {
+      if (value !== activeHref) {
+        setActiveHref(value);
+        onHrefChange?.(value);
+      }
+    },
+    [activeHref, onHrefChange]
+  );
 
   const pageRef = useRefSelector(dPage ?? null);
-
-  useValueChange(activeHref, onHrefChange);
 
   const updateAnchor = useCallback(() => {
     let pageTop = 0;
@@ -79,24 +81,22 @@ export const DAnchor = (props: DAnchorProps) => {
 
     let nearestEl: [string, number] | null = null;
     for (const { href } of links.values()) {
-      if (href) {
-        const el = document.getElementById(href.slice(1));
-        if (el) {
-          const top = el.getBoundingClientRect().top;
-          // Add 1 because `getBoundingClientRect` return decimal
-          if (top - pageTop <= dDistance + 1) {
-            if (nearestEl === null) {
-              nearestEl = [href, top];
-            } else if (top > nearestEl[1]) {
-              nearestEl = [href, top];
-            }
+      const el = document.getElementById(href.slice(1));
+      if (el) {
+        const top = el.getBoundingClientRect().top;
+        // Add 1 because `getBoundingClientRect` return decimal
+        if (top - pageTop <= dDistance + 1) {
+          if (nearestEl === null) {
+            nearestEl = [href, top];
+          } else if (top > nearestEl[1]) {
+            nearestEl = [href, top];
           }
         }
       }
     }
 
     const newHref = nearestEl ? nearestEl[0] : null;
-    setActiveHref(newHref);
+    changeActiveHref(newHref);
     setDotStyle((draft) => {
       draft.opacity = nearestEl ? 1 : 0;
       if (newHref) {
@@ -113,7 +113,7 @@ export const DAnchor = (props: DAnchorProps) => {
 
       return draft;
     });
-  }, [anchorEl, dDistance, dPage, links, pageRef, setDotStyle]);
+  }, [anchorEl, changeActiveHref, dDistance, dPage, links, pageRef, setDotStyle]);
 
   const onLinkClick = useCallback(
     (href: string) => {
@@ -154,18 +154,32 @@ export const DAnchor = (props: DAnchorProps) => {
     if (rootContentRef.current) {
       asyncGroup.onResize(rootContentRef.current, updateAnchor);
     }
-    asyncGroup.onGlobalScroll(updateAnchor);
+    asyncGroup.onGlobalScroll(updateAnchor, () => {
+      const data = Array.from(links.values())[0];
+      if (data) {
+        const el = document.getElementById(data.href.slice(1));
+        if (el) {
+          const top = el.getBoundingClientRect().top;
+
+          const skip = dataRef.current.top?.href === data.href && dataRef.current.top?.num === top;
+          dataRef.current.top = { href: data.href, num: top };
+          return skip;
+        }
+      }
+
+      return false;
+    });
     return () => {
       asyncCapture.deleteGroup(asyncId);
     };
-  }, [asyncCapture, rootContentRef, updateAnchor]);
+  }, [asyncCapture, links, rootContentRef, updateAnchor]);
 
   const stateBackflow = useMemo<Pick<DAnchorContextData, 'updateLinks' | 'removeLinks'>>(
     () => ({
       updateLinks: (identity, href, el) => {
         if (href && el) {
           setLinks((draft) => {
-            draft.set(identity, { href, el: el as Draft<HTMLLIElement> });
+            draft.set(identity, { href, el });
           });
         }
       },

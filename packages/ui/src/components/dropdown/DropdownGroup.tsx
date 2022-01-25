@@ -21,7 +21,7 @@ export function DDropdownGroup(props: DDropdownGroupProps) {
   const [t] = useTranslation('Common');
 
   const childs = useMemo(() => {
-    return React.Children.map(children as Array<React.ReactElement<DDropdownItemProps>>, (child) =>
+    return React.Children.map(children as React.ReactElement<DDropdownItemProps>[], (child) =>
       React.cloneElement(child, {
         ...child.props,
         __level: __level + 1,
@@ -33,9 +33,12 @@ export function DDropdownGroup(props: DDropdownGroupProps) {
     <>
       <li
         {...restProps}
-        style={mergeStyle(style, {
-          paddingLeft: 12 + __level * 16,
-        })}
+        style={mergeStyle(
+          {
+            paddingLeft: 12 + __level * 16,
+          },
+          style
+        )}
         className={getClassName(className, `${dPrefix}dropdown-group`)}
         role="separator"
         aria-orientation="horizontal"

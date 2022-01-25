@@ -66,7 +66,7 @@ export function DMenu(props: DMenuProps) {
   const [activedescendant, setActiveDescendant] = useState<string | undefined>(undefined);
 
   const [activeId, changeActiveId] = useTwoWayBinding<string | null, string>(null, dActive, onActiveChange);
-  const [expandIds, changeExpandIds] = useTwoWayBinding(new Set<string>(), dExpands, onExpandsChange);
+  const [expandIds, changeExpandIds] = useTwoWayBinding<Set<string>>(new Set(), dExpands, onExpandsChange);
 
   const expandTrigger = isUndefined(dExpandTrigger) ? (dMode === 'vertical' ? 'click' : 'hover') : dExpandTrigger;
 
@@ -142,7 +142,7 @@ export function DMenu(props: DMenuProps) {
   );
 
   const childs = useMemo(() => {
-    return React.Children.map(children as Array<React.ReactElement<DMenuItemProps>>, (child, index) => {
+    return React.Children.map(children as React.ReactElement<DMenuItemProps>[], (child, index) => {
       const props = Object.assign({}, child.props);
 
       if ('type' in child && (child.type === DMenuSub || child.type === DMenuItem)) {
@@ -183,7 +183,12 @@ export function DMenu(props: DMenuProps) {
             className={getClassName(className, `${dPrefix}menu`, {
               [`${dPrefix}menu--horizontal`]: dMode === 'horizontal',
             })}
-            style={mergeStyle(style, { width: hidden ? 80 : undefined })}
+            style={mergeStyle(
+              {
+                width: hidden ? 80 : undefined,
+              },
+              style
+            )}
             tabIndex={-1}
             role="menubar"
             aria-orientation={dMode === 'horizontal' ? 'horizontal' : 'vertical'}

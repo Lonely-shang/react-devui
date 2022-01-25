@@ -6,7 +6,7 @@ import { isArray, isBoolean, isNull, isNumber, isString, isUndefined } from 'lod
 import React, { useCallback, useContext, useMemo, useRef } from 'react';
 
 import { usePrefixConfig, useComponentConfig, useCustomContext, useImmer, useTranslation, useGridConfig } from '../../hooks';
-import { generateComponentMate, getClassName } from '../../utils';
+import { generateComponentMate, getClassName, mergeStyle } from '../../utils';
 import { DIcon } from '../icon';
 import { DTooltip } from '../tooltip';
 import { DError } from './Error';
@@ -14,7 +14,7 @@ import { DFormContext } from './Form';
 import { DFormGroupContext } from './FormGroup';
 import { Validators } from './form';
 
-type DErrors = Array<{ identity: string; key: string; message: string; status: 'warning' | 'error'; hidden?: true }>;
+type DErrors = { identity: string; key: string; message: string; status: 'warning' | 'error'; hidden?: true }[];
 
 export type DValidateStatus = 'success' | 'warning' | 'error' | 'pending';
 
@@ -32,16 +32,16 @@ export const DFormItemContext = React.createContext<DFormItemContextData | null>
 export interface DFormItemProps extends React.HTMLAttributes<HTMLDivElement> {
   dLabel?: React.ReactNode;
   dLabelWidth?: number | string;
-  dLabelExtra?: Array<{ title: string; icon?: React.ReactNode } | string>;
+  dLabelExtra?: ({ title: string; icon?: React.ReactNode } | string)[];
   dShowRequired?: boolean;
-  dErrors?: DErrorInfo | Array<[string, DErrorInfo]>;
+  dErrors?: DErrorInfo | [string, DErrorInfo][];
   dSpan?: number | string | true;
   dResponsiveProps?: Record<DBreakpoints, Pick<DFormItemProps, 'dLabelWidth' | 'dSpan'>>;
 }
 
 const { COMPONENT_NAME } = generateComponentMate('DFormItem');
 export function DFormItem(props: DFormItemProps) {
-  const { dLabel, dLabelWidth, dLabelExtra, dShowRequired, dErrors, dSpan, dResponsiveProps, className, children, ...restProps } =
+  const { dLabel, dLabelWidth, dLabelExtra, dShowRequired, dErrors, dSpan, dResponsiveProps, className, style, children, ...restProps } =
     useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
@@ -51,7 +51,7 @@ export function DFormItem(props: DFormItemProps) {
     formBreakpointMatchs,
     formLabelWidth,
     formLabelColon,
-    formCustomLabel,
+    formRequiredType,
     formInstance,
     formLayout,
     formInlineSpan,
@@ -104,7 +104,7 @@ export function DFormItem(props: DFormItemProps) {
   );
 
   const [errors, hasError, errorStyle, status] = useMemo<
-    [Array<{ identity: string; errors: DErrors }>, boolean, 'error' | 'warning', DValidateStatus | undefined]
+    [{ identity: string; errors: DErrors }[], boolean, 'error' | 'warning', DValidateStatus | undefined]
   >(() => {
     const errors: DErrors = [];
     let hasError = false;
@@ -126,11 +126,16 @@ export function DFormItem(props: DFormItemProps) {
         if (isString(errorInfo)) {
           errors.push({ identity, key: identity, message: errorInfo, status: 'error' });
         } else if (Object.keys(errorInfo).length === 2 && 'message' in errorInfo && 'status' in errorInfo) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          errors.push({ identity, key: identity, ...errorInfo } as any);
-        } else {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          for (const key of Object.keys(formControl.errors!)) {
+          errors.push({
+            identity,
+            key: identity,
+            ...(errorInfo as {
+              message: string;
+              status: 'warning' | 'error';
+            }),
+          });
+        } else if (formControl.errors) {
+          for (const key of Object.keys(formControl.errors)) {
             if (key in errorInfo) {
               if (isString(errorInfo[key])) {
                 errors.push({ identity, key: `${identity}-${key}`, message: errorInfo[key], status: 'error' });
@@ -176,13 +181,45 @@ export function DFormItem(props: DFormItemProps) {
     });
 
     const identitys = new Set(errors.map((item) => item.identity));
-    const _errors: Array<{ identity: string; errors: DErrors }> = [];
+    const _errors: { identity: string; errors: DErrors }[] = [];
     identitys.forEach((identity) => {
       _errors.push({ identity, errors: errors.filter((item) => item.identity === identity) });
     });
 
     return [_errors, hasError, errorStyle, status];
   }, [dErrors, formItems, getControl]);
+
+  const required = (() => {
+    if (isBoolean(dShowRequired)) {
+      return dShowRequired;
+    }
+    for (const { formControlName } of formItems.values()) {
+      if (getControl(formControlName).hasValidator(Validators.required)) {
+        return true;
+      }
+    }
+    return false;
+  })();
+
+  const id = (() => {
+    if (formItems.size === 1) {
+      for (const { id } of formItems.values()) {
+        return id;
+      }
+    }
+  })();
+
+  const handleLabelClick = useCallback<React.MouseEventHandler<HTMLLabelElement>>((e) => {
+    const id = e.currentTarget.getAttribute('for');
+    if (id) {
+      const el = document.getElementById(id);
+      if (el && el.tagName !== 'INPUT') {
+        e.preventDefault();
+        el.focus({ preventScroll: true });
+        el.click();
+      }
+    }
+  }, []);
 
   const errorsNode = useMemo(
     () =>
@@ -238,26 +275,6 @@ export function DFormItem(props: DFormItemProps) {
     }
   }, [formFeedbackIcon, status]);
 
-  const required = useMemo(() => {
-    if (isBoolean(dShowRequired)) {
-      return dShowRequired;
-    }
-    for (const { formControlName } of formItems.values()) {
-      if (getControl(formControlName).hasValidator(Validators.required)) {
-        return true;
-      }
-    }
-    return false;
-  }, [dShowRequired, formItems, getControl]);
-
-  const id = useMemo(() => {
-    if (formItems.size === 1) {
-      for (const { id } of formItems.values()) {
-        return id;
-      }
-    }
-  }, [formItems]);
-
   const extraNode = useMemo(() => {
     if (dLabelExtra) {
       return dLabelExtra.map((extra, index) => {
@@ -278,18 +295,6 @@ export function DFormItem(props: DFormItemProps) {
       });
     }
   }, [dLabelExtra]);
-
-  const handleLabelClick = useCallback<React.MouseEventHandler<HTMLLabelElement>>((e) => {
-    const id = e.currentTarget.getAttribute('for');
-    if (id) {
-      const el = document.getElementById(id);
-      if (el && el.tagName !== 'INPUT') {
-        e.preventDefault();
-        el.focus({ preventScroll: true });
-        el.click();
-      }
-    }
-  }, []);
 
   const stateBackflow = useMemo<Pick<DFormItemContextData, 'updateFormItems' | 'removeFormItems'>>(
     () => ({
@@ -319,41 +324,36 @@ export function DFormItem(props: DFormItemProps) {
     <DFormItemContext.Provider value={contextValue}>
       <div
         {...restProps}
-        className={getClassName(
-          className,
-          `${dPrefix}form-item`,
-          hasError
-            ? {
-                'is-error': errorStyle === 'error',
-                'is-warning': errorStyle === 'warning',
-              }
-            : {},
+        className={getClassName(className, `${dPrefix}form-item`, {
+          'is-error': hasError && errorStyle === 'error',
+          'is-warning': hasError && errorStyle === 'warning',
+          'is-pending': status === 'pending',
+          [`${dPrefix}form-item--vertical`]: formLayout === 'vertical',
+        })}
+        style={mergeStyle(
           {
-            'is-pending': status === 'pending',
-            [`${dPrefix}form-item--vertical`]: formLayout === 'vertical',
-          }
+            flexGrow: span === true ? 1 : undefined,
+            width: span === true ? undefined : isNumber(span) ? `calc((100% / ${colNum}) * ${span})` : span,
+          },
+          style
         )}
-        style={{
-          flexGrow: span === true ? 1 : undefined,
-          width: span === true ? undefined : isNumber(span) ? `calc((100% / ${colNum}) * ${span})` : span,
-        }}
       >
         <div className={`${dPrefix}form-item__container`}>
           {labelWidth !== 0 &&
             (dLabel ? (
               <div
                 className={getClassName(`${dPrefix}form-item__label`, {
-                  [`${dPrefix}form-item__label--required`]: formCustomLabel === 'required' && dLabel && required,
-                  [`${dPrefix}form-item__label--colon`]: dLabel && formLabelColon,
+                  [`${dPrefix}form-item__label--required`]: formRequiredType === 'required' && required,
+                  [`${dPrefix}form-item__label--colon`]: formLabelColon,
                 })}
                 style={{ width: formLayout === 'vertical' ? undefined : labelWidth }}
               >
                 <label htmlFor={id} onClick={handleLabelClick}>
                   {dLabel}
-                  {(extraNode || formCustomLabel === 'optional') && (
+                  {(extraNode || (formRequiredType === 'optional' && !required)) && (
                     <div className={`${dPrefix}form-item__extra`}>
                       {extraNode}
-                      {formCustomLabel === 'optional' && <span>{t('Optional')}</span>}
+                      {formRequiredType === 'optional' && !required && <span>{t('Optional')}</span>}
                     </div>
                   )}
                 </label>

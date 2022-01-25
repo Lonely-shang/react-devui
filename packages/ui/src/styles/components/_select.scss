@@ -89,15 +89,6 @@ $select-option-height: 32px;
     }
   }
 
-  @include e(option-empty) {
-    display: flex;
-    align-items: center;
-    height: $select-option-height;
-    padding: 0 12px;
-
-    color: var(--#{$variable-prefix}color-step-400);
-  }
-
   @include e(option-content) {
     flex-grow: 1;
 
@@ -107,8 +98,7 @@ $select-option-height: 32px;
   @include e(empty) {
     display: flex;
     align-items: center;
-    width: 100%;
-    height: 40px;
+    height: $select-option-height;
     padding: 0 12px;
 
     color: var(--#{$variable-prefix}color-step-400);
@@ -131,8 +121,10 @@ $select-option-height: 32px;
 
     background-color: rgb(var(--#{$variable-prefix}background-color-rgb) / 80%);
 
-    @include m(left) {
+    @include m(empty) {
       justify-content: flex-start;
+
+      background-color: var(--#{$variable-prefix}background-color);
     }
   }
 }

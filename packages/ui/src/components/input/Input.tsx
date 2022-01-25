@@ -60,11 +60,10 @@ const Input: React.ForwardRefRenderFunction<DInputRef, DInputProps> = (props, re
 
   const size = dSize ?? gSize;
 
-  const [value, changeValue, { validateClassName, ariaAttribute, controlDisabled }] = useTwoWayBinding(
+  const [value, changeValue, { validateClassName, ariaAttribute, controlDisabled }] = useTwoWayBinding<string>(
     '',
     dModel,
     onModelChange,
-    /* istanbul ignore next */
     dFormControlName ? { formControlName: dFormControlName, id: _id } : undefined
   );
 
@@ -98,9 +97,12 @@ const Input: React.ForwardRefRenderFunction<DInputRef, DInputProps> = (props, re
   );
 
   useEffect(() => {
-    inputAffixNotificationCallback?.bind(changeValue);
+    const fn = (v: string) => {
+      changeValue(v);
+    };
+    inputAffixNotificationCallback?.bind(fn);
     return () => {
-      inputAffixNotificationCallback?.removeBind(changeValue);
+      inputAffixNotificationCallback?.removeBind(fn);
     };
   }, [changeValue, inputAffixNotificationCallback]);
 

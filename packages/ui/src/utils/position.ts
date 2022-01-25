@@ -1,6 +1,6 @@
 import { isUndefined } from 'lodash';
 
-import { toPx } from './measure';
+import { getNoTransformElSize, toPx } from './measure';
 
 function getParentPositioned(el: HTMLElement) {
   const loop = (_el: HTMLElement): HTMLElement => {
@@ -28,18 +28,11 @@ export function getFillingStyle(
   width: number;
   height: number;
 } {
-  const {
-    borderTopWidth: _borderTopWidth,
-    borderRightWidth: _borderRightWidth,
-    borderBottomWidth: _borderBottomWidth,
-    borderLeftWidth: _borderLeftWidth,
-  } = getComputedStyle(container);
+  const { borderTopWidth: _borderTopWidth, borderLeftWidth: _borderLeftWidth } = getComputedStyle(container);
   const borderTopWidth = toPx(_borderTopWidth, true);
-  const borderRightWidth = toPx(_borderRightWidth, true);
-  const borderBottomWidth = toPx(_borderBottomWidth, true);
   const borderLeftWidth = toPx(_borderLeftWidth, true);
 
-  const targetRect = container.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
 
   let offsetTop = 0;
   let offsetLeft = 0;
@@ -51,10 +44,10 @@ export function getFillingStyle(
   }
 
   return {
-    top: targetRect.top + borderTopWidth + offsetTop,
-    left: targetRect.left + borderLeftWidth + offsetLeft,
-    width: targetRect.width - (borderLeftWidth + borderRightWidth),
-    height: targetRect.height - (borderTopWidth + borderBottomWidth),
+    top: containerRect.top + borderTopWidth + offsetTop,
+    left: containerRect.left + borderLeftWidth + offsetLeft,
+    width: container.clientWidth,
+    height: container.clientHeight,
   };
 }
 
@@ -95,7 +88,7 @@ export function getPopupPlacementStyle(
   fixed = true,
   space?: [number, number, number, number]
 ): { top: number; left: number; placement?: DPlacement } | undefined {
-  const { width, height } = popupEl.getBoundingClientRect();
+  const { width, height } = getNoTransformElSize(popupEl);
 
   const targetRect = targetEl.getBoundingClientRect();
 
@@ -274,10 +267,11 @@ export function getPopupPlacementStyle(
   }
 }
 
+export type DVerticalSidePlacement = 'top' | 'top-left' | 'top-right' | 'bottom' | 'bottom-left' | 'bottom-right';
 export function getVerticalSideStyle(
   popupEl: HTMLElement,
   targetEl: HTMLElement,
-  placement: 'top' | 'top-left' | 'top-right' | 'bottom' | 'bottom-left' | 'bottom-right',
+  placement: DVerticalSidePlacement,
   offset = 10
 ): {
   top: number;
@@ -285,7 +279,7 @@ export function getVerticalSideStyle(
   transformOrigin: string;
   arrowPosition: React.CSSProperties;
 } {
-  const { width, height } = popupEl.getBoundingClientRect();
+  const { width, height } = getNoTransformElSize(popupEl);
 
   const targetRect = targetEl.getBoundingClientRect();
 
@@ -356,13 +350,12 @@ export function getVerticalSideStyle(
       : targetRect.top + targetRect.height + offset;
   top = Math.min(Math.max(top, 10), window.innerHeight - height - 10);
 
-  let left =
+  const left =
     placement === 'top' || placement === 'bottom'
       ? targetRect.left + (targetRect.width - width) / 2
       : placement === 'top-left' || placement === 'bottom-left'
       ? targetRect.left
       : targetRect.left + targetRect.width - width;
-  left = Math.min(Math.max(left, 10), window.innerWidth - width - 10);
 
   const transformOrigin = placement === 'top' || placement === 'top-left' || placement === 'top-right' ? 'center bottom' : 'center top';
 
@@ -381,8 +374,9 @@ export function getVerticalSideStyle(
       return getVerticalSideStyle(
         popupEl,
         targetEl,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (placement.includes('top') ? placement.replace('top', 'bottom') : placement.replace('bottom', 'top')) as any,
+        placement.includes('top')
+          ? (placement.replace('top', 'bottom') as DVerticalSidePlacement)
+          : (placement.replace('bottom', 'top') as DVerticalSidePlacement),
         offset
       );
     }
@@ -407,7 +401,7 @@ export function getHorizontalSideStyle(
   left: number;
   transformOrigin: string;
 } {
-  const { width, height } = popupEl.getBoundingClientRect();
+  const { width, height } = getNoTransformElSize(popupEl);
 
   const targetRect = targetEl.getBoundingClientRect();
 

@@ -23,7 +23,7 @@ export function DMenuGroup(props: DMenuGroupProps) {
   const childs = useMemo(() => {
     const length = React.Children.count(children);
 
-    return React.Children.map(children as Array<React.ReactElement<DMenuItemProps>>, (child, index) =>
+    return React.Children.map(children as React.ReactElement<DMenuItemProps>[], (child, index) =>
       React.cloneElement(child, {
         ...child.props,
         className: getClassName(child.props.className, {
@@ -40,9 +40,12 @@ export function DMenuGroup(props: DMenuGroupProps) {
       <li
         {...restProps}
         className={getClassName(className, `${dPrefix}menu-group`)}
-        style={mergeStyle(style, {
-          paddingLeft: 16 + __level * 20,
-        })}
+        style={mergeStyle(
+          {
+            paddingLeft: 16 + __level * 20,
+          },
+          style
+        )}
         role="separator"
         aria-orientation="horizontal"
       >
