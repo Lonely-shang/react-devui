@@ -1,0 +1,12 @@
+@include b(empty) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--#{$variable-prefix}empty-color);
+
+  @include e(description) {
+    margin-top: 8px;
+
+    @include font-size(0.9rem);
+  }
+}

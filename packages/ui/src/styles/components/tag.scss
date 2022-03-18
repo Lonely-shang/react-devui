@@ -1,0 +1,68 @@
+@include b(tag) {
+  --#{$variable-prefix}tag-padding-size: 8px;
+  --#{$variable-prefix}tag-size: 28px;
+
+  display: inline-flex;
+  align-items: center;
+  height: var(--#{$variable-prefix}tag-size);
+  padding: 0 var(--#{$variable-prefix}tag-padding-size);
+  vertical-align: top;
+  border-radius: var(--#{$variable-prefix}border-radius);
+
+  @include font-size(0.9rem);
+
+  @include m(primary) {
+    color: var(--#{$variable-prefix}tag-color, var(--#{$variable-prefix}text-color));
+    background-color: var(--#{$variable-prefix}tag-background-color, var(--#{$variable-prefix}tag-background-color));
+  }
+
+  @include m(fill) {
+    color: map.get($colors, 'white');
+    background-color: var(--#{$variable-prefix}tag-color, var(--#{$variable-prefix}color-icon-decorator));
+
+    @include e(close) {
+      color: map.get($colors, 'white');
+
+      &:hover,
+      &:focus {
+        color: var(--#{$variable-prefix}color-primary-lighter);
+      }
+
+      &:active {
+        color: var(--#{$variable-prefix}color-primary-darker);
+      }
+    }
+  }
+
+  @include m(outline) {
+    padding: 0 calc(var(--#{$variable-prefix}tag-padding-size) - 1px);
+    color: var(--#{$variable-prefix}tag-color, var(--#{$variable-prefix}color-icon-decorator));
+    border: 1px solid var(--#{$variable-prefix}tag-border-color, var(--#{$variable-prefix}color-border));
+  }
+
+  @each $theme, $rgb in $themes {
+    @include theme(#{$theme}) {
+      --#{$variable-prefix}tag-color: var(--#{$variable-prefix}color-#{$theme});
+      --#{$variable-prefix}tag-border-color: var(--#{$variable-prefix}color-#{$theme}-lighter);
+      --#{$variable-prefix}tag-background-color: var(--#{$variable-prefix}background-color-#{$theme});
+    }
+  }
+
+  @include m(smaller) {
+    --#{$variable-prefix}tag-padding-size: 6px;
+    --#{$variable-prefix}tag-size: 24px;
+
+    @include font-size(0.75rem);
+  }
+
+  @include m(larger) {
+    --#{$variable-prefix}tag-padding-size: 10px;
+    --#{$variable-prefix}tag-size: 32px;
+
+    @include font-size(1rem);
+  }
+
+  @include e(close) {
+    margin-left: 4px;
+  }
+}

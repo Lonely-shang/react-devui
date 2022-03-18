@@ -3,12 +3,6 @@ group: Navigation
 title: Dropdown
 ---
 
-List that pops down.
-
-## When To Use
-
-When there are too many operation commands on the page, this component can be used to store operation commands.
-
 ## API
 
 ### DDropdownProps
@@ -51,7 +45,7 @@ Extend `React.LiHTMLAttributes<HTMLLIElement>`.
 | dId | Uniquely identifies | string | - |
 | dIcon | Settings submenu icon | React.ReactNode | - |
 | dTitle | Set submenu title | React.ReactNode | - |
-| dDisabled | Whether to disable | boolean | false |
+| disabled | Whether to disable | boolean | false |
 | dPopupClassName | Add className to the popup | string | - |
 <!-- prettier-ignore-end -->
 
@@ -64,5 +58,5 @@ Extend `React.LiHTMLAttributes<HTMLLIElement>`.
 | --- | --- | --- | --- | 
 | dId | Uniquely identifies | string | - |
 | dIcon | Set menu item icon | React.ReactNode | - |
-| dDisabled | Whether to disable | boolean | false |
+| disabled | Whether to disable | boolean | false |
 <!-- prettier-ignore-end -->

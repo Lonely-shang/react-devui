@@ -1,0 +1,61 @@
+@include b(textarea) {
+  --#{$variable-prefix}textarea-line-height: 24px;
+
+  display: block;
+  width: 100%;
+  min-height: calc(var(--#{$variable-prefix}textarea-line-height) + 8px);
+  padding: 3px calc(var(--#{$variable-prefix}horizontal-space-size) - 1px);
+  margin: 0;
+  font: inherit;
+  font-size: var(--#{$variable-prefix}font-size);
+  line-height: var(--#{$variable-prefix}textarea-line-height);
+  color: var(--#{$variable-prefix}text-color);
+  letter-spacing: inherit;
+  resize: vertical;
+  background-color: var(--#{$variable-prefix}background-color-input);
+  border: 1px solid var(--#{$variable-prefix}color-border);
+  border-radius: var(--#{$variable-prefix}border-radius);
+  outline: none;
+  transition: border-color var(--#{$variable-prefix}animation-duration-base) linear;
+  appearance: none;
+  caret-color: var(--#{$variable-prefix}color-primary);
+
+  @include utils-disabled(true, ':disabled');
+  @include form-validate;
+
+  &:hover {
+    border-color: var(--#{$variable-prefix}color-primary-lighter);
+  }
+
+  &:focus {
+    border-color: var(--#{$variable-prefix}color-primary);
+  }
+
+  &::placeholder {
+    color: rgb(var(--#{$variable-prefix}text-color-rgb) / 40%);
+    transform: translateX(1px);
+  }
+
+  &:disabled::placeholder {
+    color: rgb(var(--#{$variable-prefix}text-color-rgb) / 10%);
+  }
+
+  @include m(smaller) {
+    --#{$variable-prefix}textarea-line-height: 20px;
+    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-smaller);
+    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-smaller);
+  }
+
+  @include m(larger) {
+    --#{$variable-prefix}textarea-line-height: 28px;
+    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-larger);
+    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-larger);
+  }
+
+  @include e(count) {
+    font-variant-numeric: tabular-nums;
+    line-height: 28px;
+    color: var(--#{$variable-prefix}text-color-sub);
+    text-align: right;
+  }
+}

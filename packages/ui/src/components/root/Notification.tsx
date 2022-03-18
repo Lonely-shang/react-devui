@@ -1,18 +1,39 @@
 import type { DNotificationProps } from '../notification';
 import type { Subscription } from 'rxjs';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 
-import { useImmer, usePrefixConfig } from '../../hooks';
+import { useElement, useImmer, usePrefixConfig } from '../../hooks';
 import { DNotification, NotificationService, notificationSubject } from '../notification';
 
-export function Notification() {
+export function Notification(): JSX.Element | null {
   //#region Context
   const dPrefix = usePrefixConfig();
   //#endregion
 
   const [notifications, setNotifications] = useImmer(new Map<number, DNotificationProps & { dVisible: boolean }>());
+
+  const getRoot = (id: string) => {
+    let root = document.getElementById(`${dPrefix}notification-root`);
+    if (!root) {
+      root = document.createElement('div');
+      root.id = `${dPrefix}notification-root`;
+      document.body.appendChild(root);
+    }
+
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      root.appendChild(el);
+    }
+    return el;
+  };
+  const notificationLTRoot = useElement(() => getRoot(`${dPrefix}notification-lt-root`));
+  const notificationRTRoot = useElement(() => getRoot(`${dPrefix}notification-rt-root`));
+  const notificationLBRoot = useElement(() => getRoot(`${dPrefix}notification-lb-root`));
+  const notificationRBRoot = useElement(() => getRoot(`${dPrefix}notification-rb-root`));
 
   useEffect(() => {
     const obs: Subscription[] = [];
@@ -35,14 +56,14 @@ export function Notification() {
       };
     };
     obs.push(
-      notificationSubject.open.subscribe({
+      notificationSubject.open$.subscribe({
         next: ({ uniqueId, props }) => {
           setNotifications((draft) => {
             draft.set(uniqueId, { ...props, dVisible: true, ...mergeProps(uniqueId, props) });
           });
         },
       }),
-      notificationSubject.close.subscribe({
+      notificationSubject.close$.subscribe({
         next: (uniqueId) => {
           setNotifications((draft) => {
             const props = draft.get(uniqueId);
@@ -52,7 +73,7 @@ export function Notification() {
           });
         },
       }),
-      notificationSubject.rerender.subscribe({
+      notificationSubject.rerender$.subscribe({
         next: ({ uniqueId, props: newProps }) => {
           setNotifications((draft) => {
             const props = draft.get(uniqueId);
@@ -62,7 +83,7 @@ export function Notification() {
           });
         },
       }),
-      notificationSubject.closeAll.subscribe({
+      notificationSubject.closeAll$.subscribe({
         next: (animation) => {
           setNotifications((draft) => {
             if (animation) {
@@ -78,58 +99,36 @@ export function Notification() {
     );
   }, [setNotifications]);
 
-  const [notificationLTRoot, notificationRTRoot, notificationLBRoot, notificationRBRoot] = useMemo(() => {
-    const getRoot = (id: string) => {
-      let root = document.getElementById(`${dPrefix}notification-root`);
-      if (!root) {
-        root = document.createElement('div');
-        root.id = `${dPrefix}notification-root`;
-        document.body.appendChild(root);
-      }
-
-      let el = document.getElementById(id);
-      if (!el) {
-        el = document.createElement('div');
-        el.id = id;
-        root.appendChild(el);
-      }
-      return el;
-    };
-
-    return [
-      getRoot(`${dPrefix}notification-lt-root`),
-      getRoot(`${dPrefix}notification-rt-root`),
-      getRoot(`${dPrefix}notification-lb-root`),
-      getRoot(`${dPrefix}notification-rb-root`),
-    ];
-  }, [dPrefix]);
-
   return (
     <>
-      {ReactDOM.createPortal(
-        Array.from(notifications.entries())
-          .filter(([, notificationProps]) => notificationProps.dPlacement === 'left-top')
-          .map(([uniqueId, notificationProps]) => <DNotification key={uniqueId} {...notificationProps}></DNotification>),
-        notificationLTRoot
-      )}
-      {ReactDOM.createPortal(
-        Array.from(notifications.entries())
-          .filter(([, notificationProps]) => (notificationProps.dPlacement ?? 'right-top') === 'right-top')
-          .map(([uniqueId, notificationProps]) => <DNotification key={uniqueId} {...notificationProps}></DNotification>),
-        notificationRTRoot
-      )}
-      {ReactDOM.createPortal(
-        Array.from(notifications.entries())
-          .filter(([, notificationProps]) => notificationProps.dPlacement === 'left-bottom')
-          .map(([uniqueId, notificationProps]) => <DNotification key={uniqueId} {...notificationProps}></DNotification>),
-        notificationLBRoot
-      )}
-      {ReactDOM.createPortal(
-        Array.from(notifications.entries())
-          .filter(([, notificationProps]) => notificationProps.dPlacement === 'right-bottom')
-          .map(([uniqueId, notificationProps]) => <DNotification key={uniqueId} {...notificationProps}></DNotification>),
-        notificationRBRoot
-      )}
+      {notificationLTRoot &&
+        ReactDOM.createPortal(
+          Array.from(notifications.entries())
+            .filter(([, notificationProps]) => notificationProps.dPlacement === 'left-top')
+            .map(([uniqueId, notificationProps]) => <DNotification key={uniqueId} {...notificationProps}></DNotification>),
+          notificationLTRoot
+        )}
+      {notificationRTRoot &&
+        ReactDOM.createPortal(
+          Array.from(notifications.entries())
+            .filter(([, notificationProps]) => (notificationProps.dPlacement ?? 'right-top') === 'right-top')
+            .map(([uniqueId, notificationProps]) => <DNotification key={uniqueId} {...notificationProps}></DNotification>),
+          notificationRTRoot
+        )}
+      {notificationLBRoot &&
+        ReactDOM.createPortal(
+          Array.from(notifications.entries())
+            .filter(([, notificationProps]) => notificationProps.dPlacement === 'left-bottom')
+            .map(([uniqueId, notificationProps]) => <DNotification key={uniqueId} {...notificationProps}></DNotification>),
+          notificationLBRoot
+        )}
+      {notificationRBRoot &&
+        ReactDOM.createPortal(
+          Array.from(notifications.entries())
+            .filter(([, notificationProps]) => notificationProps.dPlacement === 'right-bottom')
+            .map(([uniqueId, notificationProps]) => <DNotification key={uniqueId} {...notificationProps}></DNotification>),
+          notificationRBRoot
+        )}
     </>
   );
 }

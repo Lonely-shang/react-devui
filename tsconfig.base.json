@@ -1,14 +1,11 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "./",
     "rootDir": ".",
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "importHelpers": true,
+    "declaration": false,
     "newLine": "LF",
     "sourceMap": true,
     "emitDecoratorMetadata": true,
@@ -26,11 +23,7 @@
     "disableSizeLimit": true,
     "noErrorTruncation": true,
     "skipDefaultLibCheck": true,
-    "skipLibCheck": true,
-    "paths": {
-      "@react-devui/ui": ["packages/ui/src/index.ts"],
-      "@react-devui/ui/*": ["packages/ui/src/*"]
-    }
+    "skipLibCheck": true
   },
   "exclude": ["node_modules", "tmp"]
 }

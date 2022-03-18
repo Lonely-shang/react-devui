@@ -1,10 +1,9 @@
-import type { DBreakpoints } from './Row';
+import type { DBreakpoints } from '../../types';
 
 import { isNumber, isObject } from 'lodash';
-import { useMemo } from 'react';
 
-import { usePrefixConfig, useComponentConfig, useCustomContext, useGridConfig } from '../../hooks';
-import { generateComponentMate, getClassName, mergeStyle } from '../../utils';
+import { usePrefixConfig, useComponentConfig, useGridConfig, useContextRequired } from '../../hooks';
+import { registerComponentMate, getClassName } from '../../utils';
 import { DRowContext } from './Row';
 
 export type DSpanValue = number | true;
@@ -16,21 +15,21 @@ export interface DColProps extends DColBaseProps {
   dResponsiveProps?: Record<DBreakpoints, DSpanValue | DColBaseProps>;
 }
 
-const { COMPONENT_NAME } = generateComponentMate('DCol');
-export function DCol(props: DColProps) {
-  const { dSpan, dResponsiveProps, className, style, children, ...restProps } = useComponentConfig(COMPONENT_NAME, props);
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DCol' });
+export function DCol(props: DColProps): JSX.Element | null {
+  const { className, style, children, dSpan, dResponsiveProps, ...restProps } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
   const { colNum } = useGridConfig();
-  const [{ rowMediaMatch, rowSpace }] = useCustomContext(DRowContext);
+  const { gMediaMatch, gSpace } = useContextRequired(DRowContext);
   //#endregion
 
-  const [span, responsiveProps] = useMemo<[DSpanValue?, React.HTMLAttributes<HTMLDivElement>?]>(() => {
+  const [span, responsiveProps] = (() => {
     let span = dSpan;
     let responsiveProps: DColBaseProps | undefined = undefined;
-    if (rowMediaMatch && dResponsiveProps) {
-      for (const breakpoint of rowMediaMatch) {
+    if (dResponsiveProps) {
+      for (const breakpoint of gMediaMatch) {
         if (breakpoint in dResponsiveProps) {
           const data = dResponsiveProps[breakpoint];
           if (isObject(data)) {
@@ -46,23 +45,21 @@ export function DCol(props: DColProps) {
     }
 
     return [span, responsiveProps];
-  }, [dResponsiveProps, dSpan, rowMediaMatch]);
+  })();
 
   return (
     <div
       {...restProps}
       {...responsiveProps}
       className={getClassName(className, responsiveProps?.className, `${dPrefix}col`)}
-      style={mergeStyle(
-        {
-          width: isNumber(span) ? `calc(100% / ${colNum} * ${span})` : undefined,
-          flexGrow: span === true ? 1 : undefined,
-          paddingLeft: rowSpace,
-          paddingRight: rowSpace,
-        },
-        style,
-        responsiveProps?.style
-      )}
+      style={{
+        ...style,
+        ...responsiveProps?.style,
+        width: isNumber(span) ? `calc(100% / ${colNum} * ${span})` : undefined,
+        flexGrow: span === true ? 1 : undefined,
+        paddingLeft: gSpace,
+        paddingRight: gSpace,
+      }}
     >
       {children}
     </div>

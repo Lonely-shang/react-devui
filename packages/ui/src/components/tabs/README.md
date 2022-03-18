@@ -3,12 +3,6 @@ group: Navigation
 title: Tabs
 ---
 
-Tab switching component.
-
-## When To Use
-
-Users need to store and display large pieces of content through a flat area to keep the interface clean and tidy.
-
 ## API
 
 ### DTabsProps
@@ -39,7 +33,7 @@ Extend `React.HTMLAttributes<HTMLDivElement>`.
 | --- | --- | --- | --- | 
 | dId | Uniquely identifies | string | - |
 | dTitle | Title of the tab | React.ReactNode | - |
-| dDisabled | Whether to disable | boolean | false |
+| disabled | Whether to disable | boolean | false |
 | dClosable | Can be closed | boolean | false |
 | dCloseIcon | Custom close icon | React.ReactNode | - |
 <!-- prettier-ignore-end -->

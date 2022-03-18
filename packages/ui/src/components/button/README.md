@@ -3,12 +3,6 @@ group: General
 title: Button
 ---
 
-Basic buttons.
-
-## When To Use
-
-Respond to user click behavior.
-
 ## API
 
 ### DButtonProps
@@ -44,5 +38,5 @@ Extend `React.HTMLAttributes<HTMLDivElement>`.
 | dType | Set the shape of the buttons in the button group | Reference DButtonProps['dType'] | 'secondary' |
 | dTheme | Set the theme of the buttons in the button group | Reference DButtonProps['dTheme'] | 'primary' |
 | dSize | Set the size of the buttons in the button group | Reference DButtonProps['dSize'] | - |
-| dDisabled | Disable the buttons in the button group | boolean | false |
+| disabled | Disable the buttons in the button group | boolean | false |
 <!-- prettier-ignore-end -->

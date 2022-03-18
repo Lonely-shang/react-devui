@@ -2,12 +2,6 @@
 title: 下拉菜单
 ---
 
-向下弹出的列表。
-
-## 何时使用
-
-当页面上的操作命令过多时，用此组件可以收纳操作命令。
-
 ## API
 
 ### DDropdownProps
@@ -50,7 +44,7 @@ title: 下拉菜单
 | dId | 唯一标识 | string | - |
 | dIcon | 设置子菜单图标 | React.ReactNode | - |
 | dTitle | 设置子菜单标题 | React.ReactNode | - |
-| dDisabled | 是否禁用 | boolean | false |
+| disabled | 是否禁用 | boolean | false |
 | dPopupClassName | 向弹窗添加 className | string | - |
 <!-- prettier-ignore-end -->
 
@@ -63,5 +57,5 @@ title: 下拉菜单
 | --- | --- | --- | --- | 
 | dId | 唯一标识 | string | - |
 | dIcon | 设置菜单项图标 | React.ReactNode | - |
-| dDisabled | 是否禁用 | boolean | false |
+| disabled | 是否禁用 | boolean | false |
 <!-- prettier-ignore-end -->

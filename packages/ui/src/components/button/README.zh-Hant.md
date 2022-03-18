@@ -2,12 +2,6 @@
 title: 按钮
 ---
 
-基本的按钮。
-
-## 何时使用
-
-响应用户点击行为。
-
 ## API
 
 ### DButtonProps
@@ -43,5 +37,5 @@ type DButtonRef = HTMLButtonElement;
 | dType | 设置按钮组中按钮的形态 | 参考 DButtonProps['dType'] | 'secondary' |
 | dTheme | 设置按钮组中按钮的主题 | 参考 DButtonProps['dTheme'] | 'primary' |
 | dSize | 设置按钮组中按钮的尺寸 | 参考 DButtonProps['dSize'] | - |
-| dDisabled | 禁用按钮组中的按钮 | boolean | false |
+| disabled | 禁用按钮组中的按钮 | boolean | false |
 <!-- prettier-ignore-end -->

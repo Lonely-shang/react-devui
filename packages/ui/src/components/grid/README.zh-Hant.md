@@ -2,12 +2,6 @@
 title: 栅格
 ---
 
-栅格系统。
-
-## 何时使用
-
-需要更为灵活的 Flex 布局，或者页面内容需要支持响应式布局。
-
 ## API
 
 ### DRowProps
@@ -19,7 +13,6 @@ title: 栅格
 | --- | --- | --- | --- | 
 | dGutter | 栅格间隔，写成数组形式表示 `[垂直间距, 水平间距]` | DGutterValue | 0 |
 | dResponsiveGutter | 栅格间隔支持响应式布局 | Record\<DBreakpoints, DGutterValue\> | - |
-| onMediaChange | 断点改变时的回调 | `(match: DBreakpoints \| null, matchs: DBreakpoints[]) => void` | - | 
 <!-- prettier-ignore-end -->
 
 ### DColProps

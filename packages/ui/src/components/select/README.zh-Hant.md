@@ -2,12 +2,6 @@
 title: 选择框
 ---
 
-一个提供选项的控件。
-
-## 何时使用
-
-代替原生的选择器。
-
 ## API
 
 ### DSelectSingleProps\<T\>
@@ -64,7 +58,7 @@ title: 选择框
 interface DSelectBaseOption<T> {
   dLabel: string;
   dValue: T;
-  dDisabled?: boolean;
+  disabled?: boolean;
   [index: string | symbol]: unknown;
 }
 ```
@@ -75,7 +69,7 @@ interface DSelectBaseOption<T> {
 interface DSelectOption<T> {
   dLabel: string;
   dValue?: T;
-  dDisabled?: boolean;
+  disabled?: boolean;
   dChildren?: DSelectBaseOption<T>[];
   [index: string | symbol]: unknown;
 }

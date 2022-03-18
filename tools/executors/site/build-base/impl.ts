@@ -39,7 +39,7 @@ interface DemoMeta {
 
 class GenerateSite {
   private hashList = new Map<string, string>();
-  private menuConfig: Array<{ title: string; children: Array<{ title: string; to: string }> }> = [];
+  private menuConfig: { title: string; children: { title: string; to: string }[] }[] = [];
   private routeConfig = new Map<string, { import: string; path: string }>();
 
   private resources!: {
@@ -56,7 +56,7 @@ class GenerateSite {
       } & { [index: string]: string };
     };
   };
-  private menuGroups!: Array<{ 'en-US': string; 'zh-Hant': string }>;
+  private menuGroups!: { 'en-US': string; 'zh-Hant': string }[];
   private componentRoutesTmp!: string;
   private componentRouteTmp!: string;
   private routeTmp!: string;
@@ -190,7 +190,7 @@ class GenerateSite {
       });
 
       let importStr = '';
-      const demoList: Array<ReturnType<GenerateSite['generateComponentDemo']>> = [];
+      const demoList: ReturnType<GenerateSite['generateComponentDemo']>[] = [];
       for (const demoFile of readdirSync(path.join(file.path, 'demos'))) {
         const order = demoFile.match(/^[0-9]+/)?.[0];
         if (order) {
@@ -245,7 +245,7 @@ class GenerateSite {
 
             demosStr += demoStr;
 
-            linksStr += String.raw`{ href: '#${demo.get(lang)!.id!}', title: '${demo.get(lang)!.title!}' }, `;
+            linksStr += String.raw`{ title: '${demo.get(lang)!.title!}', href: '#${demo.get(lang)!.id!}' }, `;
           }
         });
 

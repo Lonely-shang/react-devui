@@ -1,0 +1,140 @@
+@include b(pagination) {
+  --#{$variable-prefix}pagination-item-size: 32px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+
+  @include when(change) {
+    .#{$variable-prefix}pagination__item--number {
+      transition: none;
+    }
+  }
+
+  @include m(mini) {
+    --#{$variable-prefix}pagination-item-size: 24px;
+
+    gap: 4px 8px;
+
+    @include font-size(0.8rem);
+
+    .#{$variable-prefix}pagination__list {
+      gap: 4px 2px;
+    }
+
+    .#{$variable-prefix}pagination__item--button:not(.is-active) {
+      border: none;
+    }
+  }
+
+  @include e(list) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  @include e(item) {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: top;
+
+    @include m(button) {
+      justify-content: center;
+      min-width: var(--#{$variable-prefix}pagination-item-size);
+      height: var(--#{$variable-prefix}pagination-item-size);
+      cursor: pointer;
+      user-select: none;
+      border-radius: var(--#{$variable-prefix}border-radius);
+      transition: border-color var(--#{$variable-prefix}animation-duration-base) linear,
+        color var(--#{$variable-prefix}animation-duration-base) linear;
+
+      @include utils-disabled;
+
+      &:hover,
+      &:focus {
+        color: var(--#{$variable-prefix}color-primary-lighter);
+        border-color: var(--#{$variable-prefix}color-primary-lighter);
+      }
+
+      @include when(active) {
+        color: var(--#{$variable-prefix}color-primary);
+        border-color: var(--#{$variable-prefix}color-primary);
+      }
+    }
+
+    @include m(number) {
+      outline: none;
+      transition: border-color var(--#{$variable-prefix}animation-duration-base) linear,
+        color var(--#{$variable-prefix}animation-duration-base) linear, box-shadow var(--#{$variable-prefix}animation-duration-base) linear;
+
+      &:focus-visible {
+        box-shadow: 0 0 0 3px rgb(var(--#{$variable-prefix}color-primary-rgb) / var(--#{$variable-prefix}shadow-normal));
+      }
+    }
+
+    @include m(border) {
+      border: 1px solid var(--#{$variable-prefix}color-border);
+    }
+
+    @include m(jump5) {
+      .#{$variable-prefix}icon {
+        color: var(--#{$variable-prefix}color-primary);
+        opacity: 0;
+        transition: opacity var(--#{$variable-prefix}animation-duration-fast) linear;
+      }
+
+      &:hover,
+      &:focus {
+        .#{$variable-prefix}icon {
+          opacity: 1;
+        }
+        .#{$variable-prefix}pagination__ellipsis {
+          opacity: 0;
+        }
+      }
+    }
+  }
+
+  @include e(ellipsis) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85em;
+    color: var(--#{$variable-prefix}color-disabled);
+    letter-spacing: 1.5px;
+    transition: opacity var(--#{$variable-prefix}animation-duration-fast) linear;
+  }
+
+  @include e(size-select, true) {
+    width: auto;
+    font-size: inherit;
+
+    @include m(mini) {
+      height: 26px;
+      padding: 0 6px;
+    }
+  }
+
+  @include e(jump-input, true) {
+    width: 4.5em;
+    font-size: inherit;
+
+    @include m(mini) {
+      width: 3em;
+      height: 26px;
+      padding: 0 6px;
+    }
+  }
+}

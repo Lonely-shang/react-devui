@@ -1,23 +1,24 @@
-import type { DGeneralStateContextData } from '../../hooks/general-state';
-import type { DBreakpoints } from '../grid';
+import type { DBreakpoints, DGeneralState, DSize } from '../../types';
 import type { DFormInstance } from './hooks';
 
 import { isUndefined } from 'lodash';
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 
-import { usePrefixConfig, useComponentConfig, DGeneralStateContext } from '../../hooks';
-import { generateComponentMate, getClassName } from '../../utils';
+import { usePrefixConfig, useComponentConfig } from '../../hooks';
+import { DGeneralStateContext } from '../../hooks/state/useGeneralState';
+import { registerComponentMate, getClassName } from '../../utils';
 import { useMediaMatch } from '../grid';
+import { DFormGroupContext } from './FormGroup';
 
 export interface DFormContextData {
-  formInstance: DFormInstance;
-  formBreakpointMatchs: DBreakpoints[];
-  formLabelWidth: number | string;
-  formLabelColon: boolean;
-  formRequiredType: NonNullable<DFormProps['dRequiredType']>;
-  formLayout: NonNullable<DFormProps['dLayout']>;
-  formInlineSpan: number | true;
-  formFeedbackIcon: NonNullable<DFormProps['dFeedbackIcon']>;
+  gInstance: DFormInstance;
+  gBreakpointMatchs: DBreakpoints[];
+  gLabelWidth: NonNullable<DFormProps['dLabelWidth']>;
+  gLabelColon: NonNullable<DFormProps['dLabelColon']>;
+  gRequiredType: NonNullable<DFormProps['dRequiredType']>;
+  gLayout: NonNullable<DFormProps['dLayout']>;
+  gInlineSpan: NonNullable<DFormProps['dInlineSpan']>;
+  gFeedbackIcon: NonNullable<DFormProps['dFeedbackIcon']>;
 }
 export const DFormContext = React.createContext<DFormContextData | null>(null);
 
@@ -36,13 +37,16 @@ export interface DFormProps extends React.FormHTMLAttributes<HTMLFormElement> {
         error?: React.ReactNode;
         pending?: React.ReactNode;
       };
-  dSize?: 'smaller' | 'larger';
-  dResponsiveProps?: Record<DBreakpoints, Pick<DFormProps, 'dLabelWidth' | 'dRequiredType' | 'dLayout' | 'dInlineSpan'>>;
+  dSize?: DSize;
+  dResponsiveProps?: Record<DBreakpoints, Pick<DFormProps, 'dLabelWidth' | 'dLayout' | 'dInlineSpan'>>;
 }
 
-const { COMPONENT_NAME } = generateComponentMate('DForm');
-export function DForm(props: DFormProps) {
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DForm' });
+export function DForm(props: DFormProps): JSX.Element | null {
   const {
+    className,
+    autoComplete = 'off',
+    children,
     dForm,
     dLabelWidth,
     dLabelColon,
@@ -52,9 +56,6 @@ export function DForm(props: DFormProps) {
     dFeedbackIcon = false,
     dSize,
     dResponsiveProps,
-    className,
-    autoComplete = 'off',
-    children,
     onSubmit,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
@@ -63,17 +64,7 @@ export function DForm(props: DFormProps) {
   const dPrefix = usePrefixConfig();
   //#endregion
 
-  const handleSubmit = useCallback<React.FormEventHandler<HTMLFormElement>>(
-    (e) => {
-      onSubmit?.(e);
-
-      e.preventDefault();
-      e.stopPropagation();
-    },
-    [onSubmit]
-  );
-
-  const generalStateContextValue = useMemo<DGeneralStateContextData>(
+  const generalStateContextValue = useMemo<DGeneralState>(
     () => ({
       gSize: dSize,
       gDisabled: false,
@@ -83,16 +74,16 @@ export function DForm(props: DFormProps) {
 
   const mediaMatch = useMediaMatch();
 
-  const contextValue = useMemo(() => {
+  const contextValue = useMemo<DFormContextData>(() => {
     const contextValue = {
-      formInstance: dForm,
-      formBreakpointMatchs: mediaMatch,
-      formLabelWidth: dLabelWidth ?? 150,
-      formLabelColon: dLabelColon ?? true,
-      formRequiredType: dRequiredType,
-      formLayout: dLayout,
-      formInlineSpan: dInlineSpan,
-      formFeedbackIcon: dFeedbackIcon,
+      gInstance: dForm,
+      gBreakpointMatchs: mediaMatch,
+      gLabelWidth: dLabelWidth ?? 150,
+      gLabelColon: dLabelColon ?? true,
+      gRequiredType: dRequiredType,
+      gLayout: dLayout,
+      gInlineSpan: dInlineSpan,
+      gFeedbackIcon: dFeedbackIcon,
     };
     if (dResponsiveProps) {
       const mergeProps = (point: string, targetKey: string, sourceKey: string) => {
@@ -103,16 +94,15 @@ export function DForm(props: DFormProps) {
       };
       for (const breakpoint of mediaMatch) {
         if (breakpoint in dResponsiveProps) {
-          mergeProps(breakpoint, 'formLabelWidth', 'dLabelWidth');
-          mergeProps(breakpoint, 'formRequiredType', 'dRequiredType');
-          mergeProps(breakpoint, 'formLayout', 'dLayout');
-          mergeProps(breakpoint, 'formInlineSpan', 'dInlineSpan');
+          mergeProps(breakpoint, 'gLabelWidth', 'dLabelWidth');
+          mergeProps(breakpoint, 'gLayout', 'dLayout');
+          mergeProps(breakpoint, 'gInlineSpan', 'dInlineSpan');
           break;
         }
       }
     }
-    contextValue.formLabelWidth = dLabelWidth ?? (contextValue.formLayout === 'vertical' ? '100%' : 150);
-    contextValue.formLabelColon = dLabelColon ?? (contextValue.formLayout === 'vertical' ? false : true);
+    contextValue.gLabelWidth = dLabelWidth ?? (contextValue.gLayout === 'vertical' ? '100%' : 150);
+    contextValue.gLabelColon = dLabelColon ?? (contextValue.gLayout === 'vertical' ? false : true);
 
     return contextValue;
   }, [dRequiredType, dFeedbackIcon, dForm, dInlineSpan, dLabelColon, dLabelWidth, dLayout, dResponsiveProps, mediaMatch]);
@@ -120,16 +110,24 @@ export function DForm(props: DFormProps) {
   return (
     <DGeneralStateContext.Provider value={generalStateContextValue}>
       <DFormContext.Provider value={contextValue}>
-        <form
-          {...restProps}
-          className={getClassName(className, `${dPrefix}form`, {
-            [`${dPrefix}form--${dSize}`]: dSize,
-          })}
-          autoComplete={autoComplete}
-          onSubmit={handleSubmit}
-        >
-          {children}
-        </form>
+        <DFormGroupContext.Provider value={dForm.form}>
+          <form
+            {...restProps}
+            className={getClassName(className, `${dPrefix}form`, {
+              [`${dPrefix}form--${dSize}`]: dSize,
+              [`${dPrefix}form--${dLayout}`]: dLayout,
+            })}
+            autoComplete={autoComplete}
+            onSubmit={(e) => {
+              onSubmit?.(e);
+
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            {children}
+          </form>
+        </DFormGroupContext.Provider>
       </DFormContext.Provider>
     </DGeneralStateContext.Provider>
   );

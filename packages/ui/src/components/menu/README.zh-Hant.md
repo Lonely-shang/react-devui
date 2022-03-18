@@ -2,12 +2,6 @@
 title: 导航菜单
 ---
 
-为页面和功能提供导航的菜单列表。
-
-## 何时使用
-
-用户需要顶部导航或者侧边导航。
-
 ## API
 
 ### DMenuProps
@@ -46,7 +40,7 @@ title: 导航菜单
 | dId | 唯一标识 | string | - |
 | dIcon | 设置子菜单图标 | React.ReactNode | - |
 | dTitle | 设置子菜单标题 | React.ReactNode | - |
-| dDisabled | 是否禁用 | boolean | false |
+| disabled | 是否禁用 | boolean | false |
 | dPopupClassName | 向弹窗添加 className | string | - |
 <!-- prettier-ignore-end -->
 
@@ -59,5 +53,5 @@ title: 导航菜单
 | --- | --- | --- | --- | 
 | dId | 唯一标识 | string | - |
 | dIcon | 设置菜单项图标 | React.ReactNode | - |
-| dDisabled | 是否禁用 | boolean | false |
+| disabled | 是否禁用 | boolean | false |
 <!-- prettier-ignore-end -->

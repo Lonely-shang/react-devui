@@ -1,8 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-this-alias */
 /* eslint-disable @typescript-eslint/no-empty-function */
-
-// Refer to Angular [forms](https://github.com/angular/angular/blob/13.1.1/packages/forms)
-
 import type { Subscription } from 'rxjs';
 
 import { isArray, isNull, isNumber, isString } from 'lodash';
@@ -148,7 +145,6 @@ export abstract class AbstractControl {
     return this._parent;
   }
   get root(): AbstractControl {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
     let control: AbstractControl = this;
 
     while (control.parent) {
@@ -193,7 +189,7 @@ export abstract class AbstractControl {
     return !this._pristine;
   }
 
-  public readonly asyncVerifyComplete = new Subject<AbstractControl>();
+  public readonly asyncVerifyComplete$ = new Subject<AbstractControl>();
 
   setValidators(validators: ValidatorFn | ValidatorFn[] | null): void {
     this._rawValidators = validators;
@@ -417,7 +413,7 @@ export abstract class AbstractControl {
         // the state of the asynchronous validation (whether it is in progress or not). So, it is
         // necessary that we have updated the `_hasOwnPendingAsyncValidator` boolean flag first.
         this.setErrors(errors);
-        this.asyncVerifyComplete.next(this);
+        this.asyncVerifyComplete$.next(this);
       });
     }
   }

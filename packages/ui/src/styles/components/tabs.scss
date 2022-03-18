@@ -1,0 +1,431 @@
+@mixin tabs-horizontal($direction) {
+  @if $direction == top {
+    flex-direction: column;
+  } @else {
+    flex-direction: column-reverse;
+  }
+
+  @include e(tabpanel) {
+    @if $direction == top {
+      margin-top: 20px;
+    } @else {
+      margin-bottom: 20px;
+    }
+  }
+
+  &:not(.#{$variable-prefix}tabs--slider) {
+    @include e(button) {
+      @include m(add) {
+        @if $direction == top {
+          border-bottom-color: transparent;
+        } @else {
+          border-top-color: transparent;
+        }
+      }
+    }
+  }
+
+  @include e(tablist-wrapper) {
+    width: 100%;
+    overflow: auto hidden;
+
+    @if $direction == top {
+      padding-bottom: 2px;
+    } @else {
+      padding-top: 2px;
+    }
+  }
+
+  @include e(tablist) {
+    gap: var(--#{$variable-prefix}tabs-tab-gap);
+    min-width: 100%;
+
+    &::after {
+      left: 0;
+      width: 100%;
+      height: 1px;
+
+      @if $direction == top {
+        bottom: -1px;
+      } @else {
+        top: -1px;
+      }
+    }
+  }
+
+  @include e(indicator) {
+    left: 0;
+    width: 0;
+    height: 2px;
+    transition: left var(--#{$variable-prefix}animation-duration-slow) ease-in-out,
+      opacity var(--#{$variable-prefix}animation-duration-base) linear, width var(--#{$variable-prefix}animation-duration-base) linear;
+
+    @if $direction == top {
+      bottom: -2px;
+    } @else {
+      top: -2px;
+    }
+  }
+  @include e(slider-indicator) {
+    left: 0;
+    width: 0;
+    height: 100%;
+    transition: left var(--#{$variable-prefix}animation-duration-slow) ease-in-out,
+      opacity var(--#{$variable-prefix}animation-duration-base) linear, width var(--#{$variable-prefix}animation-duration-base) linear;
+  }
+  @include e(wrap-indicator) {
+    left: 0;
+    width: 0;
+    height: calc(100% + 1px);
+    transition: left var(--#{$variable-prefix}animation-duration-slow) ease-in-out,
+      opacity var(--#{$variable-prefix}animation-duration-base) linear, width var(--#{$variable-prefix}animation-duration-base) linear;
+
+    @if $direction == top {
+      top: 0;
+      border-bottom: none;
+      border-radius: var(--#{$variable-prefix}border-radius) var(--#{$variable-prefix}border-radius) 0 0;
+    } @else {
+      bottom: 0;
+      border-top: none;
+      border-radius: 0 0 var(--#{$variable-prefix}border-radius) var(--#{$variable-prefix}border-radius);
+    }
+  }
+
+  @include e(button-container) {
+    right: 0;
+  }
+
+  @include e(button) {
+    width: 52px;
+    height: var(--#{$variable-prefix}tabs-tab-size);
+    @include m(more) {
+      box-shadow: -3px 0 8px -2px var(--#{$variable-prefix}shadow-color);
+      @include when(end) {
+        border-left-color: var(--#{$variable-prefix}background-color-indicator);
+      }
+    }
+  }
+}
+
+@mixin tabs-vertical($direction) {
+  @if $direction == left {
+    flex-direction: row;
+  } @else {
+    flex-direction: row-reverse;
+  }
+
+  .#{$variable-prefix}tab {
+    padding: 0 var(--#{$variable-prefix}tabs-tab-padding);
+
+    @if $direction == left {
+      justify-content: flex-end;
+    } @else {
+      justify-content: flex-start;
+    }
+  }
+
+  @include e(tabpanel) {
+    flex-grow: 1;
+
+    @if $direction == left {
+      margin-left: 20px;
+    } @else {
+      margin-right: 20px;
+    }
+  }
+
+  @include e(button) {
+    @include m(add) {
+      border-right-color: transparent;
+      border-left-color: transparent;
+    }
+  }
+
+  @include e(tablist-wrapper) {
+    overflow: hidden auto;
+
+    @if $direction == left {
+      padding-right: 2px;
+    } @else {
+      padding-left: 2px;
+    }
+  }
+
+  @include e(tablist) {
+    flex-direction: column;
+
+    &::after {
+      top: 0;
+      width: 1px;
+      height: 100%;
+
+      @if $direction == left {
+        right: -1px;
+      } @else {
+        left: -1px;
+      }
+    }
+  }
+
+  @include e(indicator) {
+    top: 0;
+    width: 2px;
+    height: var(--#{$variable-prefix}tabs-tab-size);
+    transition: top var(--#{$variable-prefix}animation-duration-slow) ease-in-out,
+      opacity var(--#{$variable-prefix}animation-duration-base) linear;
+
+    @if $direction == left {
+      right: -2px;
+    } @else {
+      left: -2px;
+    }
+  }
+
+  @include e(slider-indicator) {
+    top: 0;
+    width: 100%;
+    height: var(--#{$variable-prefix}tabs-tab-size);
+    transition: top var(--#{$variable-prefix}animation-duration-slow) ease-in-out,
+      opacity var(--#{$variable-prefix}animation-duration-base) linear;
+  }
+
+  @include e(wrap-indicator) {
+    top: 0;
+    width: calc(100% + 1px);
+    height: var(--#{$variable-prefix}tabs-tab-size);
+    transition: top var(--#{$variable-prefix}animation-duration-slow) ease-in-out,
+      opacity var(--#{$variable-prefix}animation-duration-base) linear;
+
+    @if $direction == left {
+      left: 0;
+      border-right: none;
+      border-radius: 0 var(--#{$variable-prefix}border-radius) var(--#{$variable-prefix}border-radius) 0;
+    } @else {
+      right: 0;
+      border-left: none;
+      border-radius: var(--#{$variable-prefix}border-radius) 0 0 var(--#{$variable-prefix}border-radius);
+    }
+  }
+
+  @include e(button-container) {
+    bottom: 0;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  @include e(button) {
+    width: 100%;
+    height: 36px;
+
+    @include m(more) {
+      box-shadow: 0 -3px 8px -2px var(--#{$variable-prefix}shadow-color);
+      @include when(end) {
+        border-top-color: var(--#{$variable-prefix}background-color-indicator);
+      }
+    }
+  }
+}
+
+@include b(tabs) {
+  $selector: &;
+
+  --#{$variable-prefix}tabs-tab-size: 44px;
+  --#{$variable-prefix}tabs-tab-gap: 0 32px;
+  --#{$variable-prefix}tabs-tab-padding: 16px;
+
+  position: relative;
+  display: flex;
+
+  @include m(top) {
+    @include tabs-horizontal(top);
+  }
+
+  @include m(bottom) {
+    @include tabs-horizontal(bottom);
+  }
+
+  @include m(left) {
+    @include tabs-vertical(left);
+  }
+
+  @include m(right) {
+    @include tabs-vertical(right);
+  }
+
+  @include m(center) {
+    @include e(tablist) {
+      justify-content: center;
+    }
+  }
+
+  @include m(larger) {
+    --#{$variable-prefix}tabs-tab-size: 52px;
+    --#{$variable-prefix}tabs-tab-gap: 36px;
+    --#{$variable-prefix}tabs-tab-padding: 20px;
+
+    .#{$variable-prefix}tabs__tablist {
+      @include font-size(1.1rem);
+    }
+  }
+
+  @include m(smaller) {
+    --#{$variable-prefix}tabs-tab-size: 36px;
+    --#{$variable-prefix}tabs-tab-gap: 20px;
+    --#{$variable-prefix}tabs-tab-padding: 12px;
+
+    .#{$variable-prefix}tabs__tablist {
+      @include font-size(0.85rem);
+    }
+  }
+
+  @include m(slider) {
+    &#{$selector}--top,
+    &#{$selector}--bottom {
+      .#{$variable-prefix}tab {
+        padding: 0 var(--#{$variable-prefix}tabs-tab-padding);
+      }
+    }
+
+    @include e(tablist-wrapper) {
+      padding: 0;
+      background-color: var(--#{$variable-prefix}background-color-primary);
+    }
+
+    @include e(tablist) {
+      gap: 0;
+
+      &::after {
+        content: none;
+      }
+    }
+  }
+
+  @include m(wrap) {
+    &#{$selector}--top,
+    &#{$selector}--bottom {
+      .#{$variable-prefix}tab {
+        padding: 0 var(--#{$variable-prefix}tabs-tab-padding);
+      }
+    }
+
+    @include e(tablist) {
+      gap: 0;
+    }
+  }
+
+  @include e(tablist-wrapper) {
+    position: relative;
+  }
+
+  @include e(tablist) {
+    position: relative;
+    display: inline-flex;
+
+    @include font-size(1rem);
+
+    &::after {
+      position: absolute;
+      content: '';
+      background-color: var(--#{$variable-prefix}background-color-indicator);
+    }
+  }
+
+  @include e(indicator) {
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+    background-color: var(--#{$variable-prefix}color-primary);
+    opacity: 0;
+  }
+
+  @include e(button-container) {
+    position: sticky;
+    z-index: 6;
+    display: flex;
+    flex-wrap: nowrap;
+  }
+
+  @include e(button) {
+    flex-shrink: 0;
+    background-color: var(--#{$variable-prefix}background-color);
+
+    @include utils-disabled;
+
+    @include m(add) {
+      border: 1px solid var(--#{$variable-prefix}background-color-indicator);
+    }
+
+    @include m(more) {
+      border: 1px solid transparent;
+      transition: color var(--#{$variable-prefix}animation-duration-base) linear,
+        box-shadow var(--#{$variable-prefix}animation-duration-base) linear;
+
+      @include when(end) {
+        box-shadow: none;
+      }
+    }
+  }
+
+  @include e(slider-indicator) {
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0;
+
+    &::after {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      bottom: 3px;
+      left: 3px;
+      content: '';
+      background-color: var(--#{$variable-prefix}background-color);
+      border-radius: var(--#{$variable-prefix}border-radius);
+      box-shadow: 0 2px 4px 0 var(--#{$variable-prefix}shadow-color);
+    }
+  }
+
+  @include e(wrap-indicator) {
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+    background-color: var(--#{$variable-prefix}background-color-primary);
+    border: 1px solid var(--#{$variable-prefix}background-color-indicator);
+    opacity: 0;
+  }
+
+  @include e(dropdown-item) {
+    @include when(active) {
+      color: var(--#{$variable-prefix}color-primary);
+    }
+  }
+}
+
+@include b(tab) {
+  position: relative;
+  z-index: 5;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: var(--#{$variable-prefix}tabs-tab-size);
+  cursor: pointer;
+  transition: color var(--#{$variable-prefix}animation-duration-base) linear;
+
+  &:focus,
+  &:hover {
+    color: var(--#{$variable-prefix}color-primary-lighter);
+  }
+
+  @include when(active) {
+    color: var(--#{$variable-prefix}color-primary);
+  }
+
+  @include when(disabled) {
+    pointer-events: none;
+    filter: opacity(50%);
+  }
+
+  @include e(close) {
+    margin-left: 4px;
+  }
+}

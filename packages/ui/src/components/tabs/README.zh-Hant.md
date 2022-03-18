@@ -2,12 +2,6 @@
 title: 页签面板
 ---
 
-页签切换组件。
-
-## 何时使用
-
-用户需要通过平级的区域将大块内容进行收纳和展现，保持界面整洁。
-
 ## API
 
 ### DTabsProps
@@ -38,7 +32,7 @@ title: 页签面板
 | --- | --- | --- | --- | 
 | dId | 唯一标识 | string | - |
 | dTitle | 页签的标题 | React.ReactNode | - |
-| dDisabled | 是否禁用 | boolean | false |
+| disabled | 是否禁用 | boolean | false |
 | dClosable | 是否可关闭 | boolean | false |
 | dCloseIcon | 自定义关闭图标 | React.ReactNode | - |
 <!-- prettier-ignore-end -->

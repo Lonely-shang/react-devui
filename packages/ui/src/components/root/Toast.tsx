@@ -1,18 +1,37 @@
 import type { DToastProps } from '../toast';
 import type { Subscription } from 'rxjs';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 
-import { useImmer, usePrefixConfig } from '../../hooks';
+import { useElement, useImmer, usePrefixConfig } from '../../hooks';
 import { DToast, ToastService, toastSubject } from '../toast';
 
-export function Toast() {
+export function Toast(): JSX.Element | null {
   //#region Context
   const dPrefix = usePrefixConfig();
   //#endregion
 
   const [toasts, setToasts] = useImmer(new Map<number, DToastProps & { dVisible: boolean }>());
+
+  const getRoot = (id: string) => {
+    let root = document.getElementById(`${dPrefix}toast-root`);
+    if (!root) {
+      root = document.createElement('div');
+      root.id = `${dPrefix}toast-root`;
+      document.body.appendChild(root);
+    }
+
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      root.appendChild(el);
+    }
+    return el;
+  };
+  const toastTRoot = useElement(() => getRoot(`${dPrefix}toast-t-root`));
+  const toastBRoot = useElement(() => getRoot(`${dPrefix}toast-b-root`));
 
   useEffect(() => {
     const obs: Subscription[] = [];
@@ -35,14 +54,14 @@ export function Toast() {
       };
     };
     obs.push(
-      toastSubject.open.subscribe({
+      toastSubject.open$.subscribe({
         next: ({ uniqueId, props }) => {
           setToasts((draft) => {
             draft.set(uniqueId, { ...props, dVisible: true, ...mergeProps(uniqueId, props) });
           });
         },
       }),
-      toastSubject.close.subscribe({
+      toastSubject.close$.subscribe({
         next: (uniqueId) => {
           setToasts((draft) => {
             const props = draft.get(uniqueId);
@@ -52,7 +71,7 @@ export function Toast() {
           });
         },
       }),
-      toastSubject.rerender.subscribe({
+      toastSubject.rerender$.subscribe({
         next: ({ uniqueId, props: newProps }) => {
           setToasts((draft) => {
             const props = draft.get(uniqueId);
@@ -62,7 +81,7 @@ export function Toast() {
           });
         },
       }),
-      toastSubject.closeAll.subscribe({
+      toastSubject.closeAll$.subscribe({
         next: (animation) => {
           setToasts((draft) => {
             if (animation) {
@@ -78,41 +97,22 @@ export function Toast() {
     );
   }, [setToasts]);
 
-  const [toastTRoot, toastBRoot] = useMemo(() => {
-    const getRoot = (id: string) => {
-      let root = document.getElementById(`${dPrefix}toast-root`);
-      if (!root) {
-        root = document.createElement('div');
-        root.id = `${dPrefix}toast-root`;
-        document.body.appendChild(root);
-      }
-
-      let el = document.getElementById(id);
-      if (!el) {
-        el = document.createElement('div');
-        el.id = id;
-        root.appendChild(el);
-      }
-      return el;
-    };
-
-    return [getRoot(`${dPrefix}toast-t-root`), getRoot(`${dPrefix}toast-b-root`)];
-  }, [dPrefix]);
-
   return (
     <>
-      {ReactDOM.createPortal(
-        Array.from(toasts.entries())
-          .filter(([, toastProps]) => (toastProps.dPlacement ?? 'top') === 'top')
-          .map(([uniqueId, toastProps]) => <DToast key={uniqueId} {...toastProps}></DToast>),
-        toastTRoot
-      )}
-      {ReactDOM.createPortal(
-        Array.from(toasts.entries())
-          .filter(([, toastProps]) => toastProps.dPlacement === 'bottom')
-          .map(([uniqueId, toastProps]) => <DToast key={uniqueId} {...toastProps}></DToast>),
-        toastBRoot
-      )}
+      {toastTRoot &&
+        ReactDOM.createPortal(
+          Array.from(toasts.entries())
+            .filter(([, toastProps]) => (toastProps.dPlacement ?? 'top') === 'top')
+            .map(([uniqueId, toastProps]) => <DToast key={uniqueId} {...toastProps}></DToast>),
+          toastTRoot
+        )}
+      {toastBRoot &&
+        ReactDOM.createPortal(
+          Array.from(toasts.entries())
+            .filter(([, toastProps]) => toastProps.dPlacement === 'bottom')
+            .map(([uniqueId, toastProps]) => <DToast key={uniqueId} {...toastProps}></DToast>),
+          toastBRoot
+        )}
     </>
   );
 }

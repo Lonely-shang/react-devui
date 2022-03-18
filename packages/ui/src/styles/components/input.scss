@@ -1,0 +1,128 @@
+@include b(input) {
+  display: inline-flex;
+  align-items: center;
+  height: var(--#{$variable-prefix}size);
+  padding: 0 calc(var(--#{$variable-prefix}horizontal-space-size) - 1px);
+  font-size: var(--#{$variable-prefix}font-size);
+  color: var(--#{$variable-prefix}text-color);
+  background-color: var(--#{$variable-prefix}background-color-input);
+  border: 1px solid var(--#{$variable-prefix}color-border);
+  border-radius: var(--#{$variable-prefix}border-radius);
+  transition: border-color var(--#{$variable-prefix}animation-duration-base) linear;
+
+  @include utils-disabled(true);
+  @include form-validate;
+
+  &:hover {
+    border-color: var(--#{$variable-prefix}color-primary-lighter);
+  }
+
+  @include when(focus) {
+    border-color: var(--#{$variable-prefix}color-primary-lighter);
+  }
+
+  @include m(number) {
+    &:not(.is-disabled) {
+      padding-right: 0;
+      @include e(suffix) {
+        margin-right: calc(var(--#{$variable-prefix}horizontal-space-size) - 1px);
+      }
+    }
+  }
+
+  @include m(smaller) {
+    --#{$variable-prefix}size: var(--#{$variable-prefix}size-smaller);
+    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-smaller);
+    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-smaller);
+  }
+
+  @include m(larger) {
+    --#{$variable-prefix}size: var(--#{$variable-prefix}size-larger);
+    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-larger);
+    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-larger);
+  }
+
+  @include e(input) {
+    display: inline-block;
+    flex-grow: 1;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    appearance: none;
+    caret-color: var(--#{$variable-prefix}color-primary);
+
+    &[type='number'] {
+      appearance: textfield; /* Firefox */
+
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button {
+        margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+
+        /* display: none; <- Crashes Chrome on hover */
+        appearance: none;
+      }
+    }
+
+    &::placeholder {
+      color: rgb(var(--#{$variable-prefix}text-color-rgb) / 40%);
+      transform: translateX(1px);
+    }
+
+    &:disabled::placeholder {
+      color: rgb(var(--#{$variable-prefix}text-color-rgb) / 10%);
+    }
+  }
+
+  @include e(prefix) {
+    flex-shrink: 0;
+    margin-right: 4px;
+  }
+
+  @include e(suffix) {
+    flex-shrink: 0;
+    margin-left: 4px;
+  }
+
+  @include e(clear) {
+    flex-shrink: 0;
+    margin-left: 4px;
+    transition: color var(--#{$variable-prefix}animation-duration-base) linear,
+      opacity var(--#{$variable-prefix}animation-duration-fast) linear;
+  }
+
+  @include e(password) {
+    flex-shrink: 0;
+    margin-left: 4px;
+  }
+
+  @include e(number-container) {
+    display: inline-flex;
+    flex-direction: column;
+    height: 100%;
+    margin-left: 4px;
+  }
+
+  @include e(number) {
+    flex-grow: 1;
+    width: 24px;
+    transition: color var(--#{$variable-prefix}animation-duration-base) linear,
+      background-color var(--#{$variable-prefix}animation-duration-base) linear;
+
+    &:hover,
+    &:focus {
+      background-color: var(--#{$variable-prefix}background-color-hover-primary);
+    }
+
+    &:active {
+      background-color: var(--#{$variable-prefix}background-color-primary);
+    }
+  }
+}

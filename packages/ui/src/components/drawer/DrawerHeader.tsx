@@ -1,33 +1,23 @@
 import type { DHeaderProps } from '../_header';
 
-import { useCallback } from 'react';
-
-import { usePrefixConfig, useComponentConfig, useCustomContext } from '../../hooks';
-import { generateComponentMate, getClassName } from '../../utils';
+import { usePrefixConfig, useComponentConfig } from '../../hooks';
+import { registerComponentMate, getClassName } from '../../utils';
 import { DHeader } from '../_header';
-import { DDrawerContext } from './Drawer';
 
 export type DDrawerHeaderProps = Omit<DHeaderProps, 'onClose'>;
 
-const { COMPONENT_NAME } = generateComponentMate('DDrawerHeader');
-export function DDrawerHeader(props: DDrawerHeaderProps) {
-  const { className, ...restProps } = useComponentConfig(COMPONENT_NAME, props);
+export interface DDrawerHeaderPropsWithPrivate extends DDrawerHeaderProps {
+  __id?: string;
+  __onClose?: () => void;
+}
+
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DDrawerHeader' });
+export function DDrawerHeader(props: DDrawerHeaderProps): JSX.Element | null {
+  const { className, __id, __onClose, ...restProps } = useComponentConfig(COMPONENT_NAME, props as DDrawerHeaderPropsWithPrivate);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const [{ drawerId, closeDrawer }] = useCustomContext(DDrawerContext);
   //#endregion
 
-  const handleClose = useCallback(() => {
-    closeDrawer?.();
-  }, [closeDrawer]);
-
-  return (
-    <DHeader
-      {...restProps}
-      id={drawerId ? `${dPrefix}drawer-header-${drawerId}` : undefined}
-      className={getClassName(className, `${dPrefix}drawer-header`)}
-      onClose={handleClose}
-    ></DHeader>
-  );
+  return <DHeader {...restProps} id={__id} className={getClassName(className, `${dPrefix}drawer-header`)} onClose={__onClose}></DHeader>;
 }

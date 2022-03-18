@@ -1,112 +1,65 @@
-import { isUndefined } from 'lodash';
-import { useCallback } from 'react';
+import type { DMenuMode } from './Menu';
 
-import { usePrefixConfig, useComponentConfig, useCustomContext, useRefCallback, useStateBackflow } from '../../hooks';
-import { getClassName, toId, mergeStyle, generateComponentMate } from '../../utils';
+import { usePrefixConfig } from '../../hooks';
+import { getClassName } from '../../utils';
 import { DTooltip } from '../tooltip';
-import { DMenuContext } from './Menu';
-import { DMenuSubContext } from './MenuSub';
 
-export interface DMenuItemProps extends React.LiHTMLAttributes<HTMLLIElement> {
-  dId: string;
+export interface DMenuItemProps {
+  id: string;
+  disabled?: boolean;
+  children: React.ReactNode;
+  dPosinset: [number, number];
+  dMode: DMenuMode;
+  dInNav: boolean;
+  dActive: boolean;
+  dFocusVisible: boolean;
   dIcon?: React.ReactNode;
-  dDisabled?: boolean;
-  __level?: number;
-  __inNav?: boolean;
+  dStep: number;
+  dSpace: number;
+  dLevel?: number;
+  onClick: () => void;
 }
 
-const { COMPONENT_NAME } = generateComponentMate('DMenuItem');
-export function DMenuItem(props: DMenuItemProps) {
-  const {
-    dId,
-    dIcon,
-    dDisabled = false,
-    __level = 0,
-    __inNav = false,
-    id,
-    className,
-    style,
-    tabIndex,
-    children,
-    onClick,
-    onFocus,
-    onBlur,
-    ...restProps
-  } = useComponentConfig(COMPONENT_NAME, props);
+export function DMenuItem(props: DMenuItemProps): JSX.Element | null {
+  const { id, disabled, children, dPosinset, dMode, dInNav, dActive, dFocusVisible, dIcon, dStep, dSpace, dLevel = 0, onClick } = props;
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const [{ menuMode, menuActiveId, onActiveChange, onFocus: _onFocus, onBlur: _onBlur }] = useCustomContext(DMenuContext);
-  const [{ updateChildren, removeChildren }] = useCustomContext(DMenuSubContext);
   //#endregion
 
-  //#region Ref
-  const [liEl, liRef] = useRefCallback<HTMLLIElement>();
-  //#endregion
+  const inHorizontalNav = dMode === 'horizontal' && dInNav;
 
-  const _id = id ?? `${dPrefix}menu-item-${toId(dId)}`;
-
-  useStateBackflow(updateChildren, removeChildren, dId, false);
-
-  const handleClick = useCallback(
-    (e) => {
-      onClick?.(e);
-
-      !dDisabled && onActiveChange?.(dId);
-    },
-    [dDisabled, dId, onActiveChange, onClick]
-  );
-
-  const handleFocus = useCallback(
-    (e) => {
-      onFocus?.(e);
-
-      !dDisabled && _onFocus?.(dId, _id);
-    },
-    [_id, _onFocus, dDisabled, dId, onFocus]
-  );
-
-  const handleBlur = useCallback(
-    (e) => {
-      onBlur?.(e);
-
-      _onBlur?.();
-    },
-    [_onBlur, onBlur]
+  const liNode = (
+    <li
+      id={id}
+      className={getClassName(`${dPrefix}menu-item`, {
+        [`${dPrefix}menu-item--horizontal`]: inHorizontalNav,
+        [`${dPrefix}menu-item--icon`]: dMode === 'icon' && dInNav,
+        'is-active': dActive,
+        'is-disabled': disabled,
+      })}
+      style={{ paddingLeft: dSpace + dLevel * dStep }}
+      role="menuitem"
+      aria-disabled={disabled}
+      onClick={onClick}
+    >
+      {dFocusVisible && <div className={`${dPrefix}focus-outline`}></div>}
+      <div
+        className={getClassName(`${dPrefix}menu-item__indicator`, {
+          [`${dPrefix}menu-item__indicator--first`]: dPosinset[0] === 0 && dPosinset[1] > 1,
+          [`${dPrefix}menu-item__indicator--last`]: dPosinset[0] === dPosinset[1] - 1 && dPosinset[1] > 1,
+        })}
+      >
+        <div style={{ backgroundColor: dLevel === 0 ? 'transparent' : undefined }}></div>
+      </div>
+      {dIcon && <div className={`${dPrefix}menu-item__icon`}>{dIcon}</div>}
+      <div className={`${dPrefix}menu-item__title`}>{children}</div>
+    </li>
   );
 
   return (
-    <>
-      <li
-        {...restProps}
-        ref={liRef}
-        id={_id}
-        className={getClassName(className, `${dPrefix}menu-item`, {
-          [`${dPrefix}menu-item--horizontal`]: menuMode === 'horizontal' && __inNav,
-          [`${dPrefix}menu-item--icon`]: menuMode === 'icon' && __inNav,
-          'is-active': menuActiveId === dId,
-          'is-disabled': dDisabled,
-        })}
-        style={mergeStyle(
-          {
-            paddingLeft: 16 + __level * 20,
-          },
-          style
-        )}
-        role="menuitem"
-        tabIndex={isUndefined(tabIndex) ? -1 : tabIndex}
-        aria-disabled={dDisabled}
-        onClick={handleClick}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-      >
-        <div className={`${dPrefix}menu-item__indicator`}>
-          <div style={{ backgroundColor: __level === 0 ? 'transparent' : undefined }}></div>
-        </div>
-        {dIcon && <div className={`${dPrefix}menu-item__icon`}>{dIcon}</div>}
-        <div className={`${dPrefix}menu-item__title`}>{children}</div>
-      </li>
-      {__inNav && menuMode === 'icon' && <DTooltip dTitle={children} dTriggerEl={liEl} dPlacement="right" />}
-    </>
+    <DTooltip disabled={!(dMode === 'icon' && dInNav)} dTitle={children} dPlacement="right">
+      {liNode}
+    </DTooltip>
   );
 }

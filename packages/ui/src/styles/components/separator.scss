@@ -1,0 +1,97 @@
+@include b(separator) {
+  width: 100%;
+  height: 1px;
+  padding: 0;
+  margin: 16px 0;
+  list-style: none;
+  background-color: var(--#{$variable-prefix}color-divider);
+  border: none;
+
+  @include m(text) {
+    display: flex;
+    align-items: center;
+    margin: 24px 0;
+    background-color: unset;
+
+    &::before {
+      height: 1px;
+      content: '';
+      background-color: var(--#{$variable-prefix}color-divider);
+    }
+
+    &::after {
+      height: 1px;
+      content: '';
+      background-color: var(--#{$variable-prefix}color-divider);
+    }
+
+    &.#{$variable-prefix}separator--vertical {
+      width: auto;
+      margin: 0 24px;
+
+      &::before {
+        width: 1px;
+        height: unset;
+      }
+
+      &::after {
+        width: 1px;
+        height: unset;
+      }
+
+      .#{$variable-prefix}separator__text {
+        padding: 8px 0;
+      }
+    }
+  }
+
+  @include m(text-left) {
+    &::before {
+      flex: 0 0 10%;
+    }
+
+    &::after {
+      flex: 1 0 0;
+    }
+  }
+
+  @include m(text-right) {
+    &::before {
+      flex: 1 0 0;
+    }
+
+    &::after {
+      flex: 0 0 10%;
+    }
+  }
+
+  @include m(text-center) {
+    &::before {
+      flex: 1 0 0;
+    }
+
+    &::after {
+      flex: 1 0 0;
+    }
+  }
+
+  @include m(vertical) {
+    display: inline-flex;
+    flex-direction: column;
+    width: 1px;
+    height: unset;
+    margin: 4px 8px;
+
+    &::before {
+      flex: 1 0 0;
+      content: '';
+      background-color: var(--#{$variable-prefix}color-divider);
+    }
+  }
+
+  @include e(text) {
+    flex: 0 0 auto;
+    padding: 0 8px;
+    font-size: 0.95em;
+  }
+}

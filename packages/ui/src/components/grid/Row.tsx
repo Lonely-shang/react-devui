@@ -1,44 +1,36 @@
+import type { DBreakpoints } from '../../types';
+
 import { isArray, isNumber } from 'lodash';
 import React, { useMemo } from 'react';
 
 import { usePrefixConfig, useComponentConfig } from '../../hooks';
-import { generateComponentMate, getClassName, mergeStyle } from '../../utils';
+import { registerComponentMate, getClassName } from '../../utils';
 import { useMediaMatch } from './hooks';
 
 export interface DRowContextData {
-  rowMediaMatch: DBreakpoints[];
-  rowSpace: number | string;
+  gMediaMatch: DBreakpoints[];
+  gSpace: number | string;
 }
 export const DRowContext = React.createContext<DRowContextData | null>(null);
 
-export type DBreakpoints = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 export type DGutterValue = number | string | [number | string, number | string];
 
 export interface DRowProps extends React.HTMLAttributes<HTMLDivElement> {
   dGutter?: DGutterValue;
   dResponsiveGutter?: Record<DBreakpoints, DGutterValue>;
-  onMediaChange?: (match: DBreakpoints[]) => void;
 }
 
-const { COMPONENT_NAME } = generateComponentMate('DRow');
-export function DRow(props: DRowProps) {
-  const {
-    dGutter = 0,
-    dResponsiveGutter,
-    onMediaChange,
-    className,
-    style,
-    children,
-    ...restProps
-  } = useComponentConfig(COMPONENT_NAME, props);
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DRow' });
+export function DRow(props: DRowProps): JSX.Element | null {
+  const { className, style, children, dGutter = 0, dResponsiveGutter, ...restProps } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
   //#endregion
 
-  const mediaMatch = useMediaMatch(onMediaChange);
+  const mediaMatch = useMediaMatch();
 
-  const gap = useMemo(() => {
+  const gap = (() => {
     const getGap = (gutter: DGutterValue): [number | string, number | string] => {
       if (isArray(gutter)) {
         return [gutter[0], gutter[1]];
@@ -58,13 +50,13 @@ export function DRow(props: DRowProps) {
     }
 
     return gap;
-  }, [dGutter, dResponsiveGutter, mediaMatch]);
+  })();
   const space = isNumber(gap[1]) ? gap[1] / 2 : `calc(${gap[1]} / 2)`;
 
   const contextValue = useMemo<DRowContextData>(
     () => ({
-      rowMediaMatch: mediaMatch,
-      rowSpace: space,
+      gMediaMatch: mediaMatch,
+      gSpace: space,
     }),
     [mediaMatch, space]
   );
@@ -74,14 +66,12 @@ export function DRow(props: DRowProps) {
       <div
         {...restProps}
         className={getClassName(className, `${dPrefix}row`)}
-        style={mergeStyle(
-          {
-            rowGap: gap[0],
-            marginLeft: isNumber(space) ? -space : `calc(${space} * -1)`,
-            marginRight: isNumber(space) ? -space : `calc(${space} * -1)`,
-          },
-          style
-        )}
+        style={{
+          ...style,
+          rowGap: gap[0],
+          marginLeft: isNumber(space) ? -space : `calc(${space} * -1)`,
+          marginRight: isNumber(space) ? -space : `calc(${space} * -1)`,
+        }}
       >
         {children}
       </div>

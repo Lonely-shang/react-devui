@@ -1,633 +1,230 @@
-import type { DElementSelector } from '../../hooks/element-ref';
-import type { DTransitionStateList } from '../../hooks/transition';
-import type { DPlacement } from '../../utils/position';
-
 import { isUndefined } from 'lodash';
-import React, { useId, useCallback, useEffect, useMemo, useImperativeHandle, useRef, useState } from 'react';
-import ReactDOM, { flushSync } from 'react-dom';
+import { useEffect, useId, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { filter } from 'rxjs';
 
-import {
-  usePrefixConfig,
-  useAsync,
-  useRefSelector,
-  useImmer,
-  useRefCallback,
-  useContentRefConfig,
-  useDTransition,
-  useMaxIndex,
-} from '../../hooks';
-import { getClassName, getPopupPlacementStyle, mergeStyle } from '../../utils';
-import { checkOutEl } from './utils';
+import { useAsync, useContentScrollViewChange, useEventCallback } from '../../hooks';
 
-export interface DTriggerRenderProps {
-  [key: `data-${string}popup-trigger`]: string;
-  onMouseEnter?: React.MouseEventHandler<HTMLElement>;
-  onMouseLeave?: React.MouseEventHandler<HTMLElement>;
-  onFocus?: React.FocusEventHandler<HTMLElement>;
-  onBlur?: React.FocusEventHandler<HTMLElement>;
-  onClick?: React.MouseEventHandler<HTMLElement>;
+export type DExtendsPopupProps = Pick<DPopupProps, 'disabled' | 'dTrigger' | 'dMouseEnterDelay' | 'dMouseLeaveDelay' | 'dEscClosable'>;
+
+export interface DPopupPopupRenderProps {
+  'data-popup-popupid': string;
+  pOnMouseEnter?: () => void;
+  pOnMouseLeave?: () => void;
+  pOnClick?: () => void;
 }
 
-export interface DPopupRef {
-  el: HTMLDivElement | null;
-  triggerEl: HTMLElement | null;
-  updatePosition: () => void;
+export interface DPopupRenderProps {
+  'data-popup-triggerid': string;
+  pOnMouseEnter?: () => void;
+  pOnMouseLeave?: () => void;
+  pOnFocus?: () => void;
+  pOnBlur?: () => void;
+  pOnClick?: () => void;
 }
 
-export interface DPopupProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface DPopupProps {
+  disabled?: boolean;
   dVisible: boolean;
-  dPopupContent: React.ReactNode;
-  dTriggerRender?: (props: DTriggerRenderProps) => React.ReactNode;
-  dTriggerEl?: HTMLElement | null;
-  dContainer?: DElementSelector | false;
-  dPlacement?: DPlacement;
-  dAutoPlace?: boolean;
-  dTrigger?: 'hover' | 'focus' | 'click' | null;
-  dDistance?: number;
-  dArrow?: boolean;
-  dZIndex?: number;
-  dDestroy?: boolean;
+  children: (props: DPopupRenderProps) => JSX.Element | null;
+  dPopup: (props: DPopupPopupRenderProps) => JSX.Element | null;
+  dContainer?: HTMLElement | null;
+  dTrigger?: 'hover' | 'focus' | 'click';
+  dEscClosable?: boolean;
   dMouseEnterDelay?: number;
   dMouseLeaveDelay?: number;
-  dEscClosable?: boolean;
-  dCustomPopup?: (
-    popupEl: HTMLElement,
-    triggerEl: HTMLElement
-  ) => { top: number; left: number; stateList: DTransitionStateList; arrowPosition?: React.CSSProperties };
   onVisibleChange?: (visible: boolean) => void;
-  onRendered?: () => void;
-  afterVisibleChange?: (visible: boolean) => void;
+  onUpdate?: () => void;
 }
 
-const Popup: React.ForwardRefRenderFunction<DPopupRef, DPopupProps> = (props, ref) => {
+export function DPopup(props: DPopupProps) {
   const {
+    disabled,
+    children,
     dVisible,
-    dPopupContent,
-    dTriggerRender,
-    dTriggerEl,
+    dPopup,
     dContainer,
-    dPlacement = 'top',
-    dAutoPlace = true,
     dTrigger = 'hover',
-    dDistance = 10,
-    dArrow = true,
-    dZIndex,
-    dDestroy = false,
+    dEscClosable = true,
     dMouseEnterDelay = 150,
     dMouseLeaveDelay = 200,
-    dEscClosable = true,
-    dCustomPopup,
     onVisibleChange,
-    onRendered,
-    afterVisibleChange,
-    className,
-    style,
-    onMouseEnter,
-    onMouseLeave,
-    onFocus,
-    onBlur,
-    onClick,
-    ...restProps
+    onUpdate,
   } = props;
 
-  //#region Context
-  const dPrefix = usePrefixConfig();
-  const rootContentRef = useContentRefConfig();
-  //#endregion
-
-  //#region Ref
-  const [popupEl, popupRef] = useRefCallback<HTMLDivElement>();
-  //#endregion
-
   const dataRef = useRef<{
-    clearTid: (() => void) | null;
-    hasCancelLeave: boolean;
-    transitionState?: DTransitionStateList;
-    triggerRect?: { top: number; left: number };
-  }>({
-    clearTid: null,
-    hasCancelLeave: false,
-  });
+    clearTid?: () => void;
+  }>({});
 
   const asyncCapture = useAsync();
-  const [popupPositionStyle, setPopupPositionStyle] = useImmer<React.CSSProperties>({});
-  const [arrowPosition, setArrowStyle] = useImmer<React.CSSProperties | undefined>(undefined);
+
   const uniqueId = useId();
 
-  const [autoPlacement, setAutoPlacement] = useState<DPlacement>(dPlacement);
-
-  const [rendered, setRendered] = useState(dVisible);
-  useEffect(() => {
-    if (!dVisible) {
-      setRendered(false);
+  const changeVisible = (visible?: boolean) => {
+    if (isUndefined(visible)) {
+      onVisibleChange?.(!dVisible);
+    } else if (!Object.is(dVisible, visible)) {
+      onVisibleChange?.(visible);
     }
-  }, [dVisible]);
-  const popupRendered = dVisible && rendered;
+  };
 
-  const triggerRef = useRefSelector(isUndefined(dTriggerEl) ? `[data-${dPrefix}popup-trigger="${uniqueId}"]` : dTriggerEl);
+  const handleTrigger = useEventCallback((visible?: boolean, behavior?: 'hover' | 'popup-hover') => {
+    dataRef.current.clearTid?.();
 
-  const isFixed = isUndefined(dContainer);
-  const handleContainer = useCallback(() => {
-    if (isFixed) {
-      let el = document.getElementById(`${dPrefix}popup-root`);
-      if (!el) {
-        el = document.createElement('div');
-        el.id = `${dPrefix}popup-root`;
-        document.body.appendChild(el);
-      }
-      return el;
-    } else if (dContainer === false) {
-      return triggerRef.current?.parentElement ?? null;
-    }
-    return null;
-  }, [dContainer, dPrefix, isFixed, triggerRef]);
-  const containerRef = useRefSelector(dContainer, handleContainer);
-
-  const placement = dAutoPlace ? autoPlacement : dPlacement;
-
-  const changeVisible = useCallback(
-    (visiable?: boolean) => {
-      if (isUndefined(visiable)) {
-        onVisibleChange?.(!dVisible);
-      } else {
-        if (!Object.is(dVisible, visiable)) {
-          onVisibleChange?.(visiable);
-        }
-      }
-    },
-    [dVisible, onVisibleChange]
-  );
-
-  const updatePosition = useCallback(() => {
-    if (popupEl && triggerRef.current && containerRef.current) {
-      if (isUndefined(dCustomPopup)) {
-        let currentPlacement = dAutoPlace ? dPlacement : autoPlacement;
-
-        if (dAutoPlace) {
-          let space: [number, number, number, number] = [0, 0, 0, 0];
-          if (!isFixed) {
-            const containerRect = containerRef.current.getBoundingClientRect();
-            space = [
-              containerRect.top,
-              window.innerWidth - containerRect.left - containerRect.width,
-              window.innerHeight - containerRect.top - containerRect.height,
-              containerRect.left,
-            ];
-          }
-          const position = getPopupPlacementStyle(popupEl, triggerRef.current, dPlacement, dDistance, isFixed, space);
-          if (position) {
-            currentPlacement = position.placement;
-            setAutoPlacement(position.placement);
-            setPopupPositionStyle({
-              position: isFixed ? 'fixed' : 'absolute',
-              top: position.top,
-              left: position.left,
-            });
+    if (behavior) {
+      switch (behavior) {
+        case 'hover':
+          if (visible) {
+            dataRef.current.clearTid = asyncCapture.setTimeout(() => changeVisible(visible), dMouseEnterDelay);
           } else {
-            const position = getPopupPlacementStyle(popupEl, triggerRef.current, autoPlacement, dDistance, isFixed);
-            setPopupPositionStyle({
-              position: isFixed ? 'fixed' : 'absolute',
-              top: position.top,
-              left: position.left,
-            });
+            dataRef.current.clearTid = asyncCapture.setTimeout(() => changeVisible(visible), dMouseLeaveDelay);
           }
-        } else {
-          const position = getPopupPlacementStyle(popupEl, triggerRef.current, dPlacement, dDistance, isFixed);
-          setPopupPositionStyle({
-            position: isFixed ? 'fixed' : 'absolute',
-            top: position.top,
-            left: position.left,
-          });
-        }
+          break;
 
-        let transformOrigin = 'center bottom';
-        switch (currentPlacement) {
-          case 'top':
-            transformOrigin = 'center bottom';
-            break;
+        case 'popup-hover':
+          if (!visible) {
+            dataRef.current.clearTid = asyncCapture.setTimeout(() => changeVisible(visible), dMouseLeaveDelay);
+          }
+          break;
 
-          case 'top-left':
-            transformOrigin = '20px bottom';
-            break;
-
-          case 'top-right':
-            transformOrigin = 'calc(100% - 20px) bottom';
-            break;
-
-          case 'right':
-            transformOrigin = 'left center';
-            break;
-
-          case 'right-top':
-            transformOrigin = 'left 12px';
-            break;
-
-          case 'right-bottom':
-            transformOrigin = 'left calc(100% - 12px)';
-            break;
-
-          case 'bottom':
-            transformOrigin = 'center top';
-            break;
-
-          case 'bottom-left':
-            transformOrigin = '20px top';
-            break;
-
-          case 'bottom-right':
-            transformOrigin = 'calc(100% - 20px) top';
-            break;
-
-          case 'left':
-            transformOrigin = 'right center';
-            break;
-
-          case 'left-top':
-            transformOrigin = 'right 12px';
-            break;
-
-          case 'left-bottom':
-            transformOrigin = 'right calc(100% - 12px)';
-            break;
-
-          default:
-            break;
-        }
-        dataRef.current.transitionState = {
-          'enter-from': { transform: 'scale(0.3)', opacity: '0' },
-          'enter-to': { transition: 'transform 86ms ease-out, opacity 86ms ease-out', transformOrigin },
-          'leave-to': {
-            transform: 'scale(0.3)',
-            opacity: '0',
-            transition: 'transform 0.1s ease-in, opacity 0.1s ease-in',
-            transformOrigin,
-          },
-        };
-      } else {
-        const { top, left, stateList, arrowPosition } = dCustomPopup(popupEl, triggerRef.current);
-        setArrowStyle(arrowPosition);
-        setPopupPositionStyle({
-          position: isFixed ? 'fixed' : 'absolute',
-          top,
-          left,
-        });
-        dataRef.current.transitionState = stateList;
+        default:
+          break;
       }
+    } else {
+      changeVisible(visible);
     }
-  }, [
-    autoPlacement,
-    containerRef,
-    dAutoPlace,
-    dCustomPopup,
-    dDistance,
-    dPlacement,
-    isFixed,
-    popupEl,
-    setArrowStyle,
-    setAutoPlacement,
-    setPopupPositionStyle,
-    triggerRef,
-  ]);
-
-  const hidden = useDTransition({
-    dEl: popupEl,
-    dVisible,
-    dCallbackList: {
-      beforeEnter: () => {
-        dataRef.current.hasCancelLeave = false;
-        updatePosition();
-        setRendered(true);
-        onRendered?.();
-
-        return dataRef.current.transitionState;
-      },
-      beforeLeave: () => dataRef.current.transitionState,
-    },
-    afterEnter: () => {
-      if (dataRef.current.hasCancelLeave && checkMouseLeave()) {
-        changeVisible(false);
-      }
-      afterVisibleChange?.(true);
-    },
-    afterLeave: () => {
-      afterVisibleChange?.(false);
-    },
   });
 
-  const maxZIndex = useMaxIndex(!hidden);
-  const zIndex = useMemo(() => {
-    if (!hidden) {
-      if (isUndefined(dZIndex)) {
-        if (isFixed) {
-          return maxZIndex;
-        } else {
-          return `var(--${dPrefix}zindex-absolute)`;
-        }
-      } else {
-        return dZIndex;
-      }
-    }
-  }, [dPrefix, dZIndex, hidden, isFixed, maxZIndex]);
-
-  // `onMouseEnter` and `onMouseLeave` trigger time is uncertain.
-  // Very strange, sometimes popup element emit `onMouseEnter` before
-  // trigger element emit `onMouseLeave`.
-  // It's also no emit `onMouseEnter` when enter to popup element sometimes.
-  const checkMouseLeave = useCallback(() => {
-    if (popupEl && triggerRef.current) {
-      return checkOutEl(popupEl) && checkOutEl(triggerRef.current);
-    }
-
-    return false;
-  }, [popupEl, triggerRef]);
-
-  const handleMouseEnter = useCallback(
-    (e) => {
-      onMouseEnter?.(e);
-
-      if (dTrigger === 'hover') {
-        dataRef.current.clearTid && dataRef.current.clearTid();
-        dataRef.current.clearTid = asyncCapture.setTimeout(() => {
-          dataRef.current.clearTid = null;
-          changeVisible(true);
-        }, dMouseEnterDelay);
-      }
-    },
-    [onMouseEnter, dTrigger, asyncCapture, dMouseEnterDelay, changeVisible]
-  );
-
-  const handleMouseLeave = useCallback(
-    (e) => {
-      onMouseLeave?.(e);
-
-      if (dTrigger === 'hover') {
-        dataRef.current.clearTid && dataRef.current.clearTid();
-        dataRef.current.clearTid = asyncCapture.setTimeout(() => {
-          dataRef.current.clearTid = null;
-          if (checkMouseLeave()) {
-            changeVisible(false);
-          } else {
-            dataRef.current.hasCancelLeave = true;
-          }
-        }, dMouseLeaveDelay);
-      }
-    },
-    [onMouseLeave, dTrigger, asyncCapture, dMouseLeaveDelay, checkMouseLeave, changeVisible]
-  );
-
-  const handleFocus = useCallback(
-    (e) => {
-      onFocus?.(e);
-
-      if (dTrigger === 'focus') {
-        dataRef.current.clearTid && dataRef.current.clearTid();
-        changeVisible(true);
-      }
-    },
-    [onFocus, dTrigger, changeVisible]
-  );
-
-  const handleBlur = useCallback(
-    (e) => {
-      onBlur?.(e);
-
-      if (dTrigger === 'focus') {
-        dataRef.current.clearTid = asyncCapture.setTimeout(() => changeVisible(false), 20);
-      }
-    },
-    [onBlur, dTrigger, asyncCapture, changeVisible]
-  );
-
-  const handleClick = useCallback(
-    (e) => {
-      onClick?.(e);
-
-      if (dTrigger === 'click') {
-        dataRef.current.clearTid && dataRef.current.clearTid();
-        changeVisible(true);
-      }
-    },
-    [onClick, dTrigger, changeVisible]
-  );
-
+  const clickOut = useRef(true);
   useEffect(() => {
-    if (!isUndefined(dTriggerEl)) {
+    if (!disabled && dVisible && dTrigger === 'click') {
       const [asyncGroup, asyncId] = asyncCapture.createGroup();
-      if (triggerRef.current) {
-        if (dTrigger === 'hover') {
-          asyncGroup.fromEvent(triggerRef.current, 'mouseenter').subscribe({
-            next: () => {
-              dataRef.current.clearTid && dataRef.current.clearTid();
-              dataRef.current.clearTid = asyncCapture.setTimeout(() => {
-                dataRef.current.clearTid = null;
-                flushSync(() => changeVisible(true));
-              }, dMouseEnterDelay);
-            },
-          });
-          asyncGroup.fromEvent(triggerRef.current, 'mouseleave').subscribe({
-            next: () => {
-              dataRef.current.clearTid && dataRef.current.clearTid();
-              dataRef.current.clearTid = asyncCapture.setTimeout(() => {
-                dataRef.current.clearTid = null;
-                if (checkMouseLeave()) {
-                  flushSync(() => changeVisible(false));
-                } else {
-                  dataRef.current.hasCancelLeave = true;
-                }
-              }, dMouseLeaveDelay);
-            },
-          });
-        }
 
-        if (dTrigger === 'focus') {
-          asyncGroup.fromEvent(triggerRef.current, 'focus').subscribe({
-            next: () => {
-              dataRef.current.clearTid && dataRef.current.clearTid();
-              flushSync(() => changeVisible(true));
-            },
-          });
-          asyncGroup.fromEvent(triggerRef.current, 'blur').subscribe({
-            next: () => {
-              dataRef.current.clearTid = asyncCapture.setTimeout(() => flushSync(() => changeVisible(false)), 20);
-            },
-          });
-        }
-
-        if (dTrigger === 'click') {
-          asyncGroup.fromEvent(triggerRef.current, 'click').subscribe({
-            next: () => {
-              dataRef.current.clearTid && dataRef.current.clearTid();
-              flushSync(() => changeVisible());
-            },
-          });
-        }
-      }
+      asyncGroup.fromEvent(window, 'click').subscribe({
+        next: () => {
+          if (clickOut.current) {
+            handleTrigger(false);
+          }
+          clickOut.current = true;
+        },
+      });
 
       return () => {
         asyncCapture.deleteGroup(asyncId);
       };
     }
-  }, [asyncCapture, checkMouseLeave, dMouseEnterDelay, dMouseLeaveDelay, dTrigger, dTriggerEl, changeVisible, triggerRef]);
+  }, [asyncCapture, handleTrigger, dTrigger, dVisible, disabled]);
 
   useEffect(() => {
-    const [asyncGroup, asyncId] = asyncCapture.createGroup();
+    if (!disabled && dVisible && dEscClosable) {
+      const [asyncGroup, asyncId] = asyncCapture.createGroup();
 
-    if (dVisible && dTrigger === 'click') {
-      asyncGroup.fromEvent(window, 'click', { capture: true }).subscribe({
-        next: () => {
-          dataRef.current.clearTid = asyncCapture.setTimeout(() => {
-            flushSync(() => changeVisible(false));
-          }, 20);
-        },
-      });
-    }
-
-    return () => {
-      asyncCapture.deleteGroup(asyncId);
-    };
-  }, [asyncCapture, dTrigger, dVisible, changeVisible]);
-
-  useEffect(() => {
-    const [asyncGroup, asyncId] = asyncCapture.createGroup();
-
-    if (dVisible && dEscClosable) {
       asyncGroup
         .fromEvent<KeyboardEvent>(window, 'keydown')
         .pipe(filter((e) => e.code === 'Escape'))
         .subscribe({
           next: () => {
-            flushSync(() => changeVisible(false));
+            handleTrigger(false);
           },
         });
+
+      return () => {
+        asyncCapture.deleteGroup(asyncId);
+      };
     }
+  }, [asyncCapture, handleTrigger, dEscClosable, dVisible, disabled]);
 
-    return () => {
-      asyncCapture.deleteGroup(asyncId);
-    };
-  }, [asyncCapture, dEscClosable, dVisible, changeVisible]);
-
+  useContentScrollViewChange(!disabled && dVisible ? onUpdate : undefined);
   useEffect(() => {
-    const [asyncGroup, asyncId] = asyncCapture.createGroup();
-    if (popupRendered) {
+    if (!disabled && dVisible) {
+      const [asyncGroup, asyncId] = asyncCapture.createGroup();
+
+      const triggerEl = document.querySelector(`[data-popup-triggerid="${uniqueId}"]`) as HTMLElement | null;
+      if (triggerEl) {
+        asyncGroup.onResize(triggerEl, () => {
+          onUpdate?.();
+        });
+      }
+
+      const popupEl = document.querySelector(`[data-popup-popupid="${uniqueId}"]`) as HTMLElement | null;
       if (popupEl) {
-        asyncGroup.onResize(popupEl, updatePosition);
-      }
-      if (triggerRef.current) {
-        asyncGroup.onResize(triggerRef.current, updatePosition);
-      }
-      if (!isFixed && rootContentRef.current) {
-        asyncGroup.onResize(rootContentRef.current, updatePosition);
+        asyncGroup.onResize(popupEl, () => {
+          onUpdate?.();
+        });
       }
 
-      asyncGroup.onGlobalScroll(updatePosition, () => {
-        if (triggerRef.current) {
-          const { top, left } = triggerRef.current.getBoundingClientRect();
-
-          const skip = dataRef.current.triggerRect?.top === top && dataRef.current.triggerRect?.left === left;
-          dataRef.current.triggerRect = { top, left };
-          return skip;
-        }
-
-        return false;
+      asyncGroup.onGlobalScroll(() => {
+        onUpdate?.();
       });
-    }
-    return () => {
-      asyncCapture.deleteGroup(asyncId);
-    };
-  }, [asyncCapture, isFixed, popupEl, popupRendered, rootContentRef, triggerRef, updatePosition]);
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      el: popupEl,
-      triggerEl: triggerRef.current,
-      updatePosition,
-    }),
-    [popupEl, triggerRef, updatePosition]
-  );
+      return () => {
+        asyncCapture.deleteGroup(asyncId);
+      };
+    }
+  }, [asyncCapture, disabled, dVisible, onUpdate, uniqueId]);
 
-  const triggerRenderProps = useMemo<DTriggerRenderProps>(() => {
-    const triggerRenderProps: DTriggerRenderProps = { [`data-${dPrefix}popup-trigger`]: uniqueId };
-    if (dTrigger === 'hover') {
-      triggerRenderProps.onMouseEnter = () => {
-        dataRef.current.clearTid && dataRef.current.clearTid();
-        dataRef.current.clearTid = asyncCapture.setTimeout(() => {
-          dataRef.current.clearTid = null;
-          changeVisible(true);
-        }, dMouseEnterDelay);
-      };
-      triggerRenderProps.onMouseLeave = () => {
-        dataRef.current.clearTid && dataRef.current.clearTid();
-        dataRef.current.clearTid = asyncCapture.setTimeout(() => {
-          dataRef.current.clearTid = null;
-          if (checkMouseLeave()) {
-            changeVisible(false);
-          } else {
-            dataRef.current.hasCancelLeave = true;
-          }
-        }, dMouseLeaveDelay);
-      };
-    }
-    if (dTrigger === 'focus') {
-      triggerRenderProps.onFocus = () => {
-        dataRef.current.clearTid && dataRef.current.clearTid();
-        changeVisible(true);
-      };
-      triggerRenderProps.onBlur = () => {
-        dataRef.current.clearTid = asyncCapture.setTimeout(() => changeVisible(false), 20);
-      };
-    }
-    if (dTrigger === 'click') {
-      triggerRenderProps.onClick = () => {
-        dataRef.current.clearTid && dataRef.current.clearTid();
-        changeVisible();
-      };
-    }
+  const childProps: DPopupRenderProps = { 'data-popup-triggerid': uniqueId };
+  if (!disabled) {
+    switch (dTrigger) {
+      case 'hover':
+        childProps.pOnMouseEnter = () => {
+          handleTrigger(true, 'hover');
+        };
+        childProps.pOnMouseLeave = () => {
+          handleTrigger(false, 'hover');
+        };
+        break;
 
-    return triggerRenderProps;
-  }, [asyncCapture, checkMouseLeave, dMouseEnterDelay, dMouseLeaveDelay, dPrefix, dTrigger, uniqueId, changeVisible]);
+      case 'focus':
+        childProps.pOnFocus = () => {
+          handleTrigger(true);
+        };
+        childProps.pOnBlur = () => {
+          handleTrigger(false);
+        };
+        break;
+
+      case 'click':
+        childProps.pOnClick = () => {
+          clickOut.current = false;
+          handleTrigger();
+        };
+        break;
+
+      default:
+        break;
+    }
+  }
+  const child = children(childProps);
+
+  const popupProps: DPopupPopupRenderProps = { 'data-popup-popupid': uniqueId };
+  if (!disabled && dVisible) {
+    switch (dTrigger) {
+      case 'hover':
+        popupProps.pOnMouseEnter = () => {
+          handleTrigger(true, 'popup-hover');
+        };
+        popupProps.pOnMouseLeave = () => {
+          handleTrigger(false, 'popup-hover');
+        };
+        break;
+
+      case 'click':
+        popupProps.pOnClick = () => {
+          clickOut.current = false;
+        };
+        break;
+
+      default:
+        break;
+    }
+  }
+  const popupNode = dPopup(popupProps);
 
   return (
     <>
-      {dTriggerRender?.(triggerRenderProps)}
-      {!(dDestroy && hidden) &&
-        dPopupContent &&
-        containerRef.current &&
-        ReactDOM.createPortal(
-          <div
-            {...restProps}
-            ref={popupRef}
-            className={getClassName(className, `${dPrefix}popup`, `${dPrefix}popup--` + placement)}
-            style={mergeStyle(
-              {
-                ...popupPositionStyle,
-                display: hidden ? 'none' : undefined,
-                zIndex,
-              },
-              style
-            )}
-            tabIndex={-1}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onClick={handleClick}
-          >
-            {dArrow && (
-              <div
-                className={getClassName(`${dPrefix}popup__arrow`, {
-                  [`${dPrefix}popup__arrow--custom`]: arrowPosition,
-                })}
-                style={arrowPosition}
-              ></div>
-            )}
-            {dPopupContent}
-          </div>,
-          containerRef.current
-        )}
+      {child}
+      {!disabled && dContainer && ReactDOM.createPortal(popupNode, dContainer)}
     </>
   );
-};
-
-export const DPopup = React.forwardRef(Popup);
+}

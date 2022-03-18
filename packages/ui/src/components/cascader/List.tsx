@@ -1,250 +1,248 @@
+import type { DId } from '../../types';
+import type { DVirtualScrollRef } from '../_virtual-scroll';
 import type { AbstractTreeNode, MultipleTreeNode, SingleTreeNode } from '../tree';
-import type { DCascaderContextData, DCascaderOption } from './Cascader';
+import type { DCascaderOption } from './Cascader';
+import type { Subject } from 'rxjs';
 
-import { useCallback, useEffect, useMemo, useContext } from 'react';
+import { isUndefined } from 'lodash';
+import { useEffect, useRef } from 'react';
 
-import { usePrefixConfig, useAsync, useTranslation } from '../../hooks';
+import { usePrefixConfig, useTranslation, useEventCallback } from '../../hooks';
+import { LoadingOutlined, RightOutlined } from '../../icons';
 import { getClassName } from '../../utils';
 import { DVirtualScroll } from '../_virtual-scroll';
 import { DCheckbox } from '../checkbox';
-import { DIcon } from '../icon';
-import { DCascaderContext } from './Cascader';
-import { ID_SEPARATOR } from './utils';
 
-export interface DListProps<T> {
-  dList: AbstractTreeNode<T, DCascaderOption<T>>[];
+export interface DListProps<ID extends DId, T> {
+  listId?: string;
+  getOptionId: (value: ID) => string;
+  dNodes: AbstractTreeNode<ID, T>[];
+  dSelected: ID | null | ID[];
+  dFocusNode: AbstractTreeNode<ID, T> | undefined;
+  dCustomOption?: (option: T) => React.ReactNode;
+  dMultiple: boolean;
+  dOnlyLeafSelectable?: boolean;
+  dFocusVisible: boolean;
+  dRoot: boolean;
+  onSelectedChange: (value: ID | null | ID[]) => void;
+  onClose: () => void;
+  onFocusChange: (option: AbstractTreeNode<ID, T>) => void;
+  onKeyDown$: Subject<React.KeyboardEvent<HTMLInputElement>>;
 }
 
-export function DList<T>(props: DListProps<T>) {
-  const { dList } = props;
+export function DList<ID extends DId, T extends DCascaderOption<ID>>(props: DListProps<ID, T>): JSX.Element | null {
+  const {
+    listId,
+    getOptionId,
+    dNodes,
+    dSelected,
+    dFocusNode,
+    dCustomOption,
+    dMultiple,
+    dOnlyLeafSelectable,
+    dFocusVisible,
+    dRoot,
+    onSelectedChange,
+    onClose,
+    onFocusChange,
+    onKeyDown$,
+  } = props;
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const {
-    cascaderSelecteds,
-    cascaderFocusValues,
-    cascaderUniqueId,
-    cascaderRendered,
-    cascaderMultiple,
-    cascaderOnlyLeafSelectable,
-    cascaderOptionRender,
-    cascaderGetId,
-    onModelChange,
-    onFocusValuesChange,
-    onClose,
-  } = useContext(DCascaderContext) as DCascaderContextData<T>;
+  //#endregion
+
+  //#region Ref
+  const dVSRef = useRef<DVirtualScrollRef<AbstractTreeNode<ID, T>>>(null);
   //#endregion
 
   const [t] = useTranslation('Common');
-  const asyncCapture = useAsync();
 
-  const canSelectOption = useCallback((option: AbstractTreeNode<T, DCascaderOption<T>>) => option.enabled, []);
-  const compareOption = useCallback((a: AbstractTreeNode<T, DCascaderOption<T>>, b: AbstractTreeNode<T, DCascaderOption<T>>) => {
-    return a.id.join(ID_SEPARATOR) === b.id.join(ID_SEPARATOR);
-  }, []);
-
-  const [focusOption, focusIndex] = useMemo(() => {
-    let focusOption: AbstractTreeNode<T, DCascaderOption<T>> | null = null;
-    const ids = cascaderFocusValues.map((v) => cascaderGetId(v));
-    const focusIndex = dList.findIndex((item) => item.id.every((id, index) => id === ids[index]));
-    if (focusIndex !== -1 && dList[0].value.length === cascaderFocusValues.length) {
-      focusOption = dList[focusIndex];
-    }
-    return [focusOption, focusIndex];
-  }, [cascaderFocusValues, cascaderGetId, dList]);
-  const focusIds = focusOption ? focusOption.id : null;
-
-  const handleOptionClick = useCallback(
-    (option: AbstractTreeNode<T, DCascaderOption<T>>, isSwitch?: boolean) => {
-      if (canSelectOption(option)) {
-        if (cascaderMultiple) {
-          isSwitch = isSwitch ?? true;
-
-          const checkeds = (option as MultipleTreeNode<T, DCascaderOption<T>>).changeStatus(
-            isSwitch ? (option.checked ? 'UNCHECKED' : 'CHECKED') : 'CHECKED',
-            cascaderSelecteds as T[][]
-          );
-          onModelChange(checkeds);
-        } else {
-          if (cascaderOnlyLeafSelectable) {
-            if (option.isLeaf) {
-              const checkeds = (option as SingleTreeNode<T, DCascaderOption<T>>).setChecked();
-              onModelChange(checkeds);
-            }
-          } else {
-            const checkeds = (option as SingleTreeNode<T, DCascaderOption<T>>).setChecked();
-            onModelChange(checkeds);
-          }
-          if (option.isLeaf) {
-            onClose();
+  const isFocus = dFocusNode && dNodes.findIndex((node) => node.id === dFocusNode.id) !== -1;
+  const inFocusNode = (() => {
+    if (dFocusNode) {
+      for (const node of dNodes) {
+        if (dFocusNode.id === node.id) {
+          return node;
+        }
+        let _node = dFocusNode;
+        while (_node.parent) {
+          _node = _node.parent;
+          if (_node.id === node.id) {
+            return node;
           }
         }
       }
-    },
-    [canSelectOption, cascaderMultiple, cascaderOnlyLeafSelectable, cascaderSelecteds, onClose, onModelChange]
-  );
+    }
+  })();
 
-  const changeFocus = useCallback(
-    (option: AbstractTreeNode<T, DCascaderOption<T>> | null) => {
-      if (option) {
-        onFocusValuesChange(option.value);
-      } else {
-        onFocusValuesChange([]);
+  const changeSelectByClick = useEventCallback((option: AbstractTreeNode<ID, T>, isSwitch?: boolean) => {
+    if (dMultiple) {
+      isSwitch = isSwitch ?? true;
+
+      const checkeds = (option as MultipleTreeNode<ID, T>).changeStatus(
+        isSwitch ? (option.checked ? 'UNCHECKED' : 'CHECKED') : 'CHECKED',
+        dSelected as ID[]
+      );
+      onSelectedChange(checkeds);
+    } else {
+      if (!dOnlyLeafSelectable || option.isLeaf) {
+        (option as SingleTreeNode<ID, T>).setChecked();
+        onSelectedChange(option.id);
       }
-    },
-    [onFocusValuesChange]
-  );
+      if (option.isLeaf) {
+        onClose();
+      }
+    }
+  });
+
+  const shouldInitFocus = dRoot && isUndefined(dFocusNode);
+  const handleKeyDown = useEventCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    const focusNode = (option: AbstractTreeNode<ID, T> | undefined) => {
+      if (option) {
+        onFocusChange(option);
+      }
+    };
+    if (isFocus && inFocusNode) {
+      switch (e.code) {
+        case 'Enter':
+          e.preventDefault();
+          changeSelectByClick(inFocusNode, false);
+          break;
+
+        case 'Space':
+          e.preventDefault();
+          changeSelectByClick(inFocusNode, dMultiple);
+          break;
+
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (inFocusNode.parent) {
+            onFocusChange(inFocusNode.parent);
+          }
+          break;
+
+        case 'ArrowRight':
+          e.preventDefault();
+          if (inFocusNode.children && inFocusNode.children[0]) {
+            onFocusChange(inFocusNode.children[0]);
+          }
+          break;
+
+        case 'ArrowUp':
+          e.preventDefault();
+          focusNode(dVSRef.current?.scrollByStep(-1));
+          break;
+
+        case 'ArrowDown':
+          e.preventDefault();
+          focusNode(dVSRef.current?.scrollByStep(1));
+          break;
+
+        case 'Home':
+          e.preventDefault();
+          focusNode(dVSRef.current?.scrollToStart());
+          break;
+
+        case 'End':
+          e.preventDefault();
+          focusNode(dVSRef.current?.scrollToEnd());
+          break;
+
+        default:
+          break;
+      }
+    } else if (shouldInitFocus) {
+      if (e.code === 'ArrowDown') {
+        e.preventDefault();
+        focusNode(dVSRef.current?.scrollToStart());
+      }
+    }
+  });
 
   useEffect(() => {
-    const [asyncGroup, asyncId] = asyncCapture.createGroup();
-
-    if (cascaderRendered && focusOption) {
-      asyncGroup.fromEvent<KeyboardEvent>(window, 'keydown').subscribe({
+    if (isFocus || shouldInitFocus) {
+      const ob = onKeyDown$.subscribe({
         next: (e) => {
-          switch (e.code) {
-            case 'ArrowLeft':
-              e.preventDefault();
-              if (cascaderFocusValues.length > 1) {
-                onFocusValuesChange(cascaderFocusValues.slice(0, -1));
-              }
-              break;
-
-            case 'ArrowRight':
-              e.preventDefault();
-              if (focusOption.children && focusOption.children[0]) {
-                onFocusValuesChange(focusOption.children[0].value);
-              }
-              break;
-
-            case 'Enter':
-              e.preventDefault();
-              handleOptionClick(focusOption, false);
-              break;
-
-            case 'Space':
-              e.preventDefault();
-              if (cascaderMultiple) {
-                handleOptionClick(focusOption, true);
-              }
-              break;
-
-            default:
-              break;
-          }
+          handleKeyDown(e);
         },
       });
+
+      return () => {
+        ob.unsubscribe();
+      };
     }
-
-    return () => {
-      asyncCapture.deleteGroup(asyncId);
-    };
-  }, [asyncCapture, cascaderFocusValues, cascaderMultiple, cascaderRendered, focusOption, handleOptionClick, onFocusValuesChange]);
-
-  const itemRender = useCallback(
-    (item: AbstractTreeNode<T, DCascaderOption<T>>, renderProps) => {
-      const optionIds = item.id;
-      const id = optionIds.join(ID_SEPARATOR);
-      let isFocus = false;
-      if (cascaderFocusValues.length > 0) {
-        isFocus = optionIds.every((id, index) => cascaderFocusValues[index] && id === cascaderGetId(cascaderFocusValues[index]));
-      }
-
-      return (
-        <li
-          {...renderProps}
-          key={id}
-          id={`${dPrefix}cascader-${cascaderUniqueId}-option-${id}`}
-          className={getClassName(`${dPrefix}select__option`, {
-            'is-selected': !cascaderMultiple && item.checked,
-            'is-focus': isFocus,
-            'is-disabled': item.disabled,
-            'is-loading': item.node['dLoading'],
-          })}
-          role="option"
-          title={item.node.dLabel}
-          aria-selected={item.checked}
-          aria-disabled={item.disabled}
-          onClick={
-            item.disabled
-              ? undefined
-              : () => {
-                  changeFocus(item);
-                  if (cascaderMultiple) {
-                    if (item.isLeaf) {
-                      handleOptionClick(item);
-                    }
-                  } else {
-                    handleOptionClick(item);
-                  }
-                }
-          }
-        >
-          {cascaderMultiple && (
-            <DCheckbox
-              dModel={[item.checked]}
-              dIndeterminate={item.indeterminate}
-              dDisabled={item.disabled}
-              onClick={(e) => {
-                e.stopPropagation();
-                changeFocus(item);
-                handleOptionClick(item);
-              }}
-            ></DCheckbox>
-          )}
-          <span className={`${dPrefix}select__option-content`}>{cascaderOptionRender(item.node)}</span>
-          {!item.isLeaf && (
-            <div className={`${dPrefix}cascader-list__icon`}>
-              {item.node['dLoading'] ? (
-                <DIcon viewBox="0 0 1024 1024" dSpin>
-                  <path d="M988 548c-19.9 0-36-16.1-36-36 0-59.4-11.6-117-34.6-171.3a440.45 440.45 0 00-94.3-139.9 437.71 437.71 0 00-139.9-94.3C629 83.6 571.4 72 512 72c-19.9 0-36-16.1-36-36s16.1-36 36-36c69.1 0 136.2 13.5 199.3 40.3C772.3 66 827 103 874 150c47 47 83.9 101.8 109.7 162.7 26.7 63.1 40.2 130.2 40.2 199.3.1 19.9-16 36-35.9 36z"></path>
-                </DIcon>
-              ) : (
-                <DIcon viewBox="64 64 896 896">
-                  <path d="M765.7 486.8L314.9 134.7A7.97 7.97 0 00302 141v77.3c0 4.9 2.3 9.6 6.1 12.6l360 281.1-360 281.1c-3.9 3-6.1 7.7-6.1 12.6V883c0 6.7 7.7 10.4 12.9 6.3l450.8-352.1a31.96 31.96 0 000-50.4z"></path>
-                </DIcon>
-              )}
-            </div>
-          )}
-        </li>
-      );
-    },
-    [cascaderFocusValues, cascaderGetId, cascaderMultiple, cascaderOptionRender, cascaderUniqueId, changeFocus, dPrefix, handleOptionClick]
-  );
-
-  const childrenList = useMemo(() => {
-    if (focusIndex !== -1) {
-      const node = dList[focusIndex];
-      if (!node.node['dLoading'] && node.children) {
-        return <DList dList={node.children}></DList>;
-      }
-    }
-  }, [dList, focusIndex]);
+  }, [handleKeyDown, isFocus, onKeyDown$, shouldInitFocus]);
 
   return (
     <>
       <DVirtualScroll
-        className={getClassName(`${dPrefix}select__list`, `${dPrefix}cascader-list`)}
+        ref={dVSRef}
+        id={listId}
+        className={`${dPrefix}cascader-list`}
         role="listbox"
-        aria-multiselectable={cascaderMultiple}
-        aria-activedescendant={focusIds ? `${dPrefix}cascader-${cascaderUniqueId}-option-${focusIds.join(ID_SEPARATOR)}` : undefined}
-        dFocusOption={focusOption}
-        dHasSelected={!!focusOption}
-        dRendered={cascaderRendered}
-        dList={dList}
-        dCanSelectOption={canSelectOption}
-        dCompareOption={compareOption}
-        dItemRender={itemRender}
+        aria-multiselectable={dMultiple}
+        aria-activedescendant={dRoot && dFocusNode ? getOptionId(dFocusNode.id) : undefined}
+        dList={dNodes}
+        dItemRender={(item, index, renderProps) => {
+          return (
+            <li
+              {...renderProps}
+              key={item.id}
+              id={getOptionId(item.id)}
+              className={getClassName(`${dPrefix}cascader-list__option`, {
+                'is-focus': item.id === inFocusNode?.id,
+                'is-selected': !dMultiple && item.checked,
+                'is-disabled': item.disabled,
+              })}
+              title={item.origin.label}
+              role="option"
+              aria-selected={item.checked}
+              aria-disabled={item.disabled}
+              onClick={() => {
+                onFocusChange(item);
+                if (!dMultiple || item.isLeaf) {
+                  changeSelectByClick(item);
+                }
+              }}
+            >
+              {dFocusVisible && item.id === dFocusNode?.id && <div className={`${dPrefix}focus-outline`}></div>}
+              {dMultiple && (
+                <DCheckbox
+                  disabled={item.disabled}
+                  dModel={[item.checked]}
+                  dIndeterminate={item.indeterminate}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onFocusChange(item);
+                    changeSelectByClick(item);
+                  }}
+                ></DCheckbox>
+              )}
+              <div className={`${dPrefix}cascader-list__option-content`}>
+                {dCustomOption ? dCustomOption(item.origin) : item.origin.label}
+              </div>
+              {!item.isLeaf && (
+                <div className={`${dPrefix}cascader-list__icon`}>{item.origin.loading ? <LoadingOutlined dSpin /> : <RightOutlined />}</div>
+              )}
+            </li>
+          );
+        }}
+        dGetSize={() => 32}
+        dCompareItem={(a, b) => a.id === b.id}
+        dCanFocus={(item) => item.enabled}
+        dFocusItem={inFocusNode}
+        dSize={264}
+        dPadding={4}
         dEmpty={
-          <li key={`${dPrefix}cascader-empty`} className={`${dPrefix}select__empty`}>
-            <span className={`${dPrefix}select__option-content`}>{t('No Data')}</span>
+          <li className={`${dPrefix}cascader-list__empty`}>
+            <div className={`${dPrefix}cascader-list__option-content`}>{t('No Data')}</div>
           </li>
         }
-        dSize={264}
-        dItemSize={32}
-        dPaddingSize={4}
-        onFocusChange={changeFocus}
-      ></DVirtualScroll>
-      {childrenList}
+      />
+      {inFocusNode && !inFocusNode.origin.loading && inFocusNode.children && (
+        <DList {...props} listId={undefined} dNodes={inFocusNode.children} dRoot={false}></DList>
+      )}
     </>
   );
 }
