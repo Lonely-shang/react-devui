@@ -1,20 +1,21 @@
-import type { DId, DNestedChildren } from '../../types';
-import type { DDropdownOption } from './Dropdown';
+import type { DId } from '../../utils/types';
+import type { DDropdownItem } from './Dropdown';
 
-export function checkEnableOption<ID extends DId, T extends DDropdownOption<ID>>(option: DNestedChildren<T>) {
-  return (option.type === 'item' || option.type === 'sub') && !option.disabled;
+export function checkEnableItem<ID extends DId, T extends DDropdownItem<ID>>(item: T) {
+  return (item.type === 'item' || item.type === 'sub') && !item.disabled;
 }
 
-export function getOptions<ID extends DId, T extends DDropdownOption<ID>>(arr: DNestedChildren<T>[], _options?: DNestedChildren<T>[]) {
-  const options = _options ?? [];
-  arr.forEach((o) => {
-    if (o.type === 'group') {
-      if (o.children) {
-        getOptions(o.children, options);
+export function getSameLevelEnableItems<ID extends DId, T extends DDropdownItem<ID>>(arr: T[]) {
+  const items: T[] = [];
+  const reduceArr = (arr: T[]) => {
+    for (const item of arr) {
+      if (item.type === 'group' && item.children) {
+        reduceArr(item.children as T[]);
+      } else if (checkEnableItem(item)) {
+        items.push(item);
       }
-    } else if (checkEnableOption(o)) {
-      options.push(o);
     }
-  });
-  return options;
+  };
+  reduceArr(arr);
+  return items;
 }

@@ -1,23 +1,39 @@
 ---
 group: Data Entry
 title: Switch
+aria: switch
 ---
 
 ## API
 
 ### DSwitchProps
 
-Extend `React.HTMLAttributes<HTMLElement>`.
+```tsx
+interface DSwitchProps extends React.HTMLAttributes<HTMLElement> {
+  dRef?: {
+    input?: React.ForwardedRef<HTMLInputElement>;
+  };
+  dFormControl?: DFormControl;
+  dModel?: boolean;
+  dLabelPlacement?: 'left' | 'right';
+  dStateContent?: [React.ReactNode, React.ReactNode];
+  dDisabled?: boolean;
+  dLoading?: boolean;
+  dInputRender?: DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>;
+  onModelChange?: (checked: boolean) => void;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dModel | Manually control on/off status | [boolean, Updater\<boolean\>?] | - |
-| dLabelPlacement | Label placement | 'left' \| 'right' | 'right' |
-| dStateContent | Status content | [React.ReactNode, React.ReactNode] | - |
-| dLoading | Loading | boolean | false |
-| disabled | Whether to disable | boolean | false |
-| dInputProps | Attributes applied to the `input` element | React.InputHTMLAttributes\<HTMLInputElement\>  | - |
-| dInputRef | Pass a `ref` to the `input` element | React.Ref\<HTMLInputElement\>  | - |
-| onModelChange | Callback for on/off status change | `(checked: boolean) => void` | - |
+| dRef | pass ref | - | |
+| dFormControl | Support Forms | - | |
+| dModel | switch state, controlled, default `''` | - | |
+| dLabelPlacement | label placement | `'right'` | |
+| dStateContent | Set the display content of different states | - | |
+| dDisabled | Whether to disable | `false` | |
+| dLoading | Loading state | `false` | |
+| dInputRender | custom input element | - | |
+| onModelChange | Callback for switch state change | - | |
 <!-- prettier-ignore-end -->

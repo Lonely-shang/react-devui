@@ -1,20 +1,21 @@
-import type { DId, DNestedChildren } from '../../types';
-import type { DMenuOption } from './Menu';
+import type { DId } from '../../utils/types';
+import type { DMenuItem } from './Menu';
 
-export function checkEnableOption<ID extends DId, T extends DMenuOption<ID>>(option: DNestedChildren<T>) {
-  return (option.type === 'item' || option.type === 'sub') && !option.disabled;
+export function checkEnableItem<ID extends DId, T extends DMenuItem<ID>>(item: T) {
+  return (item.type === 'item' || item.type === 'sub') && !item.disabled;
 }
 
-export function getOptions<ID extends DId, T extends DMenuOption<ID>>(arr: DNestedChildren<T>[], _options?: DNestedChildren<T>[]) {
-  const options = _options ?? [];
-  arr.forEach((o) => {
-    if (o.type === 'group') {
-      if (o.children) {
-        getOptions(o.children, options);
+export function getSameLevelEnableItems<ID extends DId, T extends DMenuItem<ID>>(arr: T[]) {
+  const items: T[] = [];
+  const reduceArr = (arr: T[]) => {
+    for (const item of arr) {
+      if (item.type === 'group' && item.children) {
+        reduceArr(item.children as T[]);
+      } else if (checkEnableItem(item)) {
+        items.push(item);
       }
-    } else if (checkEnableOption(o)) {
-      options.push(o);
     }
-  });
-  return options;
+  };
+  reduceArr(arr);
+  return items;
 }

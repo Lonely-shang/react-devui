@@ -1,0 +1,131 @@
+@import 'size';
+@import 'overwrite';
+
+@mixin component-date-input {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: var(--#{$rd-prefix}size);
+  padding: 0 calc(var(--#{$rd-prefix}horizontal-space-size) - 1px);
+  vertical-align: top;
+  cursor: pointer;
+  background-color: var(--#{$rd-prefix}background-color-input);
+  border: 1px solid var(--#{$rd-prefix}color-border);
+  border-radius: var(--#{$rd-prefix}border-radius);
+  transition: border-color var(--#{$rd-prefix}animation-duration-base) linear;
+
+  &:hover {
+    border-color: var(--#{$rd-prefix}color-primary-lighter);
+  }
+
+  &[data-form-invalid-warning='true'] {
+    border-color: var(--#{$rd-prefix}color-warning) !important;
+
+    .#{$B}__input {
+      caret-color: var(--#{$rd-prefix}color-warning) !important;
+    }
+
+    .#{$B}__indicator {
+      background-color: var(--#{$rd-prefix}color-warning) !important;
+    }
+  }
+
+  &[data-form-invalid-error='true'] {
+    border-color: var(--#{$rd-prefix}color-danger) !important;
+
+    .#{$B}__input {
+      caret-color: var(--#{$rd-prefix}color-danger) !important;
+    }
+
+    .#{$B}__indicator {
+      background-color: var(--#{$rd-prefix}color-danger) !important;
+    }
+  }
+
+  @include component-size;
+
+  @include when(focus) {
+    border-color: var(--#{$rd-prefix}color-primary-lighter);
+  }
+
+  @include when(disabled) {
+    color: var(--#{$rd-prefix}color-disabled);
+    pointer-events: none;
+    background-color: var(--#{$rd-prefix}background-color-disabled);
+
+    @include e(input) {
+      color: var(--#{$rd-prefix}color-disabled);
+    }
+
+    @include e(icon) {
+      color: var(--#{$rd-prefix}color-disabled);
+    }
+  }
+
+  @include e(input) {
+    @include utils-input;
+
+    flex: 1 0 0;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    color: var(--#{$rd-prefix}text-color);
+    background-color: transparent;
+    border: none;
+
+    &::placeholder {
+      color: $rd-placeholder-color;
+    }
+
+    &:disabled::placeholder {
+      color: $rd-placeholder-disabled-color;
+    }
+  }
+
+  @include e(clear) {
+    position: absolute;
+    right: calc(var(--#{$rd-prefix}horizontal-space-size) - 1px);
+    z-index: 1;
+    font-size: 0.9em;
+    color: var(--#{$rd-prefix}color-icon-decorator);
+    transition: color var(--#{$rd-prefix}animation-duration-base) linear;
+
+    &:hover,
+    &:focus {
+      color: var(--#{$rd-prefix}color-primary-lighter);
+    }
+
+    &:active {
+      color: var(--#{$rd-prefix}color-primary-darker);
+    }
+  }
+
+  @include e(icon) {
+    flex-shrink: 0;
+    margin-left: 4px;
+    font-size: 0.9em;
+    color: var(--#{$rd-prefix}color-icon-decorator);
+  }
+
+  @include e(separator) {
+    @include overwrite-component(icon) {
+      flex-shrink: 0;
+      margin: 0 8px;
+      color: var(--#{$rd-prefix}color-icon-decorator);
+    }
+  }
+
+  @include e(indicator) {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    width: 0;
+    height: 2px;
+    pointer-events: none;
+    background-color: var(--#{$rd-prefix}color-primary);
+    opacity: 0;
+    transition: left var(--#{$rd-prefix}animation-duration-slow) linear, opacity var(--#{$rd-prefix}animation-duration-base) linear,
+      width var(--#{$rd-prefix}animation-duration-base) linear;
+  }
+}

@@ -4,7 +4,7 @@ const fs = require('fs');
 
 const message = process.env['HUSKY_GIT_PARAMS'];
 const types = ['feat', 'fix', 'chore', 'docs', 'style', 'refactor', 'perf', 'test'];
-const scopes = ['site', 'ui'];
+const scopes = ['hooks', 'icons', 'platform', 'site', 'ui', 'utils', 'vscode-extension'];
 
 function parseMessage(message) {
   const PATTERN = /^(\w*)(?:\((.*)\))?!?: (.*)$/;
@@ -19,12 +19,12 @@ function parseMessage(message) {
 }
 
 function getScopesRule() {
-  const messages = fs.readFileSync(message, { encoding: 'utf-8' });
+  const messages = fs.readFileSync(message, { encoding: 'utf8' });
   const parsed = parseMessage(messages.split('\n')[0]);
   if (parsed) {
     const { scope } = parsed;
     if (scope) {
-      return [2, 'always', scope.startsWith('site:') || scope.startsWith('ui:') ? [] : scopes];
+      return [2, 'always', scopes];
     }
   }
   return [2, 'always', []];

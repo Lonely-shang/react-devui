@@ -1,25 +1,31 @@
-import type { DUpdater } from '../../hooks/common/useTwoWayBinding';
 import type { DFormControl } from '../form';
 
 import { isFunction, isNumber, isUndefined } from 'lodash';
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 
-import { usePrefixConfig, useComponentConfig, useTwoWayBinding, useGeneralState, useForkRef } from '../../hooks';
-import { registerComponentMate, getClassName, mergeAriaDescribedby } from '../../utils';
+import { useForkRef, useIsomorphicLayoutEffect } from '@react-devui/hooks';
+import { getClassName } from '@react-devui/utils';
+
+import { useGeneralContext, useDValue } from '../../hooks';
+import { registerComponentMate } from '../../utils';
+import { DBaseDesign } from '../_base-design';
+import { DBaseInput } from '../_base-input';
+import { useFormControl } from '../form';
+import { useComponentConfig, usePrefixConfig } from '../root';
 
 export type DTextareaRef = HTMLTextAreaElement;
 
-export interface DTextareaProps extends React.InputHTMLAttributes<HTMLTextAreaElement> {
+export interface DTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   dFormControl?: DFormControl;
-  dModel?: [string, DUpdater<string>?];
+  dModel?: string;
   dRows?: 'auto' | { minRows?: number; maxRows?: number };
   dResizable?: boolean;
   dShowCount?: boolean | ((num: number) => React.ReactNode);
   onModelChange?: (value: string) => void;
 }
 
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DTextarea' });
-function Textarea(props: DTextareaProps, ref: React.ForwardedRef<DTextareaRef>) {
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DTextarea' as const });
+function Textarea(props: DTextareaProps, ref: React.ForwardedRef<DTextareaRef>): JSX.Element | null {
   const {
     dFormControl,
     dModel,
@@ -28,33 +34,25 @@ function Textarea(props: DTextareaProps, ref: React.ForwardedRef<DTextareaRef>) 
     dShowCount = false,
     onModelChange,
 
-    id,
-    className,
-    style,
-    maxLength,
-    disabled: _disabled,
-    onChange,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const { gSize } = useGeneralState();
+  const { gSize } = useGeneralContext();
   //#endregion
 
   //#region Ref
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  //#endregion
-
   const combineTextareaRef = useForkRef(textareaRef, ref);
+  //#endregion
 
   const lineHeight = gSize === 'larger' ? 28 : gSize === 'smaller' ? 20 : 24;
 
-  const [value, changeValue] = useTwoWayBinding<string>('', dModel, onModelChange, {
-    formControl: dFormControl?.control,
-  });
+  const formControlInject = useFormControl(dFormControl);
+  const [value, changeValue] = useDValue<string>('', dModel, onModelChange, undefined, formControlInject);
 
-  const disabled = _disabled || dFormControl?.disabled;
+  const disabled = restProps.disabled || dFormControl?.control.disabled;
 
   const resizable = dResizable && isUndefined(dRows);
 
@@ -68,7 +66,7 @@ function Textarea(props: DTextareaProps, ref: React.ForwardedRef<DTextareaRef>) 
   };
 
   const [rowNum, setRowNum] = useState(1);
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     getRowNum();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -76,7 +74,7 @@ function Textarea(props: DTextareaProps, ref: React.ForwardedRef<DTextareaRef>) 
   const heightStyle = (() => {
     let overflow: 'hidden' | undefined;
     let height: number | undefined;
-    let minHeight: number | undefined;
+    let minHeight: number = lineHeight + 8;
     let maxHeight: number | undefined;
 
     if (!isUndefined(dRows)) {
@@ -99,35 +97,51 @@ function Textarea(props: DTextareaProps, ref: React.ForwardedRef<DTextareaRef>) 
 
   return (
     <>
-      <textarea
-        {...restProps}
-        {...dFormControl?.dataAttrs}
-        {...dFormControl?.inputAttrs}
-        id={id ?? dFormControl?.controlId}
-        ref={combineTextareaRef}
-        className={getClassName(className, `${dPrefix}textarea`, {
-          [`${dPrefix}textarea--${gSize}`]: gSize,
-        })}
-        style={{
-          ...style,
-          ...heightStyle,
-          resize: resizable ? undefined : 'none',
+      <DBaseDesign
+        dComposeDesign={false}
+        dFormDesign={{
+          control: dFormControl,
         }}
-        maxLength={maxLength}
-        value={value}
-        disabled={disabled}
-        aria-disabled={disabled}
-        aria-describedby={mergeAriaDescribedby(restProps['aria-describedby'], dFormControl?.inputAttrs?.['aria-describedby'])}
-        onChange={(e) => {
-          onChange?.(e);
+      >
+        {({ render: renderBaseDesign }) => (
+          <DBaseInput dFormControl={dFormControl} dLabelFor>
+            {({ render: renderBaseInput }) =>
+              renderBaseDesign(
+                renderBaseInput(
+                  <textarea
+                    {...restProps}
+                    ref={combineTextareaRef}
+                    className={getClassName(restProps.className, `${dPrefix}textarea`, {
+                      [`${dPrefix}textarea--${gSize}`]: gSize,
+                    })}
+                    style={{
+                      ...restProps.style,
+                      ...heightStyle,
+                      lineHeight: `${lineHeight}px`,
+                      resize: resizable ? undefined : 'none',
+                    }}
+                    value={value}
+                    disabled={disabled}
+                    onChange={(e) => {
+                      restProps.onChange?.(e);
 
-          changeValue(e.currentTarget.value);
-          getRowNum();
-        }}
-      />
+                      changeValue(e.currentTarget.value);
+                      getRowNum();
+                    }}
+                  />
+                )
+              )
+            }
+          </DBaseInput>
+        )}
+      </DBaseDesign>
       {dShowCount !== false && (
         <div className={`${dPrefix}textarea__count`}>
-          {isFunction(dShowCount) ? dShowCount(value.length) : isUndefined(maxLength) ? value.length : `${value.length} / ${maxLength}`}
+          {isFunction(dShowCount)
+            ? dShowCount(value.length)
+            : isUndefined(restProps.maxLength)
+            ? value.length
+            : `${value.length} / ${restProps.maxLength}`}
         </div>
       )}
     </>

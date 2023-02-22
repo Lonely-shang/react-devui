@@ -1,8 +1,8 @@
-import { useRef } from 'react';
+import { getClassName } from '@react-devui/utils';
 
-import { usePrefixConfig } from '../../hooks';
-import { getClassName } from '../../utils';
+import { TTANSITION_DURING_FAST } from '../../utils';
 import { DCollapseTransition } from '../_transition';
+import { usePrefixConfig } from '../root';
 
 export interface DErrorProps {
   dVisible: boolean;
@@ -11,7 +11,6 @@ export interface DErrorProps {
   onHidden: () => void;
 }
 
-const TTANSITION_DURING = 133;
 export function DError(props: DErrorProps): JSX.Element | null {
   const { dVisible, dMessage, dStatus = 'error', onHidden } = props;
 
@@ -19,31 +18,36 @@ export function DError(props: DErrorProps): JSX.Element | null {
   const dPrefix = usePrefixConfig();
   //#endregion
 
-  //#region Ref
-  const elRef = useRef<HTMLDivElement>(null);
-  //#endregion
-
   return (
     <DCollapseTransition
-      dRef={elRef}
-      dSize={0}
+      dOriginalSize={{
+        height: 'auto',
+      }}
+      dCollapsedStyle={{
+        height: 0,
+      }}
       dIn={dVisible}
-      dDuring={TTANSITION_DURING}
+      dDuring={TTANSITION_DURING_FAST}
       dStyles={{
         enter: { opacity: 0 },
-        entering: { transition: `height ${TTANSITION_DURING}ms ease-out, opacity ${TTANSITION_DURING}ms ease-out` },
-        leaving: { opacity: 0, transition: `height ${TTANSITION_DURING}ms ease-in, opacity ${TTANSITION_DURING}ms ease-in` },
+        entering: {
+          transition: ['height', 'padding', 'margin', 'opacity'].map((attr) => `${attr} ${TTANSITION_DURING_FAST}ms linear`).join(', '),
+        },
+        leaving: {
+          opacity: 0,
+          transition: ['height', 'padding', 'margin', 'opacity'].map((attr) => `${attr} ${TTANSITION_DURING_FAST}ms linear`).join(', '),
+        },
         leaved: { display: 'none' },
       }}
       dSkipFirstTransition={false}
       afterLeave={onHidden}
     >
-      {(collapseStyle) => (
+      {(collapseRef, collapseStyle) => (
         <div
-          ref={elRef}
-          className={getClassName(`${dPrefix}form-error`, {
-            [`${dPrefix}form-error--error`]: dStatus === 'error',
-            [`${dPrefix}form-error--warning`]: dStatus === 'warning',
+          ref={collapseRef}
+          className={getClassName(`${dPrefix}form__error`, {
+            [`${dPrefix}form__error--error`]: dStatus === 'error',
+            [`${dPrefix}form__error--warning`]: dStatus === 'warning',
           })}
           style={collapseStyle}
           title={dMessage}

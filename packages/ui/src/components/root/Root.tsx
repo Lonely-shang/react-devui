@@ -1,80 +1,102 @@
-import type { DConfigContextData } from '../../hooks/d-config/contex';
-import type { DElementSelector } from '../../hooks/ui/useElement';
+import type { DPartialConfigContextData } from './contex';
+import type { DIconContextData } from '@react-devui/icons/Icon';
 
-import { isUndefined } from 'lodash';
-import { useEffect, useMemo } from 'react';
-import { useState } from 'react';
-import { Subject } from 'rxjs';
-import { SVResizeObserver } from 'scrollview-resize';
+import { useContext, useMemo } from 'react';
 
-import { useElement } from '../../hooks';
-import { DConfigContext } from '../../hooks/d-config/contex';
-import { Notification } from './Notification';
-import { Toast } from './Toast';
+import { useRefExtra, useEvent } from '@react-devui/hooks';
+import { DIconContext } from '@react-devui/icons/Icon';
+import { getClassName } from '@react-devui/utils';
+
+import dayjs from '../../dayjs';
+import { DConfigContextManager } from './contex';
+import { DConfigContext } from './contex';
+import resources from './resources.json';
+
+const ROOT = new DConfigContextManager({
+  namespace: 'rd',
+  componentConfigs: {},
+  i18n: {
+    lang: 'en-US',
+    resources,
+  },
+  layout: {
+    pageScrollEl: ':root',
+  },
+  globalScroll: false,
+});
+
+export const ROOT_DATA: {
+  clickEvent?: {
+    time: number;
+    e: MouseEvent;
+  };
+} = {};
 
 export interface DRootProps {
   children: React.ReactNode;
-  dContext?: Omit<DConfigContextData, 'onScrollViewChange$'>;
-  dContentSelector?: DElementSelector;
+  context?: DPartialConfigContextData;
 }
 
 export function DRoot(props: DRootProps): JSX.Element | null {
-  const { children, dContext, dContentSelector } = props;
+  const { children, context: _context } = props;
 
-  const lang = dContext?.i18n?.lang ?? 'zh-Hant';
-  const theme = dContext?.theme;
+  const parent = useContext(DConfigContext);
 
-  const [onScrollViewChange$] = useState(() => new Subject<void>());
-  const contentEl = useElement(dContentSelector ?? null);
+  const windowRef = useRefExtra(() => window);
 
-  useEffect(() => {
-    document.body.classList.toggle('CJK', lang === 'zh-Hant');
-  }, [lang]);
-
-  useEffect(() => {
-    document.body.classList.toggle('dark', theme === 'dark');
-    if (theme === 'dark') {
-      const colorScheme = document.documentElement.style.colorScheme;
-      document.documentElement.style.colorScheme = 'dark';
-      return () => {
-        document.documentElement.style.colorScheme = colorScheme;
-      };
+  const [context, iconContext] = useMemo<[DConfigContextManager, DIconContextData]>(() => {
+    const context = new DConfigContextManager((parent ?? ROOT).mergeContext(_context ?? {}));
+    if (parent) {
+      context.setParent(parent);
     }
-  }, [theme]);
 
-  useEffect(() => {
-    if (isUndefined(dContentSelector)) {
-      const observer = new ResizeObserver(() => {
-        onScrollViewChange$.next();
-      });
-      observer.observe(document.documentElement);
-      return () => {
-        observer.disconnect();
-      };
-    } else if (contentEl) {
-      const observer = new SVResizeObserver(() => {
-        onScrollViewChange$.next();
-      });
-      observer.observe(contentEl);
-      return () => {
-        observer.disconnect();
-      };
-    }
-  }, [contentEl, dContentSelector, onScrollViewChange$]);
+    const namespace = context.namespace;
+    const iconProps = context.componentConfigs.DIcon;
 
-  const contextValue = useMemo<DConfigContextData>(
-    () => ({
-      ...dContext,
-      onScrollViewChange$,
-    }),
-    [dContext, onScrollViewChange$]
+    return [
+      context,
+      {
+        props: iconProps,
+        className: (theme) => getClassName(`${namespace}-icon`, { [`t-${theme}`]: theme }),
+        twoToneColor: (theme) => [
+          theme ? `var(--${namespace}-color-${theme})` : `var(--${namespace}-text-color)`,
+          theme ? `var(--${namespace}-background-color-${theme})` : `rgb(var(--${namespace}-text-color-rgb) / 10%)`,
+        ],
+      },
+    ];
+  }, [_context, parent]);
+
+  switch (context.i18n.lang) {
+    case 'en-US':
+      dayjs.locale('en');
+      break;
+
+    case 'zh-CN':
+      dayjs.locale('zh-cn');
+      break;
+
+    default:
+      break;
+  }
+
+  useEvent<MouseEvent>(
+    windowRef,
+    'click',
+    (e) => {
+      // Check if click by keydown.
+      if (!(e.clientX === 0 && e.clientY === 0)) {
+        ROOT_DATA.clickEvent = {
+          time: performance.now(),
+          e,
+        };
+      }
+    },
+    { capture: true }
   );
 
   return (
-    <DConfigContext.Provider value={contextValue}>
-      {children}
-      <Notification></Notification>
-      <Toast></Toast>
+    <DConfigContext.Provider value={context}>
+      {parent ? children : <DIconContext.Provider value={iconContext}>{children}</DIconContext.Provider>}
     </DConfigContext.Provider>
   );
 }

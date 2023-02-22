@@ -1,77 +1,85 @@
 ---
 group: Data Entry
 title: Select
+aria: combobox
+compose: true
+virtual-scroll: true
 ---
 
 ## API
 
-### DSelectSingleProps\<T\>
-
-Extend `DSelectBaseProps<T>`.
-
-<!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
-| --- | --- | --- | --- | 
-| dModel | Manual control options | [T \| null, Updater\<T \| null\>?] | - |
-| dMultiple | Whether to select multiple | false | false |
-| dCustomSelected | Customize selected options | `(select: DSelectBaseOption<T>) => string`  | - |
-| onModelChange | Selected change callback | `(select: T \| null) => void` | - |
-<!-- prettier-ignore-end -->
-
-### DSelectMultipleProps\<T\>
-
-Extend `DSelectBaseProps<T>`.
-
-<!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
-| --- | --- | --- | --- | 
-| dModel | Manual control options | [T[], Updater\<T[]\>?] | - |
-| dMultiple | Whether to select multiple | true | false |
-| dMaxSelectNum | Maximum number of choices | number | - |
-| dCustomSelected | Customize selected options | `(selects: Array<DSelectBaseOption<T>>) => string[]`  | - |
-| onModelChange | Selected change callback | `(selects: T[]) => void` | - |
-| onExceed | Callbacks when the number of selections exceeds the limit | `() => void` | - |
-<!-- prettier-ignore-end -->
-
-### DSelectBaseProps\<T\>
-
-Extend `Omit<DSelectBoxProps, 'dExpanded' | 'dShowClear'>`.
-
-<!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
-| --- | --- | --- | --- | 
-| dVisible | Whether to pop up a window | [boolean, Updater\<boolean\>?] | - |
-| dOptions | Options | Array\<DSelectOption\<T\>\> | - |
-| dOptionRender | Custom selection | `(option: DSelectBaseOption<T>) => React.ReactNode` | - |
-| dGetId | Get unique ID | `(value: T) => string` | `(value: unknown) => String(value)` |
-| dCreateOption | Allow creation of options | `(value: string) => DSelectBaseOption<T> \| null` | - |
-| dClearable | Can it be cleared | boolean | false |
-| dCustomSearch | Custom search | `{ filter?: (value: string, option: DSelectBaseOption<T>) => boolean; sort?: (a: DSelectBaseOption<T>, b: DSelectBaseOption<T>) => number; }` | - |
-| dPopupClassName | Add className to the popup | string | - |
-| onVisibleChange | Window display/hide callback | `(visible: boolean) => void` | - |
-| onScrollBottom | Callback when the window scrolls to the bottom | `() => void` | - |
-| onCreateOption | Search for callbacks to create new options | `(option: DSelectBaseOption<T>) => void` | - |
-<!-- prettier-ignore-end -->
-
-### DSelectBaseOption\<T\>
+### DSelectProps
 
 ```tsx
-interface DSelectBaseOption<T> {
-  dLabel: string;
-  dValue: T;
+interface DSelectItem<V extends DId> {
+  label: string;
+  value: V;
   disabled?: boolean;
-  [index: string | symbol]: unknown;
+  children?: DSelectItem<V>[];
+}
+
+interface DSelectProps<V extends DId, T extends DSelectItem<V>> extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+  dRef?: {
+    input?: React.ForwardedRef<HTMLInputElement>;
+  };
+  dFormControl?: DFormControl;
+  dList: T[];
+  dModel?: V | null | V[];
+  dVisible?: boolean;
+  dPlaceholder?: string;
+  dSize?: DSize;
+  dLoading?: boolean;
+  dSearchable?: boolean;
+  dSearchValue?: string;
+  dClearable?: boolean;
+  dDisabled?: boolean;
+  dMultiple?: boolean;
+  dCustomItem?: (item: T) => React.ReactNode;
+  dCustomSelected?: (select: T) => string;
+  dCustomSearch?: {
+    filter?: (value: string, item: T) => boolean;
+    sort?: (a: T, b: T) => number;
+  };
+  dCreateItem?: (value: string) => T | undefined;
+  dPopupClassName?: string;
+  dInputRender?: DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>;
+  onModelChange?: (value: any, item: any) => void;
+  onVisibleChange?: (visible: boolean) => void;
+  onSearchValueChange?: (value: string) => void;
+  onClear?: () => void;
+  onCreateItem?: (item: T) => void;
+  onScrollBottom?: () => void;
+  afterVisibleChange?: (visible: boolean) => void;
 }
 ```
 
-### DSelectOption\<T\>
-
-```tsx
-interface DSelectOption<T> {
-  dLabel: string;
-  dValue?: T;
-  disabled?: boolean;
-  dChildren?: DSelectBaseOption<T>[];
-  [index: string | symbol]: unknown;
-}
-```
+<!-- prettier-ignore-start -->
+| Property | Description | Default | Version | 
+| --- | --- | --- | --- | 
+| dRef | pass ref | - | |
+| dFormControl | Support Forms | - | |
+| dList | data list | - | |
+| dModel | selected, controlled, default `dMultiple ? [] : null` | - | |
+| dVisible | Visible, controlled, default `false` | - | |
+| dPlaceholder | set the placeholder text of the selection box | - | |
+| dSize | set the selection box size | - | |
+| dLoading | Loading state | `false` | |
+| dSearchable | Whether searchable | `false` | |
+| dSearchValue | search value, controlled, default `''` | - | |
+| dClearable | Can be cleared | `false` | |
+| dDisabled | Whether to disable | `false` | |
+| dMultiple | Whether it is multiple selection | `false` | |
+| dCustomItem | custom option | - | |
+| dCustomSelected | Custom Selected | - | |
+| dCustomSearch | Custom Search Options | - | |
+| dCreateItem | Set creation options | - | |
+| dPopupClassName | Add `className` to the popup | - | |
+| dInputRender | custom input element | - | |
+| onModelChange | Callback for selected option changes | - | |
+| onVisibleChange | Visible/hidden callback | - | |
+| onSearchValueChange | callback for search value change | - | |
+| onClear | Clear the selected callback | - | |
+| onCreateItem | Callback for creating item | - | |
+| onScrollBottom | Callback for scrolling to the bottom | - | |
+| afterVisibleChange | Finished visible/hidden callback | - | |
+<!-- prettier-ignore-end -->

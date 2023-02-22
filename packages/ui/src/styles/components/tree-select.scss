@@ -1,0 +1,66 @@
+@import 'mixins/selectbox';
+
+@include b(tree-select) {
+  @include component-selectbox;
+
+  @include when(disabled) {
+    @include e(multiple-tag) {
+      color: var(--#{$rd-prefix}color-disabled);
+    }
+    @include e(multiple-count) {
+      color: var(--#{$rd-prefix}color-disabled);
+    }
+  }
+
+  @include e(multiple-tag) {
+    & + & {
+      margin-left: 8px;
+    }
+  }
+
+  @include e(close) {
+    margin: 0 0 0 4px;
+    color: var(--#{$rd-prefix}color-icon-decorator);
+    transition: color var(--#{$rd-prefix}animation-duration-base) linear;
+
+    &:hover,
+    &:focus {
+      color: var(--#{$rd-prefix}color-primary-lighter);
+    }
+
+    &:active {
+      color: var(--#{$rd-prefix}color-primary-darker);
+    }
+  }
+
+  @include e(popup) {
+    position: fixed;
+    overflow: auto hidden;
+    background-color: var(--#{$rd-prefix}background-color);
+    border-radius: var(--#{$rd-prefix}border-radius);
+    box-shadow: var(--#{$rd-prefix}shadow-popup);
+
+    .#{$rd-prefix}tree {
+      max-height: 264px;
+      padding: 4px 0;
+      overflow: hidden auto;
+    }
+  }
+
+  @include e(loading) {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    color: var(--#{$rd-prefix}color-primary);
+    background-color: rgb(var(--#{$rd-prefix}background-color-rgb) / 80%);
+
+    @include m(empty) {
+      justify-content: flex-start;
+      background-color: var(--#{$rd-prefix}background-color);
+    }
+  }
+}

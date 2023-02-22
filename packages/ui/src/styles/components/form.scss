@@ -1,3 +1,5 @@
+@import 'mixins/size';
+
 @keyframes form-pending-top {
   0% {
     left: -100%;
@@ -42,56 +44,44 @@
 @include b(form) {
   display: flex;
   flex-flow: row wrap;
-  font-size: var(--#{$variable-prefix}font-size);
 
-  @include m(smaller) {
-    --#{$variable-prefix}size: var(--#{$variable-prefix}size-smaller);
-    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-smaller);
-    --#{$variable-prefix}margin-size: var(--#{$variable-prefix}margin-size-smaller);
-  }
+  @include component-size;
 
-  @include m(larger) {
-    --#{$variable-prefix}size: var(--#{$variable-prefix}size-larger);
-    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-larger);
-    --#{$variable-prefix}margin-size: var(--#{$variable-prefix}margin-size-larger);
-  }
-}
+  @include e(item) {
+    position: relative;
 
-@include b(form-item) {
-  position: relative;
+    @include m(vertical) {
+      @include e(item-container) {
+        flex-direction: column;
+      }
 
-  @include m(vertical) {
-    @include e(container) {
-      flex-direction: column;
-    }
-
-    @include e(label) {
-      justify-content: flex-start;
+      @include e(item-label) {
+        justify-content: flex-start;
+      }
     }
   }
 
-  @include e(container) {
+  @include e(item-container) {
     display: flex;
     align-items: flex-start;
     width: 100%;
   }
 
-  @include e(label) {
+  @include e(item-label) {
+    @include utils-ellipsis;
+
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
     justify-content: flex-end;
-    min-height: var(--#{$variable-prefix}size);
-    padding-right: var(--#{$variable-prefix}margin-size);
-
-    @include utils-ellipsis;
+    min-height: var(--#{$rd-prefix}size);
+    padding-right: 8px;
 
     @include m(required) {
       &::before {
         display: inline-block;
         margin-right: 4px;
-        font-size: 1em;
-        color: var(--#{$variable-prefix}color-danger);
+        color: var(--#{$rd-prefix}color-danger);
         content: '*';
       }
     }
@@ -104,25 +94,28 @@
     }
   }
 
-  @include e(extra) {
+  @include e(item-label-extra) {
     display: inline-flex;
     gap: 0 4px;
     align-items: center;
     margin-left: 4px;
     font-size: 0.9em;
     line-height: 1;
-    color: var(--#{$variable-prefix}color-icon-decorator);
+    color: var(--#{$rd-prefix}text-color-sub);
   }
 
-  @include e(content) {
+  @include e(item-content) {
     position: relative;
     display: inline-flex;
+    flex-wrap: wrap;
     align-items: center;
-    min-height: var(--#{$variable-prefix}size);
+    min-height: var(--#{$rd-prefix}size);
 
-    .#{$variable-prefix}selectbox,
-    .#{$variable-prefix}compose,
-    .#{$variable-prefix}input {
+    .#{$rd-prefix}select,
+    .#{$rd-prefix}cascader,
+    .#{$rd-prefix}tree-select,
+    .#{$rd-prefix}compose,
+    .#{$rd-prefix}input:not(.#{$rd-prefix}input--number) {
       width: 100%;
     }
   }
@@ -140,7 +133,7 @@
       width: 100%;
       height: 100%;
       content: '';
-      background-color: var(--#{$variable-prefix}color-border);
+      background-color: var(--#{$rd-prefix}color-border);
     }
 
     &::after {
@@ -152,7 +145,7 @@
       content: '';
     }
 
-    &:nth-of-type(1) {
+    @include m(1) {
       top: 0;
       left: 0;
       width: 100%;
@@ -160,13 +153,13 @@
 
       &::after {
         left: 0;
-        background: linear-gradient(90deg, transparent, var(--#{$variable-prefix}color-primary));
+        background: linear-gradient(90deg, transparent, var(--#{$rd-prefix}color-primary));
         animation: form-pending-top 1s linear infinite;
         animation-fill-mode: backwards;
       }
     }
 
-    &:nth-of-type(2) {
+    @include m(2) {
       top: 0;
       right: 0;
       width: 1px;
@@ -174,14 +167,14 @@
 
       &::after {
         top: -100%;
-        background: linear-gradient(180deg, transparent, var(--#{$variable-prefix}color-primary));
+        background: linear-gradient(180deg, transparent, var(--#{$rd-prefix}color-primary));
         animation: form-pending-right 1s linear infinite;
         animation-delay: 0.25s;
         animation-fill-mode: backwards;
       }
     }
 
-    &:nth-of-type(3) {
+    @include m(3) {
       bottom: 0;
       left: 0;
       width: 100%;
@@ -189,13 +182,13 @@
 
       &::after {
         right: 0;
-        background: linear-gradient(270deg, transparent, var(--#{$variable-prefix}color-primary));
+        background: linear-gradient(270deg, transparent, var(--#{$rd-prefix}color-primary));
         animation: form-pending-bottom 1s linear 0.5s infinite;
         animation-fill-mode: backwards;
       }
     }
 
-    &:nth-of-type(4) {
+    @include m(4) {
       top: 0;
       left: 0;
       width: 1px;
@@ -203,7 +196,7 @@
 
       &::after {
         bottom: -100%;
-        background: linear-gradient(360deg, transparent, var(--#{$variable-prefix}color-primary));
+        background: linear-gradient(360deg, transparent, var(--#{$rd-prefix}color-primary));
         animation: form-pending-left 1s linear infinite;
         animation-delay: 0.75s;
         animation-fill-mode: backwards;
@@ -217,39 +210,40 @@
     align-items: center;
     justify-content: center;
     width: 2em;
-    height: var(--#{$variable-prefix}size);
+    height: var(--#{$rd-prefix}size);
     font-size: 1.1em;
 
     @include when(pending) {
-      color: var(--#{$variable-prefix}color-primary);
+      color: var(--#{$rd-prefix}color-primary);
     }
     @include when(error) {
-      color: var(--#{$variable-prefix}color-danger);
+      color: var(--#{$rd-prefix}color-danger);
     }
     @include when(warning) {
-      color: var(--#{$variable-prefix}color-warning);
+      color: var(--#{$rd-prefix}color-warning);
     }
     @include when(success) {
-      color: var(--#{$variable-prefix}color-success);
+      color: var(--#{$rd-prefix}color-success);
     }
   }
 
-  @include e(errors) {
+  @include e(error-container) {
     float: right;
     min-height: calc(1.5em + 5px);
     padding: 2px 0;
+  }
+
+  @include e(error) {
+    @include utils-ellipsis;
+
     font-size: 0.9em;
-  }
-}
 
-@include b(form-error) {
-  @include utils-ellipsis;
+    @include m(error) {
+      color: var(--#{$rd-prefix}color-danger);
+    }
 
-  @include m(error) {
-    color: var(--#{$variable-prefix}color-danger);
-  }
-
-  @include m(warning) {
-    color: var(--#{$variable-prefix}color-warning);
+    @include m(warning) {
+      color: var(--#{$rd-prefix}color-warning);
+    }
   }
 }

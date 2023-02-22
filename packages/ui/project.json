@@ -1,31 +1,38 @@
 {
-  "root": "packages/ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/ui/src",
   "projectType": "library",
-  "tags": [],
+  "tags": ["scope:ui"],
   "targets": {
     "build": {
-      "executor": "@nrwl/web:rollup",
+      "executor": "@nrwl/js:tsc",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/packages/ui",
-        "format": ["esm"],
         "tsConfig": "packages/ui/tsconfig.lib.json",
-        "project": "packages/ui/package.json",
-        "entryFile": "packages/ui/src/index.ts",
-        "external": ["react/jsx-runtime"],
-        "rollupConfig": "@nrwl/react/plugins/bundle-rollup",
-        "compiler": "babel",
+        "rootDir": "packages/ui/src",
+        "main": "packages/ui/src/index.ts",
+        "updateBuildableProjectDepsInPackageJson": false,
         "assets": [
           {
-            "glob": "packages/ui/README.md",
-            "input": ".",
-            "output": "."
+            "glob": "**/*",
+            "input": "packages/ui/src/styles",
+            "output": "/styles"
           },
           {
-            "glob": "packages/ui/src/styles",
-            "input": ".",
-            "output": "."
+            "glob": "CHANGELOG.md",
+            "input": "packages/ui",
+            "output": "/"
+          },
+          {
+            "glob": "README.md",
+            "input": "",
+            "output": "/"
+          },
+          {
+            "glob": "LICENSE",
+            "input": "",
+            "output": "/"
           }
         ]
       }
@@ -42,9 +49,7 @@
       "outputs": ["coverage/packages/ui"],
       "options": {
         "jestConfig": "packages/ui/jest.config.js",
-        "passWithNoTests": true,
-        "codeCoverage": true,
-        "coverageReporters": ["clover", "json", "lcov", "text"]
+        "passWithNoTests": true
       }
     }
   }

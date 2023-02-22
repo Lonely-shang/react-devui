@@ -6,29 +6,28 @@
     "stylelint-config-prettier"
   ],
   "rules": {
-    "selector-type-no-unknown": [
-      true,
-      {
-        "ignoreTypes": ["/^d-/"]
-      }
-    ],
-    "declaration-property-value-allowed-list": {
-      "/color/": ["/var/", "/\\$colors/", "currentColor", "transparent", "unset", "inherit"],
-      "font-size": ["/var/", "/[0-9]+em$/", "unset", "inherit"],
-      "border-radius": ["/var/", "50%", "0", "inherit"]
-    },
-    "declaration-property-value-disallowed-list": {
-      "transition": ["/all/", "/[0-9]ms/"]
-    },
-    "custom-property-pattern": null,
-    "no-invalid-position-at-import-rule": null,
-    "selector-class-pattern": null
+    "import-notation": null,
+    "selector-class-pattern": null,
+    "block-no-empty": null
   },
   "overrides": [
     {
       "files": ["*.scss", "**/*.scss"],
       "rules": {
-        "function-no-unknown": null
+        "selector-pseudo-class-no-unknown": [
+          true,
+          {
+            "ignorePseudoClasses": ["global"]
+          }
+        ],
+        "declaration-property-value-allowed-list": {
+          "/color/": ["/var/", "/\\$/", "currentcolor", "transparent", "unset", "inherit"],
+          "font-size": ["/var/", "/\\$/", "/[0-9]+em$/", "unset", "inherit"],
+          "border-radius": ["/var/", "/\\$/", "50%", "0", "inherit"]
+        },
+        "declaration-property-value-disallowed-list": {
+          "transition": ["/all/", "/[0-9]ms/"]
+        }
       }
     },
     {

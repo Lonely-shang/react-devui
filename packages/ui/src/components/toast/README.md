@@ -1,58 +1,35 @@
 ---
 group: Feedback
 title: Toast
+aria: alert
 ---
 
 ## API
 
 ### DToastProps
 
-Extend `React.HTMLAttributes<HTMLDivElement>`.
+```tsx
+interface DToastProps extends React.HTMLAttributes<HTMLDivElement> {
+  dVisible: boolean;
+  dType?: 'success' | 'warning' | 'error' | 'info';
+  dIcon?: React.ReactNode;
+  dDuration?: number;
+  dPlacement?: 'top' | 'bottom';
+  dEscClosable?: boolean;
+  onClose?: () => void;
+  afterVisibleChange?: (visible: boolean) => void;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dType | Toast type | 'success' \| 'warning' \| 'error' \| 'info' | - |
-| dIcon | Custom toast icon | React.ReactNode | - |
-| dContent | Content | React.ReactNode | - |
-| dDuration | Display duration, will not be closed automatically when it is 0 | number | 9.6 |
-| dPlacement | Toast pop-up direction | 'top' \| 'bottom'  | 'top' |
-| onClose | Callback when the toast is closed | `() => void` | - |
-| afterVisibleChange | Callback to the end of the opening/closing animation | `(visible: boolean) => void` | - |
+| dVisible | Visible, controlled, default `false` | - | |
+| dType | set prompt type | - | |
+| dIcon | Settings icon | - | |
+| dDuration | Set how many seconds to automatically close the prompt, the mouse will reset the time | `2` | |
+| dPlacement | Set tooltip position | `'top'` | |
+| dEscClosable | Whether the prompt can be closed by Esc | `true` | |
+| onClose | Callback for closing the prompt | - | |
+| afterVisibleChange | Finished visible/hidden callback | - | |
 <!-- prettier-ignore-end -->
-
-### ToastService
-
-```tsx
-class ToastService {
-  // Toast list
-  static readonly toasts: Toast[];
-
-  // Open toast
-  static open(props: DToastProps): Toast;
-
-  // Close toast
-  static close(uniqueId: number): void;
-
-  // Update toast
-  static rerender(uniqueId: number, props: DToastProps): void;
-
-  // Close all toasts
-  static closeAll(animation = true): void;
-}
-```
-
-### Toast
-
-```tsx
-class Toast {
-  // Uniquely identifies
-  readonly uniqueId: number;
-
-  // Close toast
-  close(): void;
-
-  // Update toast
-  rerender(props: DToastProps): void;
-}
-```

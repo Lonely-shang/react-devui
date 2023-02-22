@@ -7,10 +7,16 @@ title: Empty
 
 ### DEmptyProps
 
-Extend `React.HTMLAttributes<HTMLDivElement>`.
+```tsx
+interface DEmptyProps extends React.HTMLAttributes<HTMLDivElement> {
+  dIcon?: React.ReactNode;
+  dDescription?: React.ReactNode;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dIcon | Custom icon | React.ReactNode | - |
+| dIcon | Set empty state icon | - |  |
+| dDescription | Set empty state description | - |  |
 <!-- prettier-ignore-end -->

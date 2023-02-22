@@ -1,83 +1,68 @@
-import type { DBreakpoints } from '../../types';
-import type { AbstractControl } from './form-control';
+import type { AbstractControl } from './abstract-control';
 
 import { isBoolean, isFunction, isNull, isNumber, isString, isUndefined } from 'lodash';
-import React, { useContext, useEffect, useId, useRef } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 
-import { usePrefixConfig, useComponentConfig, useTranslation, useGridConfig, useContextRequired } from '../../hooks';
-import { CheckCircleFilled, CloseCircleFilled, ExclamationCircleFilled, LoadingOutlined, QuestionCircleOutlined } from '../../icons';
-import { registerComponentMate, getClassName } from '../../utils';
+import { useId } from '@react-devui/hooks';
+import { CheckCircleFilled, CloseCircleFilled, ExclamationCircleFilled, LoadingOutlined, QuestionCircleOutlined } from '@react-devui/icons';
+import { getClassName } from '@react-devui/utils';
+
+import { useContextRequired } from '../../hooks';
+import { registerComponentMate } from '../../utils';
+import { useComponentConfig, usePrefixConfig, useTranslation } from '../root';
 import { DTooltip } from '../tooltip';
 import { DError } from './Error';
 import { DFormContext } from './Form';
 import { DFormGroupContext } from './FormGroup';
-import { Validators } from './form-control';
+import { Validators } from './validators';
 
 type DErrors = { key: string; formControlName: string; message: string; status: 'warning' | 'error'; hidden?: true }[];
 
 export interface DFormControl {
   control: AbstractControl;
-  controlId: string;
-  disabled: boolean;
-  dataAttrs: { [index: string]: boolean };
+  wrapperAttrs: { [index: string]: boolean };
   inputAttrs: {
-    'data-form-item-input': true;
     'aria-invalid'?: boolean;
     'aria-describedby'?: string;
   };
 }
 
-export type DValidateStatus = 'success' | 'warning' | 'error' | 'pending';
+type DValidateStatus = 'success' | 'warning' | 'error' | 'pending';
 
 export type DErrorInfo =
   | string
   | { message: string; status: 'warning' | 'error' }
   | { [index: string]: string | { message: string; status: 'warning' | 'error' } };
 
-export interface DFormItemBaseProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
-  children: React.ReactNode;
+export interface DFormItemProps<T extends { [index: string]: DErrorInfo }> extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+  children: React.ReactNode | ((formControls: { [N in keyof T]: DFormControl }) => React.ReactNode);
+  dFormControls?: T;
   dLabel?: React.ReactNode;
   dLabelWidth?: number | string;
   dLabelExtra?: ({ title: string; icon?: React.ReactElement } | string)[];
   dShowRequired?: boolean;
+  dColNum?: number;
   dSpan?: number | string | true;
-  dResponsiveProps?: Record<DBreakpoints, Pick<DFormItemBaseProps, 'dLabelWidth' | 'dSpan'>>;
 }
 
-export interface DFormItemWithControlsProps<T extends { [index: string]: DErrorInfo }> extends DFormItemBaseProps {
-  children: (formControls: { [N in keyof T]: DFormControl }) => React.ReactNode;
-  dFormControls: T;
-}
-
-export interface DFormItemProps<T extends { [index: string]: DErrorInfo }> extends DFormItemBaseProps {
-  children: any;
-  dFormControls?: T;
-}
-
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DFormItem' });
-export function DFormItem(props: DFormItemBaseProps): JSX.Element | null;
-export function DFormItem<T extends { [index: string]: DErrorInfo }>(props: DFormItemWithControlsProps<T>): JSX.Element | null;
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DForm.Item' as const });
 export function DFormItem<T extends { [index: string]: DErrorInfo }>(props: DFormItemProps<T>): JSX.Element | null {
   const {
     children,
-    dFormControls = {} as { [index: string]: DErrorInfo },
+    dFormControls,
     dLabel,
     dLabelWidth,
     dLabelExtra,
     dShowRequired,
+    dColNum = 12,
     dSpan,
-    dResponsiveProps,
 
-    className,
-    style,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const { colNum } = useGridConfig();
-  const { gBreakpointMatchs, gLabelWidth, gLabelColon, gRequiredType, gLayout, gInlineSpan, gFeedbackIcon } =
-    useContextRequired(DFormContext);
+  const { gLabelWidth, gLabelColon, gRequiredType, gLayout, gInlineSpan, gFeedbackIcon } = useContextRequired(DFormContext);
   const formGroup = useContext(DFormGroupContext)!;
   //#endregion
 
@@ -86,26 +71,28 @@ export function DFormItem<T extends { [index: string]: DErrorInfo }>(props: DFor
   const contentRef = useRef<HTMLDivElement>(null);
   //#endregion
 
-  const [t] = useTranslation('DForm');
+  const dataRef = useRef<{
+    prevErrors: DErrors;
+  }>({
+    prevErrors: [],
+  });
+
+  const [t] = useTranslation();
 
   const uniqueId = useId();
-  const getErrorId = (formControlName: string) => `${dPrefix}form-item-error-${uniqueId}-${formControlName}`;
-  const getControlId = (formControlName: string) => `${dPrefix}form-item-control-${uniqueId}-${formControlName}`;
+  const getErrorId = (formControlName: string) => `${formControlName}-error-${uniqueId}`;
 
   const formControls = (() => {
     const obj = {} as { [N in keyof T]: DFormControl };
-    Object.keys(dFormControls).forEach((formControlName: keyof T) => {
+    Object.keys(dFormControls ?? {}).forEach((formControlName: keyof T) => {
       const formControl = formGroup.get(formControlName as string);
       if (isNull(formControl)) {
-        throw new Error(`Cant find '${formControlName}', please check if name exists!`);
+        throw new Error(`Cant find '${formControlName as string}', please check if name exists!`);
       }
       obj[formControlName] = {
         control: formControl,
-        controlId: getControlId(formControlName as string),
-        disabled: formControl.disabled,
-        dataAttrs: {},
+        wrapperAttrs: {},
         inputAttrs: {
-          'data-form-item-input': true,
           'aria-invalid': formControl.enabled && formControl.dirty && formControl.invalid,
         },
       };
@@ -113,36 +100,14 @@ export function DFormItem<T extends { [index: string]: DErrorInfo }>(props: DFor
     return obj;
   })();
 
-  const { span, labelWidth } = (() => {
-    const props = {
-      span: dSpan ?? (gLayout === 'inline' ? gInlineSpan : colNum),
-      labelWidth: dLabelWidth ?? gLabelWidth,
-    };
+  const span = dSpan ?? (gLayout === 'inline' ? gInlineSpan : dColNum);
+  const labelWidth = dLabelWidth ?? gLabelWidth;
 
-    if (dResponsiveProps) {
-      const mergeProps = (point: string, targetKey: string, sourceKey: string) => {
-        const value = dResponsiveProps[point][sourceKey];
-        if (!isUndefined(value)) {
-          props[targetKey] = value;
-        }
-      };
-      for (const breakpoint of gBreakpointMatchs) {
-        if (breakpoint in dResponsiveProps) {
-          mergeProps(breakpoint, 'span', 'dSpan');
-          mergeProps(breakpoint, 'labelWidth', 'dLabelWidth');
-          break;
-        }
-      }
-    }
-    return props;
-  })();
-
-  const prevErrors = useRef<DErrors>([]);
   const [errorNodes, formItemStatus] = (() => {
     const errors: DErrors = [];
     let formItemStatus: DValidateStatus | undefined;
 
-    Object.entries(dFormControls).forEach(([formControlName, errorInfo]) => {
+    Object.entries(dFormControls ?? {}).forEach(([formControlName, errorInfo]) => {
       const { control } = formControls[formControlName];
       if (control.enabled && control.dirty) {
         let status: DValidateStatus = 'success';
@@ -199,17 +164,17 @@ export function DFormItem<T extends { [index: string]: DErrorInfo }>(props: DFor
         }
 
         if (status !== 'success') {
-          formControls[formControlName].dataAttrs[`data-form-item-${status}`] = true;
+          formControls[formControlName].wrapperAttrs[`data-form-invalid-${status}`] = true;
         }
       }
     });
 
-    prevErrors.current.forEach((error, inedx) => {
+    dataRef.current.prevErrors.forEach((error, inedx) => {
       if (errors.findIndex((item) => item.key === error.key) === -1) {
         errors.splice(inedx, 0, { ...error, hidden: true });
       }
     });
-    prevErrors.current = errors;
+    dataRef.current.prevErrors = errors;
 
     const errorNames = new Set(errors.map((item) => item.formControlName));
     const errorNodes: JSX.Element[] = [];
@@ -228,7 +193,7 @@ export function DFormItem<T extends { [index: string]: DErrorInfo }>(props: DFor
                 dMessage={error.message}
                 dStatus={error.status}
                 onHidden={() => {
-                  prevErrors.current = prevErrors.current.filter((item) => item.key !== error.key);
+                  dataRef.current.prevErrors = dataRef.current.prevErrors.filter((item) => item.key !== error.key);
                 }}
               ></DError>
             ))}
@@ -287,7 +252,7 @@ export function DFormItem<T extends { [index: string]: DErrorInfo }>(props: DFor
 
   useEffect(() => {
     if (labelRef.current && contentRef.current) {
-      const el = contentRef.current.querySelector(`[data-form-item-input="true"]`);
+      const el = contentRef.current.querySelector(`[data-form-item-label-for="true"]`);
       if (el) {
         labelRef.current.setAttribute('for', el.id);
       }
@@ -297,52 +262,52 @@ export function DFormItem<T extends { [index: string]: DErrorInfo }>(props: DFor
   return (
     <div
       {...restProps}
-      className={getClassName(className, `${dPrefix}form-item`, {
-        [`${dPrefix}form-item--vertical`]: gLayout === 'vertical',
+      className={getClassName(restProps.className, `${dPrefix}form__item`, {
+        [`${dPrefix}form__item--vertical`]: gLayout === 'vertical',
       })}
       style={{
-        ...style,
+        ...restProps.style,
         flexGrow: span === true ? 1 : undefined,
         flexShrink: span === true ? undefined : 0,
-        width: span === true ? undefined : isNumber(span) ? `calc((100% / ${colNum}) * ${span})` : span,
+        width: span === true ? undefined : isNumber(span) ? `calc((100% / ${dColNum}) * ${span})` : span,
       }}
     >
-      <div className={`${dPrefix}form-item__container`}>
+      <div className={`${dPrefix}form__item-container`}>
         {labelWidth !== 0 &&
           (dLabel ? (
             <label
               ref={labelRef}
-              className={getClassName(`${dPrefix}form-item__label`, {
-                [`${dPrefix}form-item__label--required`]: gRequiredType === 'required' && required,
-                [`${dPrefix}form-item__label--colon`]: gLabelColon,
+              className={getClassName(`${dPrefix}form__item-label`, {
+                [`${dPrefix}form__item-label--required`]: gRequiredType === 'required' && required,
+                [`${dPrefix}form__item-label--colon`]: gLabelColon,
               })}
               style={{ width: gLayout === 'vertical' ? undefined : labelWidth }}
             >
               {dLabel}
               {(extraNode || (gRequiredType === 'optional' && !required)) && (
-                <div className={`${dPrefix}form-item__extra`}>
+                <div className={`${dPrefix}form__item-label-extra`}>
                   {extraNode}
-                  {gRequiredType === 'optional' && !required && <div>{t('Optional')}</div>}
+                  {gRequiredType === 'optional' && !required && <div>{t('Form', 'Optional')}</div>}
                 </div>
               )}
             </label>
           ) : (
             <div style={{ width: labelWidth }}></div>
           ))}
-        <div ref={contentRef} className={`${dPrefix}form-item__content`} style={{ width: contentWidth }}>
+        <div ref={contentRef} className={`${dPrefix}form__item-content`} style={{ width: contentWidth }}>
           {formItemStatus === 'pending' && (
             <>
-              <div className={`${dPrefix}form-item__pending`}></div>
-              <div className={`${dPrefix}form-item__pending`}></div>
-              <div className={`${dPrefix}form-item__pending`}></div>
-              <div className={`${dPrefix}form-item__pending`}></div>
+              <div className={getClassName(`${dPrefix}form__pending`, `${dPrefix}form__pending--1`)}></div>
+              <div className={getClassName(`${dPrefix}form__pending`, `${dPrefix}form__pending--2`)}></div>
+              <div className={getClassName(`${dPrefix}form__pending`, `${dPrefix}form__pending--3`)}></div>
+              <div className={getClassName(`${dPrefix}form__pending`, `${dPrefix}form__pending--4`)}></div>
             </>
           )}
           {isFunction(children) ? children(formControls) : children}
         </div>
         {gFeedbackIcon && (
           <div
-            className={getClassName(`${dPrefix}form-item__feedback-icon`, {
+            className={getClassName(`${dPrefix}form__feedback-icon`, {
               [`is-${formItemStatus}`]: formItemStatus,
             })}
           >
@@ -350,9 +315,11 @@ export function DFormItem<T extends { [index: string]: DErrorInfo }>(props: DFor
           </div>
         )}
       </div>
-      <div className={`${dPrefix}form-item__errors`} style={{ width: contentWidth }}>
-        {errorNodes}
-      </div>
+      {!isUndefined(dFormControls) && (
+        <div className={`${dPrefix}form__error-container`} style={{ width: contentWidth }}>
+          {errorNodes}
+        </div>
+      )}
     </div>
   );
 }

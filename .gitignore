@@ -5,6 +5,7 @@
 /tmp
 /out-tsc
 /tools-dist
+base64.out.ts
 
 # dependencies
 /node_modules
@@ -23,6 +24,8 @@
 !.vscode/README.md
 !.vscode/recommended-settings.json
 !.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
 
 # misc
 /.sass-cache

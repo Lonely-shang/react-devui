@@ -1,57 +1,62 @@
-import type { DUpdater } from '../../hooks/common/useTwoWayBinding';
-import type { DId, DNestedChildren } from '../../types';
+import type { DId } from '../../utils/types';
 
-import { isUndefined, nth } from 'lodash';
-import React, { useId, useRef } from 'react';
-import { useState } from 'react';
+import { isNull, isNumber, isUndefined, nth } from 'lodash';
+import React, { useImperativeHandle, useRef, useState } from 'react';
+import ReactDOM from 'react-dom';
 
-import {
-  usePrefixConfig,
-  useComponentConfig,
-  useTwoWayBinding,
-  useTranslation,
-  useEventCallback,
-  useElement,
-  useMaxIndex,
-  useFocusVisible,
-} from '../../hooks';
-import { registerComponentMate, getClassName, getNoTransformSize, getVerticalSidePosition, scrollElementToView } from '../../utils';
+import { useEvent, useEventCallback, useId, useRefExtra } from '@react-devui/hooks';
+import { getClassName, getVerticalSidePosition, scrollToView } from '@react-devui/utils';
+
+import { useMaxIndex, useDValue } from '../../hooks';
+import { registerComponentMate, TTANSITION_DURING_POPUP, WINDOW_SPACE } from '../../utils';
+import { ESC_CLOSABLE_DATA } from '../../utils/checkNoExpandedEl';
+import { DFocusVisible } from '../_focus-visible';
 import { DPopup, useNestedPopup } from '../_popup';
 import { DTransition } from '../_transition';
-import { DDropdownGroup } from './DropdownGroup';
-import { DDropdownItem } from './DropdownItem';
-import { DDropdownSub } from './DropdownSub';
-import { checkEnableOption, getOptions } from './utils';
+import { useComponentConfig, usePrefixConfig, useTranslation } from '../root';
+import { DSeparator } from '../separator';
+import { DGroup } from './Group';
+import { DItem } from './Item';
+import { DSub } from './Sub';
+import { checkEnableItem, getSameLevelEnableItems } from './utils';
 
-export interface DDropdownOption<ID extends DId> {
+export interface DDropdownRef {
+  updatePosition: () => void;
+}
+
+export interface DDropdownItem<ID extends DId> {
   id: ID;
   label: React.ReactNode;
   type: 'item' | 'group' | 'sub';
   icon?: React.ReactNode;
   disabled?: boolean;
+  separator?: boolean;
+  children?: DDropdownItem<ID>[];
 }
 
-export interface DDropdownProps<ID extends DId, T extends DDropdownOption<ID>>
+export interface DDropdownProps<ID extends DId, T extends DDropdownItem<ID>>
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
   children: React.ReactElement;
-  dOptions: DNestedChildren<T>[];
-  dVisible?: [boolean, DUpdater<boolean>?];
+  dList: T[];
+  dVisible?: boolean;
   dPlacement?: 'top' | 'top-left' | 'top-right' | 'bottom' | 'bottom-left' | 'bottom-right';
   dTrigger?: 'hover' | 'click';
   dArrow?: boolean;
   dCloseOnClick?: boolean;
   dZIndex?: number | string;
   onVisibleChange?: (visible: boolean) => void;
+  onItemClick?: (id: T['id'], item: T) => void;
   afterVisibleChange?: (visible: boolean) => void;
-  onOptionClick?: (id: ID, option: DNestedChildren<T>) => void;
 }
 
-const TTANSITION_DURING = 116;
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DDropdown' });
-export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: DDropdownProps<ID, T>): JSX.Element | null {
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DDropdown' as const });
+function Dropdown<ID extends DId, T extends DDropdownItem<ID>>(
+  props: DDropdownProps<ID, T>,
+  ref: React.ForwardedRef<DDropdownRef>
+): JSX.Element | null {
   const {
     children,
-    dOptions,
+    dList,
     dVisible,
     dPlacement = 'bottom-right',
     dTrigger = 'hover',
@@ -59,17 +64,9 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
     dCloseOnClick = true,
     dZIndex,
     onVisibleChange,
+    onItemClick,
     afterVisibleChange,
-    onOptionClick,
 
-    id,
-    className,
-    style,
-    onMouseEnter,
-    onMouseLeave,
-    onMouseDown,
-    onMouseUp,
-    onClick,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
@@ -78,22 +75,38 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
   //#endregion
 
   //#region Ref
+  const windowRef = useRefExtra(() => window);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const childRef = useRefExtra(() => document.getElementById(triggerId));
   const ulRef = useRef<HTMLUListElement>(null);
+  const containerRef = useRefExtra(() => {
+    let el = document.getElementById(`${dPrefix}dropdown-root`);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = `${dPrefix}dropdown-root`;
+      document.body.appendChild(el);
+    }
+    return el;
+  }, true);
   //#endregion
 
-  const [t] = useTranslation('Common');
+  const dataRef = useRef<{
+    updatePosition: Map<ID, () => void>;
+  }>({
+    updatePosition: new Map(),
+  });
+
+  const [t] = useTranslation();
 
   const uniqueId = useId();
-  const _id = id ?? `${dPrefix}dropdown-${uniqueId}`;
-  const buttonId = children.props.id ?? `${dPrefix}dropdown-button-${uniqueId}`;
-  const getOptionId = (id: ID) => `${dPrefix}dropdown-option-${uniqueId}-${id}`;
+  const id = restProps.id ?? `${dPrefix}dropdown-${uniqueId}`;
+  const triggerId = children.props.id ?? `${dPrefix}dropdown-trigger-${uniqueId}`;
+  const getItemId = (id: ID) => `${dPrefix}dropdown-item-${id}-${uniqueId}`;
 
   const { popupIds, setPopupIds, addPopupId, removePopupId } = useNestedPopup<ID>();
   const [focusIds, setFocusIds] = useState<ID[]>([]);
   const [isFocus, setIsFocus] = useState(false);
-  const [isFocusVisible, setIsFocusVisible] = useState(false);
-  const { fvOnFocus, fvOnBlur, fvOnKeyDown } = useFocusVisible(setIsFocusVisible);
+  const [focusVisible, setFocusVisible] = useState(false);
   const focusId = (() => {
     if (isFocus) {
       let id: ID | undefined;
@@ -106,34 +119,52 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
       return id;
     }
   })();
-
-  const initFocus = () => {
+  const focusFirst = () => {
     const ids: ID[] = [];
-    const reduceArr = (arr: DNestedChildren<T>[]) => {
+    const reduceArr = (arr: T[]) => {
       for (const item of arr) {
         if (ids.length === 1) {
           break;
         }
 
         if (item.type === 'group' && item.children) {
-          reduceArr(item.children);
-        } else if (checkEnableOption(item)) {
+          reduceArr(item.children as T[]);
+        } else if (checkEnableItem(item)) {
           ids.push(item.id);
         }
       }
     };
-    reduceArr(dOptions);
+    reduceArr(dList);
+    setFocusIds(ids);
+  };
+  const focusLast = () => {
+    const ids: ID[] = [];
+    const reduceArr = (arr: T[]) => {
+      for (let index = arr.length - 1; index >= 0; index--) {
+        if (ids.length === 1) {
+          break;
+        }
+
+        const item = arr[index];
+        if (item.type === 'group' && item.children) {
+          reduceArr(item.children as T[]);
+        } else if (checkEnableItem(item)) {
+          ids.push(item.id);
+        }
+      }
+    };
+    reduceArr(dList);
     setFocusIds(ids);
   };
 
-  const [visible, _changeVisible] = useTwoWayBinding<boolean>(false, dVisible, onVisibleChange);
-  const changeVisible = useEventCallback((visible: boolean) => {
-    _changeVisible(visible);
-
+  const [visible, _changeVisible] = useDValue<boolean>(false, dVisible, onVisibleChange);
+  const changeVisible = (visible: boolean) => {
     if (!visible) {
       setPopupIds([]);
     }
-  });
+
+    _changeVisible(visible);
+  };
 
   const maxZIndex = useMaxIndex(visible);
   const zIndex = (() => {
@@ -144,27 +175,23 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
     }
   })();
 
-  const containerEl = useElement(() => {
-    let el = document.getElementById(`${dPrefix}dropdown-root`);
-    if (!el) {
-      el = document.createElement('div');
-      el.id = `${dPrefix}dropdown-root`;
-      document.body.appendChild(el);
-    }
-    return el;
-  });
-
   const [popupPositionStyle, setPopupPositionStyle] = useState<React.CSSProperties>({
-    top: -9999,
-    left: -9999,
+    top: '-200vh',
+    left: '-200vw',
   });
   const [transformOrigin, setTransformOrigin] = useState<string>();
   const [arrowPosition, setArrowPosition] = useState<React.CSSProperties>();
   const updatePosition = useEventCallback(() => {
-    const targetEl = document.getElementById(buttonId);
-    if (targetEl && dropdownRef.current) {
-      const { width, height } = getNoTransformSize(dropdownRef.current);
-      const { top, left, transformOrigin, arrowPosition } = getVerticalSidePosition(targetEl, { width, height }, dPlacement, 8);
+    if (visible && childRef.current && dropdownRef.current) {
+      const [width, height] = [dropdownRef.current.offsetWidth, dropdownRef.current.offsetHeight];
+      const { top, left, transformOrigin, arrowPosition } = getVerticalSidePosition(
+        childRef.current,
+        { width, height },
+        {
+          placement: dPlacement,
+          inWindow: WINDOW_SPACE,
+        }
+      );
       setPopupPositionStyle({ top, left });
       setTransformOrigin(transformOrigin);
       setArrowPosition(arrowPosition);
@@ -177,22 +204,42 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
     }
   };
 
-  let handleKeyDown: React.KeyboardEventHandler<HTMLElement> | undefined;
-  const optionNodes = (() => {
-    const getNodes = (arr: DNestedChildren<T>[], level: number, subParents: DNestedChildren<T>[]): JSX.Element[] =>
-      arr.map((option) => {
-        const { id: optionId, label: optionLabel, type: optionType, icon: optionIcon, disabled: optionDisabled, children } = option;
+  useEvent<KeyboardEvent>(
+    windowRef,
+    'keydown',
+    (e) => {
+      if (e.code === 'Escape') {
+        changeVisible(false);
+      }
+    },
+    {},
+    !visible
+  );
 
-        const _subParents = optionType === 'sub' ? subParents.concat([option]) : subParents;
-        const id = getOptionId(optionId);
-        const isFocus = optionId === focusId;
+  let handleKeyDown: React.KeyboardEventHandler<HTMLElement> | undefined;
+  const nodes = (() => {
+    const getNodes = (arr: T[], level: number, subParents: T[]): JSX.Element[] =>
+      arr.map((item) => {
+        const {
+          id: itemId,
+          label: itemLabel,
+          type: itemType,
+          icon: itemIcon,
+          disabled: itemDisabled = false,
+          separator: itemSeparator,
+          children,
+        } = item;
+
+        const newSubParents = itemType === 'sub' ? subParents.concat([item]) : subParents;
+        const id = getItemId(itemId);
+        const isFocus = itemId === focusId;
         const isEmpty = !(children && children.length > 0);
-        const popupState = popupIds.find((v) => v.id === optionId);
+        const popupState = popupIds.find((v) => v.id === itemId);
 
         const handleItemClick = () => {
-          onOptionClick?.(optionId, option);
+          onItemClick?.(itemId, item);
 
-          setFocusIds(subParents.map((o) => o.id).concat([optionId]));
+          setFocusIds(subParents.map((parentItem) => parentItem.id).concat([itemId]));
           if (dCloseOnClick) {
             changeVisible(false);
           }
@@ -200,17 +247,17 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
 
         if (isFocus) {
           handleKeyDown = (e) => {
-            const sameLevelOptions = getOptions(nth(subParents, -1)?.children ?? dOptions);
-            const focusOption = (o?: T) => {
-              if (o) {
-                setFocusIds(subParents.map((o) => o.id).concat([o.id]));
+            const sameLevelItems = getSameLevelEnableItems((nth(subParents, -1)?.children as T[]) ?? dList);
+            const focusItem = (val?: T) => {
+              if (val) {
+                setFocusIds(subParents.map((parentItem) => parentItem.id).concat([val.id]));
               }
             };
-            const scrollToOption = (o?: T) => {
-              if (o) {
-                const el = document.getElementById(getOptionId(o.id));
+            const scrollToItem = (val?: T) => {
+              if (val) {
+                const el = document.getElementById(getItemId(val.id));
                 if (el && ulRef.current) {
-                  scrollElementToView(el, ulRef.current, 4);
+                  scrollToView(el, ulRef.current, 4);
                 }
               }
             };
@@ -218,11 +265,11 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
             switch (e.code) {
               case 'ArrowUp': {
                 e.preventDefault();
-                const index = sameLevelOptions.findIndex((o) => o.id === optionId);
-                const option = nth(sameLevelOptions, index - 1);
-                focusOption(option);
-                scrollToOption(option);
-                if (option && nth(popupIds, -1)?.id === optionId) {
+                const index = sameLevelItems.findIndex((sameLevelItem) => sameLevelItem.id === itemId);
+                const item = nth(sameLevelItems, index - 1);
+                focusItem(item);
+                scrollToItem(item);
+                if (item && nth(popupIds, -1)?.id === itemId) {
                   setPopupIds(popupIds.slice(0, -1));
                 }
                 break;
@@ -230,11 +277,11 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
 
               case 'ArrowDown': {
                 e.preventDefault();
-                const index = sameLevelOptions.findIndex((o) => o.id === optionId);
-                const option = nth(sameLevelOptions, (index + 1) % sameLevelOptions.length);
-                focusOption(option);
-                scrollToOption(option);
-                if (option && nth(popupIds, -1)?.id === optionId) {
+                const index = sameLevelItems.findIndex((sameLevelItem) => sameLevelItem.id === itemId);
+                const item = nth(sameLevelItems, (index + 1) % sameLevelItems.length);
+                focusItem(item);
+                scrollToItem(item);
+                if (item && nth(popupIds, -1)?.id === itemId) {
                   setPopupIds(popupIds.slice(0, -1));
                 }
                 break;
@@ -252,12 +299,12 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
 
               case 'ArrowRight':
                 e.preventDefault();
-                if (optionType === 'sub') {
-                  addPopupId(optionId);
+                if (itemType === 'sub') {
+                  addPopupId(itemId);
                   if (children) {
-                    const o = nth(getOptions(children), 0);
-                    if (o) {
-                      setFocusIds(_subParents.map((o) => o.id).concat([o.id]));
+                    const newFocusItem = nth(getSameLevelEnableItems(children), 0);
+                    if (newFocusItem) {
+                      setFocusIds(newSubParents.map((parentItem) => parentItem.id).concat([newFocusItem.id]));
                     }
                   }
                 }
@@ -265,7 +312,7 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
 
               case 'Home':
                 e.preventDefault();
-                focusOption(nth(sameLevelOptions, 0));
+                focusItem(nth(sameLevelItems, 0));
                 if (ulRef.current) {
                   ulRef.current.scrollTop = 0;
                 }
@@ -273,7 +320,7 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
 
               case 'End':
                 e.preventDefault();
-                focusOption(nth(sameLevelOptions, -1));
+                focusItem(nth(sameLevelItems, -1));
                 if (ulRef.current) {
                   ulRef.current.scrollTop = ulRef.current.scrollHeight;
                 }
@@ -282,10 +329,10 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
               case 'Enter':
               case 'Space':
                 e.preventDefault();
-                if (optionType === 'item') {
+                if (itemType === 'item') {
                   handleItemClick();
-                } else if (optionType === 'sub') {
-                  addPopupId(optionId);
+                } else if (itemType === 'sub') {
+                  addPopupId(itemId);
                 }
                 break;
 
@@ -296,210 +343,242 @@ export function DDropdown<ID extends DId, T extends DDropdownOption<ID>>(props: 
         }
 
         return (
-          <React.Fragment key={optionId}>
-            {optionType === 'item' ? (
-              <DDropdownItem
+          <React.Fragment key={itemId}>
+            {itemType === 'item' ? (
+              <DItem
                 dId={id}
-                dDisabled={optionDisabled}
-                dFocusVisible={isFocusVisible && isFocus}
-                dIcon={optionIcon}
                 dLevel={level}
-                onClick={handleItemClick}
+                dIcon={itemIcon}
+                dFocusVisible={focusVisible && isFocus}
+                dDisabled={itemDisabled}
+                onItemClick={handleItemClick}
               >
-                {optionLabel}
-              </DDropdownItem>
-            ) : optionType === 'group' ? (
-              <DDropdownGroup dId={id} dOptions={children && getNodes(children, level + 1, _subParents)} dEmpty={isEmpty} dLevel={level}>
-                {optionLabel}
-              </DDropdownGroup>
+                {itemLabel}
+              </DItem>
+            ) : itemType === 'group' ? (
+              <DGroup dId={id} dLevel={level} dList={children && getNodes(children as T[], level + 1, newSubParents)} dEmpty={isEmpty}>
+                {itemLabel}
+              </DGroup>
             ) : (
-              <DDropdownSub
+              <DSub
+                ref={(fn) => {
+                  if (isNull(fn)) {
+                    dataRef.current.updatePosition.delete(itemId);
+                  } else {
+                    dataRef.current.updatePosition.set(itemId, fn);
+                  }
+                }}
                 dId={id}
-                dDisabled={optionDisabled}
-                dFocusVisible={isFocusVisible && isFocus}
-                dPopup={children && getNodes(children, 0, _subParents)}
-                dPopupVisible={!isUndefined(popupState)}
-                dPopupState={popupState?.visible ?? false}
-                dEmpty={isEmpty}
-                dTrigger={dTrigger}
-                dIcon={optionIcon}
                 dLevel={level}
+                dList={children && getNodes(children as T[], 0, newSubParents)}
+                dPopupState={popupState?.visible}
+                dTrigger={dTrigger}
+                dZIndex={
+                  isUndefined(zIndex)
+                    ? zIndex
+                    : isNumber(zIndex)
+                    ? zIndex + 1 + subParents.length
+                    : `calc(${zIndex} + ${1 + subParents.length})`
+                }
+                dIcon={itemIcon}
+                dEmpty={isEmpty}
+                dFocusVisible={focusVisible && isFocus}
+                dDisabled={itemDisabled}
                 onVisibleChange={(visible) => {
                   if (visible) {
                     if (subParents.length === 0) {
-                      setPopupIds([{ id: optionId, visible: true }]);
+                      setPopupIds([{ id: itemId, visible: true }]);
                     } else {
-                      addPopupId(optionId);
+                      addPopupId(itemId);
                     }
                   } else {
-                    removePopupId(optionId);
+                    removePopupId(itemId);
                   }
                 }}
               >
-                {optionLabel}
-              </DDropdownSub>
+                {itemLabel}
+              </DSub>
             )}
+            {itemSeparator && <DSeparator style={{ margin: '2px 0' }} />}
           </React.Fragment>
         );
       });
 
-    return getNodes(dOptions, 0, []);
+    return getNodes(dList, 0, []);
   })();
 
-  return (
-    <DTransition
-      dIn={visible}
-      dDuring={TTANSITION_DURING}
-      onEnterRendered={updatePosition}
-      afterEnter={() => {
-        afterVisibleChange?.(true);
-      }}
-      afterLeave={() => {
-        afterVisibleChange?.(false);
-      }}
-    >
-      {(state) => {
-        let transitionStyle: React.CSSProperties = {};
-        switch (state) {
-          case 'enter':
-            transitionStyle = { transform: 'scaleY(0.7)', opacity: 0 };
-            break;
-
-          case 'entering':
-            transitionStyle = {
-              transition: `transform ${TTANSITION_DURING}ms ease-out, opacity ${TTANSITION_DURING}ms ease-out`,
-              transformOrigin,
-            };
-            break;
-
-          case 'leaving':
-            transitionStyle = {
-              transform: 'scaleY(0.7)',
-              opacity: 0,
-              transition: `transform ${TTANSITION_DURING}ms ease-in, opacity ${TTANSITION_DURING}ms ease-in`,
-              transformOrigin,
-            };
-            break;
-
-          case 'leaved':
-            transitionStyle = { display: 'none' };
-            break;
-
-          default:
-            break;
+  useImperativeHandle(
+    ref,
+    () => ({
+      updatePosition: () => {
+        updatePosition();
+        for (const fn of dataRef.current.updatePosition.values()) {
+          fn();
         }
+      },
+    }),
+    [updatePosition]
+  );
 
-        return (
-          <DPopup
-            dVisible={visible}
-            dPopup={({ pOnClick, pOnMouseEnter, pOnMouseLeave, ...restPCProps }) => (
-              <div
-                ref={dropdownRef}
-                {...restProps}
-                {...restPCProps}
-                className={getClassName(className, `${dPrefix}dropdown`)}
-                style={{
-                  ...style,
-                  ...popupPositionStyle,
-                  ...transitionStyle,
-                  zIndex,
-                }}
-                onClick={(e) => {
-                  onClick?.(e);
-                  pOnClick?.();
-                }}
-                onMouseEnter={(e) => {
-                  onMouseEnter?.(e);
-                  pOnMouseEnter?.();
-                }}
-                onMouseLeave={(e) => {
-                  onMouseLeave?.(e);
-                  pOnMouseLeave?.();
-                }}
-                onMouseDown={(e) => {
-                  onMouseDown?.(e);
+  return (
+    <DPopup
+      dVisible={visible}
+      dTrigger={dTrigger}
+      dUpdatePosition={{
+        fn: updatePosition,
+        triggerRef: childRef,
+        popupRef: ulRef,
+        extraScrollRefs: [],
+      }}
+      onVisibleChange={changeVisible}
+    >
+      {({ renderTrigger, renderPopup }) => (
+        <>
+          <DFocusVisible onFocusVisibleChange={setFocusVisible}>
+            {({ render: renderFocusVisible }) =>
+              renderFocusVisible(
+                renderTrigger(
+                  React.cloneElement<React.HTMLAttributes<HTMLElement>>(children, {
+                    id: triggerId,
+                    tabIndex: children.props.tabIndex ?? 0,
+                    role: 'button',
+                    'aria-haspopup': 'menu',
+                    'aria-expanded': visible,
+                    'aria-controls': id,
+                    [ESC_CLOSABLE_DATA as string]: visible,
+                    onFocus: (e) => {
+                      children.props.onFocus?.(e);
 
-                  preventBlur(e);
-                }}
-                onMouseUp={(e) => {
-                  onMouseUp?.(e);
+                      setIsFocus(true);
+                      focusFirst();
+                    },
+                    onBlur: (e) => {
+                      children.props.onBlur?.(e);
 
-                  preventBlur(e);
+                      setIsFocus(false);
+                      changeVisible(false);
+                    },
+                    onKeyDown: (e) => {
+                      children.props.onKeyDown?.(e);
+
+                      if (visible) {
+                        handleKeyDown?.(e);
+                      } else {
+                        switch (e.code) {
+                          case 'Enter':
+                          case 'Space':
+                          case 'ArrowDown':
+                            e.preventDefault();
+                            focusFirst();
+                            changeVisible(true);
+                            break;
+
+                          case 'ArrowUp':
+                            e.preventDefault();
+                            focusLast();
+                            changeVisible(true);
+                            break;
+
+                          default:
+                            break;
+                        }
+                      }
+                    },
+                  })
+                )
+              )
+            }
+          </DFocusVisible>
+          {containerRef.current &&
+            ReactDOM.createPortal(
+              <DTransition
+                dIn={visible}
+                dDuring={TTANSITION_DURING_POPUP}
+                onEnter={updatePosition}
+                afterEnter={() => {
+                  afterVisibleChange?.(true);
+                }}
+                afterLeave={() => {
+                  afterVisibleChange?.(false);
                 }}
               >
-                <ul
-                  ref={ulRef}
-                  id={_id}
-                  className={`${dPrefix}dropdown__list`}
-                  tabIndex={-1}
-                  role="menu"
-                  aria-labelledby={buttonId}
-                  aria-activedescendant={isUndefined(focusId) ? undefined : getOptionId(focusId)}
-                >
-                  {dOptions.length === 0 ? <div className={`${dPrefix}dropdown__empty`}>{t('No Data')}</div> : optionNodes}
-                </ul>
-                {dArrow && <div className={`${dPrefix}dropdown__arrow`} style={arrowPosition}></div>}
-              </div>
-            )}
-            dContainer={containerEl}
-            dTrigger={dTrigger}
-            onVisibleChange={changeVisible}
-            onUpdate={updatePosition}
-          >
-            {({ pOnClick, pOnFocus, pOnBlur, pOnMouseEnter, pOnMouseLeave, ...restPCProps }) =>
-              React.cloneElement<React.HTMLAttributes<HTMLElement>>(children, {
-                ...children.props,
-                ...restPCProps,
-                id: buttonId,
-                tabIndex: 0,
-                role: 'button',
-                'aria-haspopup': 'menu',
-                'aria-expanded': visible,
-                'aria-controls': _id,
-                onClick: (e) => {
-                  children.props.onClick?.(e);
-                  pOnClick?.();
-                },
-                onFocus: (e) => {
-                  children.props.onFocus?.(e);
-                  pOnFocus?.();
-                  fvOnFocus();
+                {(state) => {
+                  let transitionStyle: React.CSSProperties = {};
+                  switch (state) {
+                    case 'enter':
+                      transitionStyle = { transform: 'scaleY(0.7)', opacity: 0 };
+                      break;
 
-                  setIsFocus(true);
-                  initFocus();
-                },
-                onBlur: (e) => {
-                  children.props.onBlur?.(e);
-                  pOnBlur?.();
-                  fvOnBlur();
+                    case 'entering':
+                      transitionStyle = {
+                        transition: ['transform', 'opacity'].map((attr) => `${attr} ${TTANSITION_DURING_POPUP}ms ease-out`).join(', '),
+                        transformOrigin,
+                      };
+                      break;
 
-                  setIsFocus(false);
-                  changeVisible(false);
-                },
-                onKeyDown: (e) => {
-                  children.props.onKeyDown?.(e);
-                  fvOnKeyDown(e);
+                    case 'leaving':
+                      transitionStyle = {
+                        transform: 'scaleY(0.7)',
+                        opacity: 0,
+                        transition: ['transform', 'opacity'].map((attr) => `${attr} ${TTANSITION_DURING_POPUP}ms ease-in`).join(', '),
+                        transformOrigin,
+                      };
+                      break;
 
-                  if (visible) {
-                    handleKeyDown?.(e);
-                  } else if (e.code === 'Enter' || e.code === 'Space') {
-                    e.preventDefault();
-                    changeVisible(true);
+                    case 'leaved':
+                      transitionStyle = { display: 'none' };
+                      break;
+
+                    default:
+                      break;
                   }
-                },
-                onMouseEnter: (e) => {
-                  children.props.onMouseEnter?.(e);
-                  pOnMouseEnter?.();
-                },
-                onMouseLeave: (e) => {
-                  children.props.onMouseLeave?.(e);
-                  pOnMouseLeave?.();
-                },
-              })
-            }
-          </DPopup>
-        );
-      }}
-    </DTransition>
+
+                  return renderPopup(
+                    <div
+                      ref={dropdownRef}
+                      {...restProps}
+                      className={getClassName(restProps.className, `${dPrefix}dropdown`)}
+                      style={{
+                        ...restProps.style,
+                        ...popupPositionStyle,
+                        zIndex,
+                        ...transitionStyle,
+                      }}
+                      onMouseDown={(e) => {
+                        restProps.onMouseDown?.(e);
+
+                        preventBlur(e);
+                      }}
+                      onMouseUp={(e) => {
+                        restProps.onMouseUp?.(e);
+
+                        preventBlur(e);
+                      }}
+                    >
+                      <ul
+                        ref={ulRef}
+                        id={id}
+                        className={`${dPrefix}dropdown__list`}
+                        tabIndex={-1}
+                        role="menu"
+                        aria-labelledby={triggerId}
+                        aria-activedescendant={isUndefined(focusId) ? undefined : getItemId(focusId)}
+                      >
+                        {dList.length === 0 ? <div className={`${dPrefix}dropdown__empty`}>{t('No Data')}</div> : nodes}
+                      </ul>
+                      {dArrow && <div className={`${dPrefix}dropdown__arrow`} style={arrowPosition}></div>}
+                    </div>
+                  );
+                }}
+              </DTransition>,
+              containerRef.current
+            )}
+        </>
+      )}
+    </DPopup>
   );
 }
+
+export const DDropdown: <ID extends DId, T extends DDropdownItem<ID>>(
+  props: DDropdownProps<ID, T> & React.RefAttributes<DDropdownRef>
+) => ReturnType<typeof Dropdown> = React.forwardRef(Dropdown) as any;

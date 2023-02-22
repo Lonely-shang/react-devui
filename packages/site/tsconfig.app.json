@@ -2,8 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
-    "declaration": true,
-    "types": ["node", "react/next", "react-dom/next"]
+    "types": ["node"]
   },
   "files": ["../../node_modules/@nrwl/react/typings/cssmodule.d.ts", "../../node_modules/@nrwl/react/typings/image.d.ts"],
   "exclude": [
@@ -16,5 +15,5 @@
     "**/*.spec.jsx",
     "**/*.test.jsx"
   ],
-  "include": ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"]
+  "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"]
 }

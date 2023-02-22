@@ -1,35 +1,38 @@
 import type { DFormControl } from '../form';
 
 import { isUndefined } from 'lodash';
-import { useId, useState } from 'react';
+import { useState } from 'react';
 
-import { usePrefixConfig } from '../../hooks';
-import { getClassName } from '../../utils';
-import { DTrigger } from '../_trigger';
+import { useId } from '@react-devui/hooks';
+import { getClassName } from '@react-devui/utils';
+
+import { DBaseInput } from '../_base-input';
+import { usePrefixConfig } from '../root';
 import { DTooltip } from '../tooltip';
 
 export interface DStarProps {
-  dName?: string;
-  dDisabled?: boolean;
-  dFormControl?: DFormControl;
+  dFormControl: DFormControl | undefined;
   dValue: number;
+  dName: string;
+  dDisabled: boolean;
   dIcon: React.ReactNode;
   dChecked: number | null;
   dHoverValue: number | null;
   dHalf: boolean;
-  dTooltip?: (value: number) => React.ReactNode;
+  dTooltip: ((value: number) => React.ReactNode) | undefined;
   onCheck: (value: number) => void;
   onHoverChange: (value: number) => void;
 }
 
 export function DStar(props: DStarProps): JSX.Element | null {
-  const { dName, dDisabled, dFormControl, dValue, dIcon, dChecked, dHoverValue, dHalf, dTooltip, onCheck, onHoverChange } = props;
+  const { dFormControl, dValue, dName, dDisabled, dIcon, dChecked, dHoverValue, dHalf, dTooltip, onCheck, onHoverChange } = props;
 
   //#region Context
   const dPrefix = usePrefixConfig();
   //#endregion
 
   const uniqueId = useId();
+  const inputId = `${dPrefix}rating-star-input-${uniqueId}`;
   const halfInputId = `${dPrefix}rating-star-half-input-${uniqueId}`;
 
   const checked = dValue === dChecked;
@@ -40,29 +43,20 @@ export function DStar(props: DStarProps): JSX.Element | null {
   const [tooltipValue, setTooltipValue] = useState<number>(dValue);
   const [isFocus, setIsFocus] = useState(false);
 
-  return (
-    <DTooltip dDisabled={isUndefined(dTooltip)} dTitle={dTooltip?.(tooltipValue)}>
-      <div
-        className={getClassName(`${dPrefix}rating-star`, {
-          'is-focus': isFocus,
-        })}
-      >
-        {dHalf && (
-          <>
-            <DTrigger
-              dDisabled={isUndefined(dTooltip)}
-              dTrigger="hover"
-              onTrigger={(visible) => {
-                if (visible) {
-                  setTooltipValue(halfValue);
-                }
-              }}
-            >
-              {({ sOnClick, sOnFocus, sOnBlur, sOnMouseEnter, sOnMouseLeave }) => (
+  const node = (
+    <div
+      className={getClassName(`${dPrefix}rating__star`, {
+        'is-focus': isFocus,
+      })}
+    >
+      {dHalf && (
+        <>
+          <DBaseInput dFormControl={dFormControl} dLabelFor={halfChecked}>
+            {({ render: renderBaseInput }) =>
+              renderBaseInput(
                 <input
-                  {...(halfChecked ? dFormControl?.inputAttrs : undefined)}
                   id={halfInputId}
-                  className={getClassName(`${dPrefix}rating-star__input`, `${dPrefix}rating-star__input--half`)}
+                  className={getClassName(`${dPrefix}rating__input`, `${dPrefix}rating__input--half`)}
                   type="radio"
                   name={dName}
                   checked={halfChecked}
@@ -71,58 +65,44 @@ export function DStar(props: DStarProps): JSX.Element | null {
                   onChange={() => {
                     onCheck(halfValue);
                   }}
-                  onClick={() => {
-                    sOnClick?.();
-                  }}
                   onFocus={() => {
-                    sOnFocus?.();
-
                     setIsFocus(true);
                   }}
                   onBlur={() => {
-                    sOnBlur?.();
-
                     setIsFocus(false);
                   }}
                   onMouseEnter={() => {
-                    sOnMouseEnter?.();
+                    if (!isUndefined(dTooltip)) {
+                      setTooltipValue(halfValue);
+                    }
 
                     onHoverChange(halfValue);
                   }}
-                  onMouseLeave={() => {
-                    sOnMouseLeave?.();
-                  }}
                 />
-              )}
-            </DTrigger>
-            <label
-              className={getClassName(`${dPrefix}rating-star__icon`, `${dPrefix}rating-star__icon--half`, {
-                'is-checked': halfValue <= (dHoverValue ?? dChecked ?? 0),
-              })}
-              htmlFor={halfInputId}
-            >
-              {dIcon}
-            </label>
-          </>
-        )}
-        <label
-          className={getClassName(`${dPrefix}rating-star__icon`, {
-            'is-checked': dValue <= (dHoverValue ?? dChecked ?? 0),
-          })}
-        >
-          <DTrigger
-            dDisabled={isUndefined(dTooltip)}
-            dTrigger="hover"
-            onTrigger={(visible) => {
-              if (visible) {
-                setTooltipValue(dValue);
-              }
-            }}
+              )
+            }
+          </DBaseInput>
+          <label
+            className={getClassName(`${dPrefix}rating__icon`, `${dPrefix}rating__icon--half`, {
+              'is-checked': halfValue <= (dHoverValue ?? dChecked ?? 0),
+            })}
+            htmlFor={halfInputId}
           >
-            {({ sOnClick, sOnFocus, sOnBlur, sOnMouseEnter, sOnMouseLeave }) => (
+            {dIcon}
+          </label>
+        </>
+      )}
+      <label
+        className={getClassName(`${dPrefix}rating__icon`, {
+          'is-checked': dValue <= (dHoverValue ?? dChecked ?? 0),
+        })}
+      >
+        <DBaseInput dFormControl={dFormControl} dLabelFor={checked}>
+          {({ render: renderBaseInput }) =>
+            renderBaseInput(
               <input
-                {...(checked ? { ...dFormControl?.inputAttrs, id: dFormControl?.controlId } : undefined)}
-                className={`${dPrefix}rating-star__input`}
+                id={inputId}
+                className={`${dPrefix}rating__input`}
                 type="radio"
                 name={dName}
                 checked={checked}
@@ -131,33 +111,27 @@ export function DStar(props: DStarProps): JSX.Element | null {
                 onChange={() => {
                   onCheck(dValue);
                 }}
-                onClick={() => {
-                  sOnClick?.();
-                }}
                 onFocus={() => {
-                  sOnFocus?.();
-
                   setIsFocus(true);
                 }}
                 onBlur={() => {
-                  sOnBlur?.();
-
                   setIsFocus(false);
                 }}
                 onMouseEnter={() => {
-                  sOnMouseEnter?.();
+                  if (!isUndefined(dTooltip)) {
+                    setTooltipValue(dValue);
+                  }
 
                   onHoverChange(dValue);
                 }}
-                onMouseLeave={() => {
-                  sOnMouseLeave?.();
-                }}
               />
-            )}
-          </DTrigger>
-          {dIcon}
-        </label>
-      </div>
-    </DTooltip>
+            )
+          }
+        </DBaseInput>
+        {dIcon}
+      </label>
+    </div>
   );
+
+  return isUndefined(dTooltip) ? node : <DTooltip dTitle={dTooltip?.(tooltipValue)}>{node}</DTooltip>;
 }

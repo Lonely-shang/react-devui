@@ -1,87 +1,99 @@
-import type { DLang, DTheme } from '@react-devui/ui/types';
+/* eslint-disable @nrwl/nx/enforce-module-boundaries */
+import type { DRootProps } from '@react-devui/ui';
+import type { DLang } from '@react-devui/ui/utils/types';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import routes from 'packages/site/dist/routes';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
+import { useEvent, useMount, useStorage } from '@react-devui/hooks';
 import { DRoot } from '@react-devui/ui';
-import { useAsync, useMount } from '@react-devui/ui/hooks';
 
 import { environment } from '../environments/environment';
-import { AppLayout } from './components';
-import { AppRoutes } from './routes/Routes';
+import { AppFCPLoader } from './components';
+import AppHomeRoute from './routes/home/Home';
+import AppLayout from './routes/layout/Layout';
 
-export interface AppContextData {
-  gTheme: DTheme;
-  gOnThemeChange: (theme: DTheme) => void;
-}
-export const AppContext = React.createContext<AppContextData | null>(null);
+export type AppTheme = 'light' | 'dark';
 
 export function App() {
+  const [mainEl, setMainEl] = useState<HTMLElement>();
+  const mainRef = useCallback((el: HTMLElement | null) => {
+    if (el) {
+      setMainEl(el);
+    }
+  }, []);
+
   const { i18n } = useTranslation();
-  const asyncCapture = useAsync();
+  const languageStorage = useStorage<DLang>('language', 'en-US');
+  const themeStorage = useStorage<AppTheme>('theme', 'light');
+  const scrollTopStorage = useStorage('scrollTop', 0, 'number');
 
-  const mainRef = useRef<HTMLElement>(null);
-  const [theme, setTheme] = useState<DTheme>(() => (localStorage.getItem('theme') as DTheme) ?? 'light');
-
-  useMount(() => {
+  useEvent({ current: window }, 'beforeunload' as any, () => {
     if (!environment.production) {
-      const [asyncGroup, asyncId] = asyncCapture.createGroup();
-
-      if (!window.location.hash && mainRef.current) {
-        asyncGroup.setTimeout(() => {
-          if (mainRef.current) {
-            mainRef.current.scrollTop = Number(localStorage.getItem('scrollTop') ?? 0);
-          }
-        }, 300);
+      if (mainEl) {
+        scrollTopStorage.set(mainEl.scrollTop);
       }
-
-      asyncGroup.fromEvent(window, 'beforeunload').subscribe({
-        next: () => {
-          if (mainRef.current) {
-            localStorage.setItem('scrollTop', mainRef.current.scrollTop.toString());
-          }
-        },
-      });
-
-      return () => {
-        asyncCapture.deleteGroup(asyncId);
-      };
     }
   });
 
+  useMount(() => {
+    i18n.changeLanguage(languageStorage.value);
+  });
+
   useEffect(() => {
-    localStorage.setItem('language', i18n.language);
-    document.documentElement.lang = i18n.language;
-  }, [i18n.language]);
+    document.documentElement.lang = languageStorage.value;
+  }, [languageStorage.value]);
 
-  const rootContext = useMemo(
-    () => ({
-      theme,
-      i18n: { lang: i18n.language as DLang },
-    }),
-    [i18n.language, theme]
-  );
+  useEffect(() => {
+    for (const t of ['light', 'dark']) {
+      document.body.classList.toggle(t, themeStorage.value === t);
+    }
+    const colorScheme = document.documentElement.style.colorScheme;
+    document.documentElement.style.colorScheme = themeStorage.value;
+    return () => {
+      document.documentElement.style.colorScheme = colorScheme;
+    };
+  }, [themeStorage.value]);
 
-  const contextValue = useMemo<AppContextData>(
+  useEffect(() => {
+    if (!environment.production && mainEl) {
+      mainEl.scrollTop = scrollTopStorage.value;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainEl]);
+
+  const rootContext = useMemo<DRootProps['context']>(
     () => ({
-      gTheme: theme,
-      gOnThemeChange: (theme) => {
-        setTheme(theme);
-        localStorage.setItem('theme', theme);
-      },
+      i18n: { lang: languageStorage.value },
+      layout: { pageScrollEl: '#app-main', contentResizeEl: '#app-content' },
     }),
-    [theme]
+    [languageStorage.value]
   );
 
   return (
-    <DRoot dContext={rootContext} dContentSelector="main">
-      <AppContext.Provider value={contextValue}>
-        <AppLayout />
-      </AppContext.Provider>
-
-      <main ref={mainRef} className="app-main">
-        <AppRoutes />
-      </main>
+    <DRoot context={rootContext}>
+      <AppLayout />
+      <Routes>
+        <Route path="/" element={<AppHomeRoute />} />
+        <Route path="/docs" element={<Navigate to="/docs/Overview" replace />} />
+        <Route path="/components" element={<Navigate to="/components/Button" replace />} />
+        {routes.map(({ path, component }) => (
+          <Route
+            key={path}
+            path={path}
+            element={
+              <React.Suspense fallback={<AppFCPLoader />}>
+                <main ref={mainRef} id="app-main" className="app-main">
+                  <section id="app-content">{React.createElement(component)}</section>
+                </main>
+              </React.Suspense>
+            }
+          />
+        ))}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </DRoot>
   );
 }

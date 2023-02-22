@@ -1,42 +1,61 @@
 ---
 group: Data Entry
 title: Input
+compose: true
 ---
 
 ## API
 
-### DRadioProps
-
-Extend `React.InputHTMLAttributes<HTMLInputElement>`.
-
-<!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
-| --- | --- | --- | --- | 
-| dModel | Bind value | [string, Updater\<string\>?] | - |
-| dSize | Set the size of the input box | 'smaller' \| 'larger' | - |
-| onModelChange | Callback for binding value change | `(value: string) => void` | - |
-<!-- prettier-ignore-end -->
-
-### DInputRef
-
-```tsx
-type DInputRef = HTMLInputElement;
-```
-
 ### DInputProps
 
-Extend `React.HTMLAttributes<HTMLDivElement>`.
+```tsx
+interface DInputProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+  dRef?: {
+    input?: React.ForwardedRef<HTMLInputElement>;
+  };
+  dFormControl?: DFormControl;
+  dModel?: string;
+  dType?: React.HTMLInputTypeAttribute;
+  dPrefix?: React.ReactNode;
+  dSuffix?: React.ReactNode;
+  dPassword?: boolean;
+  dNumbetButton?: boolean;
+  dClearable?: boolean;
+  dSize?: DSize;
+  dMax?: number;
+  dMin?: number;
+  dStep?: number;
+  dInteger?: boolean;
+  dPlaceholder?: string;
+  dDisabled?: boolean;
+  dInputRender?: DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>;
+  onModelChange?: (value: string) => void;
+  onClear?: () => void;
+  onPasswordChange?: (value: boolean) => void;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dPrefix | Input prefix | React.ReactNode | - |
-| dSuffix | Input suffix | React.ReactNode | - |
-| disabled | Whether to disable | boolean | false |
-| dPassword | Is it a password input | boolean | false |
-| dPasswordToggle | Whether the password input can switch the password display | boolean | true |
-| dNumber | Is it a number input | boolean | false |
-| dClearable | Can it be cleared | boolean | false |
-| dClearIcon | Custom clear icon | React.ReactNode | - |
-| dSize | Input size | 'smaller' \| 'larger' | - |
+| dRef | pass ref | - | |
+| dFormControl | Support Forms | - | |
+| dModel | input value, controlled, default `''` | - | |
+| dType | `type` attribute of `input` element | - | |
+| dPrefix | prefix | - | |
+| dSuffix | suffix | - | |
+| dPassword | Whether to hide the password, controlled, default `true` | - | |
+| dNumbetButton | Whether to display the increase and decrease buttons | `true` | |
+| dClearable | Can be cleared | `false` | |
+| dSize | set input box size | - | |
+| dMax | Set maximum value | - | |
+| dMin | set minimum value | - | |
+| dStep | Set the number of steps | - | |
+| dInteger | Whether it is an integer | `false` | |
+| dPlaceholder | set the input box placeholder text | - | |
+| dDisabled | Whether to disable | `false` | |
+| dInputRender | custom input element | - | |
+| onModelChange | Callback for input value change | - | |
+| onClear | Callback for clearing input values | - | |
+| onPasswordChange | callback for password display/invisibility | - | |
 <!-- prettier-ignore-end -->

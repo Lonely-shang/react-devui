@@ -7,14 +7,31 @@ title: Anchor
 
 ### DAnchorProps
 
-Extend `React.HTMLAttributes<HTMLUListElement>`.
+```tsx
+interface DAnchorItem {
+  href: string;
+  title?: React.ReactNode;
+  target?: string;
+  children?: DAnchorItem[];
+}
+
+interface DAnchorProps<T extends DAnchorItem> extends Omit<React.HTMLAttributes<HTMLUListElement>, 'children'> {
+  dList: T[];
+  dPage?: DRefExtra;
+  dDistance?: number | string;
+  dScrollBehavior?: 'instant' | 'smooth';
+  dIndicator?: React.ReactNode | typeof DOT_INDICATOR | typeof LINE_INDICATOR;
+  onItemClick?: (href: string, item: T) => void;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dDistance | Distance from page to anchor | number | 0 |
-| dPage | Set scrolling page, default is `window` view | [DElementSelector](/components/Interface#DElementSelector) | - |
-| dScrollBehavior | Custom scrolling behavior | 'instant' \| 'smooth' | 'instant' |
-| dIndicator | Custom indicator, pre-defined indicators of `DOT_INDICATOR` and `LINE_INDICATOR` patterns | React.ReactNode \| symbol | DOT_INDICATOR |
-| onHrefChange | Anchor point change callback | `(href: string \| null) => void` | - |
+| dList | List of data | - |  |
+| dPage | Set the page element, the default is the scroll container provided by the global configuration | - |  |
+| dDistance | Determine the distance from the anchor point into the page | `0` |  |
+| dScrollBehavior | Set scrolling behavior | `'instant'` |  |
+| dIndicator | Set indicator | `DOT_INDICATOR` |  |
+| onItemClick | Callback for item click | - |  |
 <!-- prettier-ignore-end -->

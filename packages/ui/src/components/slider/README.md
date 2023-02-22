@@ -1,55 +1,59 @@
 ---
 group: Data Entry
 title: Slider
+aria: slider
 ---
 
 ## API
 
-### DSliderSingleProps
+### DSliderProps
 
-Extend `DSliderBaseProps`.
-
-<!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
-| --- | --- | --- | --- | 
-| dModel | Manual control value | [number, Updater\<number\>?] | - |
-| dRange | Range selection | false | false |
-| dInputProps | Attributes applied to `input` elements | React.InputHTMLAttributes\<HTMLInputElement\>  | - |
-| dInputRef | Pass `ref` to `input` element | React.Ref\<HTMLInputElement\>  | - |
-| dTooltipVisible | Whether the prompt is visible | boolean  | - |
-| onModelChange | Value change callback | `(value: number) => void` | - |
-<!-- prettier-ignore-end -->
-
-### DSliderRangeProps
-
-Extend `DSliderBaseProps`.
-
-<!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
-| --- | --- | --- | --- | 
-| dModel | Manual control value | [[number, number], Updater\<[number, number]\>?] | - |
-| dRange | Range selection | true | false |
-| dRangeMinDistance | Range select minimum spacing | number | - |
-| dRangeThumbDraggable | Whether the range selection track is draggable | boolean | false |
-| dInputProps | Attributes applied to `input` elements | [React.InputHTMLAttributes\<HTMLInputElement\>?, React.InputHTMLAttributes\<HTMLInputElement\>?]  | - |
-| dInputRef | Pass `ref` to `input` element | [React.Ref\<HTMLInputElement\>?, React.Ref\<HTMLInputElement\>?]  | - |
-| dTooltipVisible | Whether the prompt is visible | [boolean?, boolean?]  | - |
-| onModelChange | Value change callback | `(value: [number, number]) => void` | - |
-<!-- prettier-ignore-end -->
-
-### DSliderBaseProps
-
-Extend `React.HTMLAttributes<HTMLDivElement>`.
+```tsx
+interface DSliderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+  dRef?: {
+    inputLeft?: React.ForwardedRef<HTMLInputElement>;
+    inputRight?: React.ForwardedRef<HTMLInputElement>;
+  };
+  dFormControl?: DFormControl;
+  dModel?: number | [number, number];
+  dMax?: number;
+  dMin?: number;
+  dStep?: number | null;
+  dDisabled?: boolean;
+  dMarks?: number | ({ value: number; label: React.ReactNode } | number)[];
+  dVertical?: boolean;
+  dReverse?: boolean;
+  dRange?: boolean;
+  dRangeMinDistance?: number;
+  dRangeThumbDraggable?: boolean;
+  dTooltipVisible?: boolean | [boolean?, boolean?];
+  dCustomTooltip?: (value: number) => React.ReactNode;
+  dInputRender?: [
+    DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>?,
+    DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>?
+  ];
+  onModelChange?: (value: any) => void;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dMax |  Maximum value | number | 100 |
-| dMin | Minimum | number | 0 |
-| dStep | Step size, null means only values in `dMarks` can be selected | number | null | 1 |
-| dMarks | Tick marks | number | ({ value: number; label: React.ReactNode } | number)[] | - |
-| dVertical | Whether to display vertically | boolean | false |
-| dReverse | Whether to invert the display | boolean | false |
-| disabled | Whether to disable | boolean | false |
-| dCustomTooltip | Custom prompt | `(value: number) => React.ReactNode` | - |
+| dRef | pass ref | - | |
+| dFormControl | Support Forms | - | |
+| dModel | value, controlled, default `dRange ? [0, 0] : 0` | - | |
+| dMax | set maximum value | `100` | |
+| dMin | set minimum value | `0` | |
+| dStep | Set the number of steps | `1` | |
+| dDisabled | Whether to disable | `false` | |
+| dMarks | set tick marks | - | |
+| dVertical | whether vertical layout | `false` | |
+| dReverse | Whether to reverse the input bar | `false` | |
+| dRange | Whether range selection | `false` | |
+| dRangeMinDistance | set minimum range | - | |
+| dRangeThumbDraggable | Whether the input bar can be dragged | `false` | |
+| dTooltipVisible | Whether tooltip is visible | - | |
+| dCustomTooltip | Custom Tooltip | - | |
+| dInputRender | custom input element | - | |
+| onModelChange | Callback for value change | - | |
 <!-- prettier-ignore-end -->

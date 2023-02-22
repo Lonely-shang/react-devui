@@ -7,23 +7,19 @@ title: Affix
 
 ### DAffixProps
 
-Extend `React.HTMLAttributes<HTMLDivElement>`.
-
-<!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
-| --- | --- | --- | --- | 
-| dTarget | Set the node that needs to listen to its scroll event, compare the `window` view by default | [DElementSelector](/components/Interface#DElementSelector) | - |
-| dTop | Trigger after reaching the specified offset from the top | number \| string | 0 |
-| dBottom | Trigger after reaching the specified offset from the bottom | number \| string | 0 |
-| dZIndex | Manually control the value of `z-index` | number | - |
-| onFixedChange | The callback function triggered when the fixed state changes | `(fixed: boolean) => void` | - | 
-<!-- prettier-ignore-end -->
-
-### DAffixRef
-
 ```tsx
-interface DAffixRef {
-  el: HTMLDivElement | null;
-  updatePosition: () => void;
+interface DAffixProps {
+  children: React.ReactElement;
+  dTarget?: DRefExtra | false;
+  dTop?: number | string;
+  dZIndex?: number | string;
 }
 ```
+
+<!-- prettier-ignore-start -->
+| Property | Description | Default | Version | 
+| --- | --- | --- | --- | 
+| dTarget | Set the target element, `false` means the `parentElement` of the element, the default is the scroll container provided by the global configuration | - |  |
+| dTop | The `top` value of the affix away from the target element | `0` |  |
+| dZIndex | Set the `z-index` of the affix | - |  |
+<!-- prettier-ignore-end -->

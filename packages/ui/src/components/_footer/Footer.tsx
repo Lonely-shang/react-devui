@@ -1,30 +1,34 @@
 import type { DButtonProps } from '../button';
 
-import React from 'react';
+import React, { useState } from 'react';
 
-import { usePrefixConfig, useTranslation } from '../../hooks';
-import { getClassName } from '../../utils';
+import { getClassName } from '@react-devui/utils';
+
 import { DButton } from '../button';
+import { usePrefixConfig, useTranslation } from '../root';
 
 export interface DFooterProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
-  dAlign?: 'left' | 'center' | 'right';
-  dButtons?: React.ReactNode[];
-  dCancelProps?: DButtonProps;
-  dOkProps?: DButtonProps;
-  onCancelClick?: () => void;
-  onOkClick?: () => void;
+  dClassNamePrefix: string;
+  dAlign: 'left' | 'center' | 'right';
+  dActions: React.ReactNode[];
+  dCancelProps: DButtonProps | undefined;
+  dOkProps: DButtonProps | undefined;
+  onCancelClick: (() => void | boolean | Promise<boolean>) | undefined;
+  onOkClick: (() => void | boolean | Promise<boolean>) | undefined;
+  onClose: (() => void) | undefined;
 }
 
 export function DFooter(props: DFooterProps): JSX.Element | null {
   const {
-    dAlign = 'right',
-    dButtons = ['cancel', 'ok'],
+    dClassNamePrefix,
+    dAlign,
+    dActions,
     dCancelProps,
     dOkProps,
     onCancelClick,
     onOkClick,
+    onClose,
 
-    className,
     ...restProps
   } = props;
 
@@ -32,34 +36,64 @@ export function DFooter(props: DFooterProps): JSX.Element | null {
   const dPrefix = usePrefixConfig();
   //#endregion
 
-  const [t] = useTranslation('DFooter');
+  const prefix = `${dPrefix}${dClassNamePrefix}`;
+
+  const [t] = useTranslation();
+
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [okLoading, setOkLoading] = useState(false);
+
+  const cancelProps: DFooterProps['dCancelProps'] = {
+    ...dCancelProps,
+    dLoading: dCancelProps?.dLoading || cancelLoading,
+    onClick: () => {
+      const shouldClose = onCancelClick?.();
+      if (shouldClose instanceof Promise) {
+        setCancelLoading(true);
+        shouldClose.then((val) => {
+          setCancelLoading(false);
+          if (val !== false) {
+            onClose?.();
+          }
+        });
+      } else if (shouldClose !== false) {
+        onClose?.();
+      }
+    },
+  };
+
+  const okProps: DFooterProps['dOkProps'] = {
+    ...dOkProps,
+    dLoading: dOkProps?.dLoading || okLoading,
+    onClick: () => {
+      const shouldClose = onOkClick?.();
+      if (shouldClose instanceof Promise) {
+        setOkLoading(true);
+        shouldClose.then((val) => {
+          setOkLoading(false);
+          if (val !== false) {
+            onClose?.();
+          }
+        });
+      } else if (shouldClose !== false) {
+        onClose?.();
+      }
+    },
+  };
 
   return (
-    <div {...restProps} className={getClassName(className, `${dPrefix}footer`, `${dPrefix}footer--${dAlign}`)}>
-      {dButtons.map((button, index) =>
-        button === 'cancel' ? (
-          <DButton
-            key="cancel"
-            {...dCancelProps}
-            dType="secondary"
-            onClick={() => {
-              onCancelClick?.();
-            }}
-          >
-            {t('Cancel')}
+    <div {...restProps} className={getClassName(restProps.className, `${prefix}__footer`, `${prefix}__footer--${dAlign}`)}>
+      {React.Children.map(dActions, (action) =>
+        action === 'cancel' ? (
+          <DButton {...cancelProps} key="$$cancel" dType={cancelProps.dType ?? 'secondary'}>
+            {cancelProps.children ?? t('Footer', 'Cancel')}
           </DButton>
-        ) : button === 'ok' ? (
-          <DButton
-            key="ok"
-            {...dOkProps}
-            onClick={() => {
-              onOkClick?.();
-            }}
-          >
-            {t('OK')}
+        ) : action === 'ok' ? (
+          <DButton {...okProps} key="$$ok">
+            {okProps.children ?? t('Footer', 'OK')}
           </DButton>
         ) : (
-          <React.Fragment key={index}>{button}</React.Fragment>
+          action
         )
       )}
     </div>

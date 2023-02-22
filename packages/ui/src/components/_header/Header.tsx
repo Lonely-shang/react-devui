@@ -1,22 +1,32 @@
-import { usePrefixConfig, useTranslation } from '../../hooks';
-import { CloseOutlined } from '../../icons';
-import { getClassName } from '../../utils';
+import type { DButtonProps } from '../button';
+
+import React, { useState } from 'react';
+
+import { CloseOutlined } from '@react-devui/icons';
+import { getClassName } from '@react-devui/utils';
+
 import { DButton } from '../button';
+import { usePrefixConfig, useTranslation } from '../root';
 
 export interface DHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
-  dClosable?: boolean;
-  dExtraIcons?: React.ReactNode[];
-  onClose?: () => void;
+  dClassNamePrefix: string;
+  dActions: React.ReactNode[];
+  dCloseProps: DButtonProps | undefined;
+  dAriaLabelledby: string | undefined;
+  onCloseClick: (() => void | boolean | Promise<boolean>) | undefined;
+  onClose: (() => void) | undefined;
 }
 
 export function DHeader(props: DHeaderProps): JSX.Element | null {
   const {
     children,
-    dClosable = true,
-    dExtraIcons,
+    dClassNamePrefix,
+    dActions,
+    dCloseProps,
+    dAriaLabelledby,
+    onCloseClick,
     onClose,
 
-    className,
     ...restProps
   } = props;
 
@@ -24,22 +34,49 @@ export function DHeader(props: DHeaderProps): JSX.Element | null {
   const dPrefix = usePrefixConfig();
   //#endregion
 
-  const [t] = useTranslation('Common');
+  const prefix = `${dPrefix}${dClassNamePrefix}`;
+
+  const [t] = useTranslation();
+
+  const [closeLoading, setCloseLoading] = useState(false);
+
+  const closeProps: DHeaderProps['dCloseProps'] = {
+    ...dCloseProps,
+    dLoading: dCloseProps?.dLoading || closeLoading,
+    onClick: () => {
+      const shouldClose = onCloseClick?.();
+      if (shouldClose instanceof Promise) {
+        setCloseLoading(true);
+        shouldClose.then((val) => {
+          setCloseLoading(false);
+          if (val !== false) {
+            onClose?.();
+          }
+        });
+      } else if (shouldClose !== false) {
+        onClose?.();
+      }
+    },
+  };
 
   return (
-    <div {...restProps} className={getClassName(className, `${dPrefix}header`)}>
-      <div className={`${dPrefix}header__title`}>{children}</div>
-      <div className={`${dPrefix}header__buttons`}>
-        {dExtraIcons && dExtraIcons.map((icon, index) => <DButton key={index} dType="text" dIcon={icon}></DButton>)}
-        {dClosable && (
-          <DButton
-            aria-label={t('Close')}
-            dType="text"
-            dIcon={<CloseOutlined />}
-            onClick={() => {
-              onClose?.();
-            }}
-          ></DButton>
+    <div {...restProps} className={getClassName(restProps.className, `${prefix}__header`)}>
+      <div id={dAriaLabelledby} className={`${prefix}__header-title`}>
+        {children}
+      </div>
+      <div className={`${prefix}__header-actions`}>
+        {React.Children.map(dActions, (action) =>
+          action === 'close' ? (
+            <DButton
+              {...closeProps}
+              key="$$close"
+              aria-label={closeProps['aria-label'] ?? t('Close')}
+              dType={closeProps.dType ?? 'text'}
+              dIcon={closeProps.dIcon ?? <CloseOutlined />}
+            ></DButton>
+          ) : (
+            action
+          )
         )}
       </div>
     </div>

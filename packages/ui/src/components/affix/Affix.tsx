@@ -1,101 +1,69 @@
-import type { DElementSelector } from '../../hooks/ui/useElement';
+import type { DRefExtra } from '@react-devui/hooks/useRefExtra';
 
 import { isString, isUndefined } from 'lodash';
-import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { useImperativeHandle, useState } from 'react';
 
-import {
-  usePrefixConfig,
-  useComponentConfig,
-  useAsync,
-  useElement,
-  useContentScrollViewChange,
-  useIsomorphicLayoutEffect,
-  useEventCallback,
-} from '../../hooks';
-import { getClassName, registerComponentMate, toPx } from '../../utils';
+import { useEvent, useEventCallback, useId, useIsomorphicLayoutEffect, useRefExtra, useResize } from '@react-devui/hooks';
+import { getOffsetToRoot, toPx } from '@react-devui/utils';
+
+import { cloneHTMLElement, registerComponentMate } from '../../utils';
+import { useComponentConfig, useGlobalScroll, useLayout, usePrefixConfig } from '../root';
 
 export interface DAffixRef {
-  fixed: boolean;
+  sticky: boolean;
   updatePosition: () => void;
 }
 
-export interface DAffixProps extends React.HTMLAttributes<HTMLDivElement> {
-  dTarget?: DElementSelector;
+export interface DAffixProps {
+  children: React.ReactElement;
+  dTarget?: DRefExtra | false;
   dTop?: number | string;
-  dBottom?: number | string;
   dZIndex?: number | string;
 }
 
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DAffix' });
-function Affix(props: DAffixProps, ref: React.ForwardedRef<DAffixRef>) {
-  const {
-    children,
-    dTarget,
-    dTop = 0,
-    dBottom,
-    dZIndex,
-
-    className,
-    style,
-    ...restProps
-  } = useComponentConfig(COMPONENT_NAME, props);
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DAffix' as const });
+function Affix(props: DAffixProps, ref: React.ForwardedRef<DAffixRef>): JSX.Element | null {
+  const { children, dTarget, dTop = 0, dZIndex } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
+  const { dPageScrollRef, dContentResizeRef } = useLayout();
   //#endregion
 
   //#region Ref
-  const affixRef = useRef<HTMLDivElement>(null);
-  const referenceRef = useRef<HTMLDivElement>(null);
+  const affixRef = useRefExtra(() => document.querySelector(`[data-affix="${uniqueId}"]`));
+  const referenceRef = useRefExtra(() => document.querySelector(`[data-affix-reference="${uniqueId}"]`));
+  const targetRef = useRefExtra(
+    isUndefined(dTarget)
+      ? () => dPageScrollRef.current
+      : dTarget === false
+      ? () => {
+          return affixRef.current?.parentElement ?? null;
+        }
+      : dTarget
+  );
   //#endregion
 
-  const asyncCapture = useAsync();
+  const uniqueId = useId();
 
-  const targetEl = useElement(dTarget ?? null);
+  const [sticky, setSticky] = useState(false);
 
-  const [fixedStyle, setFixedStyle] = useState<React.CSSProperties>();
-  const [referenceStyle, setReferenceStyle] = useState<React.CSSProperties>();
-  const [fixed, setFixed] = useState(false);
+  const [positionStyle, setPositionStyle] = useState<React.CSSProperties>();
   const updatePosition = useEventCallback(() => {
-    if (isUndefined(dTarget) || targetEl) {
-      const offsetEl = fixed ? referenceRef.current : affixRef.current;
+    const offsetEl = sticky ? referenceRef.current : affixRef.current;
 
-      if (offsetEl) {
-        let targetRect = {
-          top: 0,
-          bottom: window.innerHeight,
-        };
-        if (targetEl) {
-          targetRect = targetEl.getBoundingClientRect();
-        }
+    if (targetRef.current && offsetEl) {
+      const offsetRect = offsetEl.getBoundingClientRect();
+      const targetTop = getOffsetToRoot(targetRef.current);
+      const distance = isString(dTop) ? toPx(dTop, true) : dTop;
 
-        const offsetRect = offsetEl.getBoundingClientRect();
-
-        const top = isString(dTop) ? toPx(dTop, true) : dTop;
-        let fixed = offsetRect.top - targetRect.top <= top;
-        let fixedTop = targetRect.top + top;
-        if (!isUndefined(dBottom)) {
-          const bottom = isString(dBottom) ? toPx(dBottom, true) : dBottom;
-          fixed = targetRect.bottom - offsetRect.bottom <= bottom;
-          fixedTop = targetRect.bottom - bottom - offsetRect.height;
-        }
-
-        if (fixed) {
-          setFixedStyle({
-            position: 'fixed',
-            zIndex: dZIndex ?? `var(--${dPrefix}zindex-sticky)`,
-            width: offsetRect.width,
-            height: offsetRect.height,
-            left: offsetRect.left,
-            top: fixedTop,
-          });
-          setReferenceStyle({
-            width: offsetRect.width,
-            height: offsetRect.height,
-          });
-        }
-        setFixed(fixed);
-      }
+      setSticky(Math.ceil(targetRef.current.scrollTop) + distance >= getOffsetToRoot(offsetEl as HTMLElement) - targetTop);
+      setPositionStyle({
+        width: offsetRect.width,
+        height: offsetRect.height,
+        top: (isUndefined(dTarget) ? targetTop : targetRef.current.getBoundingClientRect().top) + distance,
+        left: offsetRect.left,
+      });
     }
   });
   useIsomorphicLayoutEffect(() => {
@@ -103,52 +71,44 @@ function Affix(props: DAffixProps, ref: React.ForwardedRef<DAffixRef>) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useContentScrollViewChange(updatePosition);
-  useEffect(() => {
-    const [asyncGroup, asyncId] = asyncCapture.createGroup();
+  const globalScroll = useGlobalScroll(updatePosition);
+  useEvent(dPageScrollRef, 'scroll', updatePosition, { passive: true }, globalScroll);
+  useEvent(targetRef, 'scroll', updatePosition, { passive: true }, globalScroll || isUndefined(dTarget));
 
-    asyncGroup.onGlobalScroll(updatePosition);
-
-    return () => {
-      asyncCapture.deleteGroup(asyncId);
-    };
-  }, [asyncCapture, updatePosition]);
+  useResize(sticky ? referenceRef : affixRef, updatePosition);
+  useResize(dContentResizeRef, updatePosition);
 
   useImperativeHandle(
     ref,
     () => ({
-      fixed,
+      sticky,
       updatePosition,
     }),
-    [fixed, updatePosition]
+    [sticky, updatePosition]
   );
 
   return (
     <>
-      {fixed && (
-        <div
-          {...restProps}
-          ref={referenceRef}
-          className={getClassName(className, `${dPrefix}affix`)}
-          style={{
-            ...style,
-            ...referenceStyle,
+      {sticky &&
+        cloneHTMLElement(children, {
+          style: {
+            ...children.props.style,
             visibility: 'hidden',
-          }}
-          aria-hidden={true}
-        ></div>
-      )}
-      <div
-        {...restProps}
-        ref={affixRef}
-        className={getClassName(className, `${dPrefix}affix`)}
-        style={{
-          ...style,
-          ...(fixed ? fixedStyle : {}),
-        }}
-      >
-        {children}
-      </div>
+          },
+          'aria-hidden': true,
+          'data-affix-reference': uniqueId,
+        })}
+      {cloneHTMLElement(children, {
+        style: sticky
+          ? {
+              ...children.props.style,
+              ...positionStyle,
+              position: 'fixed',
+              zIndex: dZIndex ?? `var(--${dPrefix}zindex-sticky)`,
+            }
+          : children.props.style,
+        'data-affix': uniqueId,
+      })}
     </>
   );
 }

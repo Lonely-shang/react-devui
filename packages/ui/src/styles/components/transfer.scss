@@ -1,0 +1,125 @@
+@import 'mixins/overwrite';
+
+$transfer-option-height: 32px;
+
+@include b(transfer) {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  &[data-form-invalid-warning='true'] {
+    .#{$B}__panel {
+      border-color: var(--#{$rd-prefix}color-warning) !important;
+    }
+  }
+
+  &[data-form-invalid-error='true'] {
+    .#{$B}__panel {
+      border-color: var(--#{$rd-prefix}color-danger) !important;
+    }
+  }
+
+  @include when(disabled) {
+    pointer-events: none;
+    filter: opacity(50%);
+  }
+
+  @include e(actions) {
+    display: flex;
+    flex-direction: column;
+    gap: 4px 0;
+    margin: 0 8px;
+    /* stylelint-disable-next-line declaration-property-value-allowed-list */
+    font-size: 12px;
+
+    .#{$rd-prefix}button {
+      --#{$rd-prefix}size: 24px;
+    }
+  }
+
+  @include e(panel) {
+    flex: 1 0 0;
+    overflow: hidden;
+    border: 1px solid var(--#{$rd-prefix}color-border);
+    border-radius: var(--#{$rd-prefix}border-radius);
+  }
+
+  @include e(header) {
+    display: flex;
+    align-items: center;
+    height: 41px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--#{$rd-prefix}color-divider);
+  }
+
+  @include e(header-title) {
+    @include utils-ellipsis;
+
+    flex: 1 0 0;
+    text-align: right;
+  }
+
+  @include e(search) {
+    @include overwrite-component(input) {
+      display: flex;
+      margin: 10px 12px;
+    }
+  }
+
+  @include e(list-container) {
+    position: relative;
+  }
+
+  @include e(loading) {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--#{$rd-prefix}color-primary);
+    background-color: rgb(var(--#{$rd-prefix}background-color-rgb) / 80%);
+  }
+
+  @include e(list) {
+    position: relative;
+    height: 192px;
+    padding: 0;
+    margin: 0;
+    overflow: hidden auto;
+    list-style: none;
+  }
+
+  @include e(option) {
+    position: relative;
+    display: flex;
+    gap: 0 8px;
+    align-items: center;
+    height: $transfer-option-height;
+    padding: 0 12px;
+    cursor: pointer;
+    transition: background-color var(--#{$rd-prefix}animation-duration-base) linear;
+
+    &:hover {
+      background-color: var(--#{$rd-prefix}background-color-hover);
+    }
+
+    @include when(disabled) {
+      color: var(--#{$rd-prefix}color-disabled);
+      pointer-events: none;
+    }
+  }
+
+  @include e(option-content) {
+    @include utils-ellipsis;
+
+    flex: 1 0 0;
+  }
+
+  @include e(empty) {
+    @include overwrite-component(empty) {
+      justify-content: center;
+      height: 100%;
+    }
+  }
+}

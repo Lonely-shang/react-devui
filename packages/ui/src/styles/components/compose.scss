@@ -1,14 +1,15 @@
-/* stylelint-disable no-descending-specificity */
+@import 'mixins/size';
+
 @include b(compose) {
-  $compose-support: '[data-compose-support]';
-  $compose-support--active: '[data-compose-support-active]';
-  $compose-support--disabled: '[data-compose-support-disabled]';
+  $compose-support: "[data-compose-support='true']";
+  $compose-support--active: "[data-compose-support-active='true']";
+  $compose-support--disabled: "[data-compose-support-disabled='true']";
 
   display: inline-flex;
   align-items: stretch;
   vertical-align: top;
 
-  & > #{$compose-support} {
+  #{$compose-support} {
     &#{$compose-support--disabled} {
       z-index: 0;
     }
@@ -20,11 +21,11 @@
         z-index: 5;
       }
 
-      @include form-warning {
+      &[data-form-invalid-warning='true'] {
         z-index: 6;
       }
 
-      @include form-error {
+      &[data-form-invalid-error='true'] {
         z-index: 7;
       }
 
@@ -36,48 +37,44 @@
   }
 
   &:not(#{&}--vertical) {
-    & > #{$compose-support} {
-      & + #{$compose-support} {
-        margin-left: -1px !important;
-      }
+    & > :not(:first-child, :only-child) {
+      margin-left: -1px !important;
+    }
 
-      &:not(:first-child):not(:last-child) {
-        border-radius: 0 !important;
-      }
+    & > :first-child:not(:only-child) {
+      border-top-right-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+    }
 
-      &:first-child:not(:only-child) {
-        border-top-right-radius: 0 !important;
-        border-bottom-right-radius: 0 !important;
-      }
+    & > :last-child:not(:only-child) {
+      border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+    }
 
-      &:last-child:not(:only-child) {
-        border-top-left-radius: 0 !important;
-        border-bottom-left-radius: 0 !important;
-      }
+    & > :not(:first-child, :last-child) {
+      border-radius: 0 !important;
     }
   }
 
   @include m(vertical) {
     flex-direction: column;
 
-    & > #{$compose-support} {
-      & + #{$compose-support} {
-        margin-top: -1px !important;
-      }
+    & > :not(:first-child, :only-child) {
+      margin-top: -1px !important;
+    }
 
-      &:not(:first-child):not(:last-child) {
-        border-radius: 0 !important;
-      }
+    & > :first-child:not(:only-child) {
+      border-bottom-right-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+    }
 
-      &:first-child:not(:only-child) {
-        border-bottom-right-radius: 0 !important;
-        border-bottom-left-radius: 0 !important;
-      }
+    & > :last-child:not(:only-child) {
+      border-top-left-radius: 0 !important;
+      border-top-right-radius: 0 !important;
+    }
 
-      &:last-child:not(:only-child) {
-        border-top-left-radius: 0 !important;
-        border-top-right-radius: 0 !important;
-      }
+    & > :not(:first-child, :last-child) {
+      border-radius: 0 !important;
     }
   }
 }
@@ -86,28 +83,22 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--#{$variable-prefix}size);
-  height: var(--#{$variable-prefix}size);
-  padding: 0 calc(var(--#{$variable-prefix}padding-size) - 1px);
-  font-size: var(--#{$variable-prefix}font-size);
-  border: 1px solid var(--#{$variable-prefix}color-border);
-  border-radius: var(--#{$variable-prefix}border-radius);
+  min-width: var(--#{$rd-prefix}size);
+  height: var(--#{$rd-prefix}size);
+  padding: 0 calc(var(--#{$rd-prefix}padding-size) - 1px);
+  white-space: nowrap;
+  border: 1px solid var(--#{$rd-prefix}color-border);
+  border-radius: var(--#{$rd-prefix}border-radius);
 
-  @include utils-disabled(true);
+  @include component-size;
+
+  @include when(disabled) {
+    color: var(--#{$rd-prefix}color-disabled);
+    pointer-events: none;
+    background-color: var(--#{$rd-prefix}background-color-disabled);
+  }
 
   @include m(gray) {
-    background-color: var(--#{$variable-prefix}compose-item-gray-background-color);
-  }
-
-  @include m(smaller) {
-    --#{$variable-prefix}size: var(--#{$variable-prefix}size-smaller);
-    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-smaller);
-    --#{$variable-prefix}padding-size: var(--#{$variable-prefix}padding-size-smaller);
-  }
-
-  @include m(larger) {
-    --#{$variable-prefix}size: var(--#{$variable-prefix}size-larger);
-    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-larger);
-    --#{$variable-prefix}padding-size: var(--#{$variable-prefix}padding-size-larger);
+    background-color: var(--#{$rd-prefix}background-color-light-gray);
   }
 }

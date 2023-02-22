@@ -1,0 +1,33 @@
+import { getClassName } from '@react-devui/utils';
+
+import { registerComponentMate } from '../../utils';
+import { useComponentConfig, usePrefixConfig } from '../root';
+
+export interface DSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
+  dVariant?: 'text' | 'circular' | 'rect';
+}
+
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DSkeleton' as const });
+export function DSkeleton(props: DSkeletonProps): JSX.Element | null {
+  const {
+    children,
+    dVariant = 'text',
+
+    ...restProps
+  } = useComponentConfig(COMPONENT_NAME, props);
+
+  //#region Context
+  const dPrefix = usePrefixConfig();
+  //#endregion
+
+  return (
+    <div {...restProps} className={getClassName(restProps.className, `${dPrefix}skeleton`, `${dPrefix}skeleton--${dVariant}`)}>
+      {dVariant === 'text' && (
+        <div className={`${dPrefix}skeleton__placeholder`} aria-hidden>
+          t
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}

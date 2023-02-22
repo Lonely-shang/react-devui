@@ -1,17 +1,18 @@
-import { isUndefined } from 'lodash';
-import { useId, useRef } from 'react';
-import { Subject } from 'rxjs';
+import { useRef } from 'react';
+import ReactDOM from 'react-dom';
 
-import { usePrefixConfig, useComponentConfig } from '../../hooks';
-import { CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined } from '../../icons';
-import { registerComponentMate, getClassName } from '../../utils';
-import { DAlertDialog } from '../_alert-dialog';
+import { useRefExtra } from '@react-devui/hooks';
+
+import { registerComponentMate } from '../../utils';
+import { DAlertPopover } from '../_alert-popover';
 import { DTransition } from '../_transition';
+import { useComponentConfig, usePrefixConfig } from '../root';
+import { DPanel } from './Panel';
 
-export interface DToastProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface DToastProps extends React.HTMLAttributes<HTMLDivElement> {
+  dVisible: boolean;
   dType?: 'success' | 'warning' | 'error' | 'info';
   dIcon?: React.ReactNode;
-  dContent: React.ReactNode;
   dDuration?: number;
   dPlacement?: 'top' | 'bottom';
   dEscClosable?: boolean;
@@ -19,75 +20,19 @@ export interface DToastProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   afterVisibleChange?: (visible: boolean) => void;
 }
 
-export const toastSubject = {
-  open$: new Subject<{ uniqueId: number; props: DToastProps }>(),
-  close$: new Subject<number>(),
-  rerender$: new Subject<{ uniqueId: number; props: DToastProps }>(),
-  closeAll$: new Subject<boolean>(),
-};
-
-class Toast {
-  constructor(private _uniqueId: number) {}
-
-  get uniqueId() {
-    return this._uniqueId;
-  }
-
-  close() {
-    ToastService.close(this._uniqueId);
-  }
-
-  rerender(props: DToastProps) {
-    ToastService.rerender(this._uniqueId, props);
-  }
-}
-
-let TOASTS: Toast[] = [];
-let UNIQUEID = 1;
-export class ToastService {
-  static get toasts() {
-    return TOASTS;
-  }
-
-  static open(props: DToastProps) {
-    UNIQUEID += 1;
-    toastSubject.open$.next({ uniqueId: UNIQUEID, props });
-    const toast = new Toast(UNIQUEID);
-    TOASTS.push(toast);
-    return toast;
-  }
-
-  static close(uniqueId: number) {
-    TOASTS = TOASTS.filter((item) => item.uniqueId !== uniqueId);
-    toastSubject.close$.next(uniqueId);
-  }
-
-  static rerender(uniqueId: number, props: DToastProps) {
-    toastSubject.rerender$.next({ uniqueId, props });
-  }
-
-  static closeAll(animation = true) {
-    TOASTS = [];
-    toastSubject.closeAll$.next(animation);
-  }
-}
-
 const TTANSITION_DURING = { enter: 133, leave: 166 };
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DToast' });
-export function DToast(props: DToastProps & { dVisible: boolean }): JSX.Element | null {
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DToast' as const });
+export function DToast(props: DToastProps): JSX.Element | null {
   const {
     dVisible,
     dType,
     dIcon,
-    dContent,
     dDuration = 2,
     dPlacement = 'top',
     dEscClosable = true,
     onClose,
     afterVisibleChange,
 
-    className,
-    style,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
@@ -96,100 +41,114 @@ export function DToast(props: DToastProps & { dVisible: boolean }): JSX.Element 
   //#endregion
 
   //#region Ref
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   //#endregion
 
-  const uniqueId = useId();
-  const contentId = `${dPrefix}toast-content-${uniqueId}`;
+  const getRoot = (id: string) => {
+    let root = document.getElementById(`${dPrefix}toast-root`);
+    if (!root) {
+      root = document.createElement('div');
+      root.id = `${dPrefix}toast-root`;
+      document.body.appendChild(root);
+    }
+
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      root.appendChild(el);
+    }
+    return el;
+  };
+  const toastTRootRef = useRefExtra(() => getRoot(`${dPrefix}toast-t-root`), true);
+  const toastBRootRef = useRefExtra(() => getRoot(`${dPrefix}toast-b-root`), true);
+
+  const rootRef = dPlacement === 'top' ? toastTRootRef : toastBRootRef;
 
   return (
-    <DTransition
-      dIn={dVisible}
-      dDuring={TTANSITION_DURING}
-      dSkipFirstTransition={false}
-      afterEnter={() => {
-        afterVisibleChange?.(true);
-      }}
-      afterLeave={() => {
-        afterVisibleChange?.(false);
-      }}
-    >
-      {(state) => {
-        let transitionStyle: React.CSSProperties = {};
-        switch (state) {
-          case 'enter':
-            transitionStyle = {
-              transform: dPlacement === 'top' ? 'translate(0, -70%)' : 'translate(0, 70%)',
-              opacity: 0,
-            };
-            break;
+    rootRef.current &&
+    ReactDOM.createPortal(
+      <DTransition
+        dIn={dVisible}
+        dDuring={TTANSITION_DURING}
+        dSkipFirstTransition={false}
+        afterEnter={() => {
+          afterVisibleChange?.(true);
+        }}
+        afterLeave={() => {
+          afterVisibleChange?.(false);
+        }}
+      >
+        {(state) => {
+          let transitionStyle: React.CSSProperties = {};
+          switch (state) {
+            case 'enter':
+              transitionStyle = {
+                transform: dPlacement === 'top' ? 'translate(0, -70%)' : 'translate(0, 70%)',
+                opacity: 0,
+              };
+              break;
 
-          case 'entering':
-            transitionStyle = {
-              transition: `transform ${TTANSITION_DURING.enter}ms ease-out, opacity ${TTANSITION_DURING.enter}ms ease-out`,
-            };
-            break;
+            case 'entering':
+              transitionStyle = {
+                transition: ['transform', 'opacity'].map((attr) => `${attr} ${TTANSITION_DURING.enter}ms ease-out`).join(', '),
+              };
+              break;
 
-          case 'leave':
-            if (dialogRef.current) {
-              const { height } = dialogRef.current.getBoundingClientRect();
-              transitionStyle = { height, overflow: 'hidden' };
-            }
-            break;
+            case 'leave':
+              if (panelRef.current) {
+                const height = panelRef.current.offsetHeight;
+                transitionStyle = { height, overflow: 'hidden' };
+              }
+              break;
 
-          case 'leaving':
-            transitionStyle = {
-              height: 0,
-              overflow: 'hidden',
-              opacity: 0,
-              marginBottom: 0,
-              transition: `height ${TTANSITION_DURING.leave}ms ease-in, opacity ${TTANSITION_DURING.leave}ms ease-in, margin ${TTANSITION_DURING.leave}ms ease-in`,
-            };
-            break;
+            case 'leaving':
+              transitionStyle = {
+                height: 0,
+                overflow: 'hidden',
+                paddingTop: 0,
+                paddingBottom: 0,
+                marginTop: 0,
+                marginBottom: 0,
+                opacity: 0,
+                transition: ['height', 'padding', 'margin', 'opacity']
+                  .map((attr) => `${attr} ${TTANSITION_DURING.leave}ms ease-in`)
+                  .join(', '),
+              };
+              break;
 
-          case 'leaved':
-            transitionStyle = { display: 'none' };
-            break;
+            case 'leaved':
+              transitionStyle = { display: 'none' };
+              break;
 
-          default:
-            break;
-        }
+            default:
+              break;
+          }
 
-        return (
-          <DAlertDialog
-            {...restProps}
-            className={getClassName(className, `${dPrefix}toast`)}
-            style={{
-              ...style,
-              ...transitionStyle,
-            }}
-            aria-describedby={contentId}
-            dDuration={dDuration}
-            dEscClosable={dEscClosable}
-            dDialogRef={dialogRef}
-            onClose={onClose}
-          >
-            {(!isUndefined(dType) || !isUndefined(dIcon)) && (
-              <div className={`${dPrefix}toast__icon`}>
-                {!isUndefined(dIcon) ? (
-                  dIcon
-                ) : dType === 'success' ? (
-                  <CheckCircleOutlined dTheme="success" />
-                ) : dType === 'warning' ? (
-                  <WarningOutlined dTheme="warning" />
-                ) : dType === 'error' ? (
-                  <CloseCircleOutlined dTheme="danger" />
-                ) : (
-                  <ExclamationCircleOutlined dTheme="primary" />
-                )}
-              </div>
-            )}
-            <div id={contentId} className={getClassName(`${dPrefix}toast__content`)}>
-              {dContent}
-            </div>
-          </DAlertDialog>
-        );
-      }}
-    </DTransition>
+          return (
+            <DAlertPopover dDuration={dDuration} dEscClosable={dEscClosable} onClose={onClose}>
+              {({ render }) =>
+                render(
+                  <DPanel
+                    {...restProps}
+                    ref={panelRef}
+                    style={{
+                      ...restProps.style,
+                      ...transitionStyle,
+                    }}
+                    dClassNamePrefix="toast"
+                    dType={dType}
+                    dIcon={dIcon}
+                    dActions={[]}
+                    onClose={undefined}
+                  ></DPanel>
+                )
+              }
+            </DAlertPopover>
+          );
+        }}
+      </DTransition>,
+      rootRef.current
+    )
   );
 }

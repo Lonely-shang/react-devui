@@ -1,179 +1,180 @@
+@use 'sass:map';
+@import 'mixins/size';
+
 @include b(button) {
   $selector: &;
   $disabled-selector: ':disabled:not(.is-loading)';
 
+  @include utils-button;
+
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--#{$variable-prefix}size);
-  height: var(--#{$variable-prefix}size);
+  min-width: var(--#{$rd-prefix}size);
+  height: var(--#{$rd-prefix}size);
   margin: 0;
-  font: inherit;
-  font-size: var(--#{$variable-prefix}font-size);
-  white-space: nowrap;
-  vertical-align: top;
-  cursor: pointer;
-  border-radius: var(--#{$variable-prefix}border-radius);
-  outline: none;
-  transition: border-color var(--#{$variable-prefix}animation-duration-base) linear,
-    color var(--#{$variable-prefix}animation-duration-base) linear,
-    background-color var(--#{$variable-prefix}animation-duration-base) linear;
-  appearance: none;
+  border-radius: var(--#{$rd-prefix}border-radius);
+  transition: border-color var(--#{$rd-prefix}animation-duration-base) linear, color var(--#{$rd-prefix}animation-duration-base) linear,
+    background-color var(--#{$rd-prefix}animation-duration-base) linear;
 
   &:disabled {
     pointer-events: none;
   }
 
+  @include when(loading) {
+    pointer-events: none;
+  }
+
+  @include component-size;
+
+  @each $theme, $rgb in $rd-themes {
+    @include theme(#{$theme}) {
+      --#{$rd-prefix}button-color: var(--#{$rd-prefix}color-#{$theme});
+      --#{$rd-prefix}button-color-lighter: var(--#{$rd-prefix}color-#{$theme}-lighter);
+      --#{$rd-prefix}button-color-darker: var(--#{$rd-prefix}color-#{$theme}-darker);
+      --#{$rd-prefix}button-text-hover-background: var(--#{$rd-prefix}background-color-#{$theme}-hover);
+      --#{$rd-prefix}button-text-active-background: var(--#{$rd-prefix}background-color-#{$theme});
+    }
+  }
+
   @include m(primary) {
-    padding: 0 calc(var(--#{$variable-prefix}padding-size) - 1px);
-    color: map.get($colors, 'white');
-    background-color: var(--#{$variable-prefix}button-color);
-    border: 1px solid var(--#{$variable-prefix}button-color);
+    padding: 0 calc(var(--#{$rd-prefix}padding-size) - 1px);
+    color: map.get($rd-colors, 'white');
+    background-color: var(--#{$rd-prefix}button-color);
+    border: 1px solid var(--#{$rd-prefix}button-color);
+
+    &:hover,
+    &:focus,
+    &.is-loading {
+      background-color: var(--#{$rd-prefix}button-color-lighter);
+      border-color: var(--#{$rd-prefix}button-color-lighter);
+    }
+
+    &:active {
+      background-color: var(--#{$rd-prefix}button-color-darker);
+      border-color: var(--#{$rd-prefix}button-color-darker);
+    }
 
     &#{$disabled-selector} {
       filter: saturate(50%) grayscale(50%);
     }
-
-    @include when(loading) {
-      @include utils-loading('1px');
-    }
-
-    &:hover,
-    &:focus {
-      background-color: var(--#{$variable-prefix}button-color-lighter);
-      border-color: var(--#{$variable-prefix}button-color-lighter);
-    }
-
-    &:active {
-      background-color: var(--#{$variable-prefix}button-color-darker);
-      border-color: var(--#{$variable-prefix}button-color-darker);
-    }
   }
 
   @include m(secondary) {
-    padding: 0 calc(var(--#{$variable-prefix}padding-size) - 1px);
-    color: var(--#{$variable-prefix}text-color);
+    padding: 0 calc(var(--#{$rd-prefix}padding-size) - 1px);
+    color: var(--#{$rd-prefix}text-color);
     background-color: transparent;
-    border: 1px solid var(--#{$variable-prefix}color-border);
-
-    @include when(loading) {
-      @include utils-loading('1px');
-    }
-
-    @include utils-disabled(true, $disabled-selector);
+    border: 1px solid var(--#{$rd-prefix}color-border);
 
     &:hover,
-    &:focus {
-      color: var(--#{$variable-prefix}button-color-lighter);
-      border-color: var(--#{$variable-prefix}button-color-lighter);
+    &:focus,
+    &.is-loading {
+      color: var(--#{$rd-prefix}button-color-lighter);
+      border-color: var(--#{$rd-prefix}button-color-lighter);
     }
 
     &:active {
-      color: var(--#{$variable-prefix}button-color-darker);
-      border-color: var(--#{$variable-prefix}button-color-darker);
+      color: var(--#{$rd-prefix}button-color-darker);
+      border-color: var(--#{$rd-prefix}button-color-darker);
+    }
+
+    &#{$disabled-selector} {
+      color: var(--#{$rd-prefix}color-disabled);
+      pointer-events: none;
+      background-color: var(--#{$rd-prefix}background-color-disabled);
     }
   }
 
   @include m(outline) {
-    padding: 0 calc(var(--#{$variable-prefix}padding-size) - 1px);
-    color: var(--#{$variable-prefix}button-color);
+    padding: 0 calc(var(--#{$rd-prefix}padding-size) - 1px);
+    color: var(--#{$rd-prefix}button-color);
     background-color: transparent;
-    border: 1px solid var(--#{$variable-prefix}button-color);
-
-    &#{$disabled-selector} {
-      color: var(--#{$variable-prefix}color-disabled);
-      border-color: var(--#{$variable-prefix}color-border);
-    }
-
-    @include when(loading) {
-      @include utils-loading('1px');
-    }
+    border: 1px solid var(--#{$rd-prefix}button-color);
 
     &:hover,
-    &:focus {
-      color: var(--#{$variable-prefix}button-color-lighter);
-      border-color: var(--#{$variable-prefix}button-color-lighter);
+    &:focus,
+    &.is-loading {
+      color: var(--#{$rd-prefix}button-color-lighter);
+      border-color: var(--#{$rd-prefix}button-color-lighter);
     }
 
     &:active {
-      color: var(--#{$variable-prefix}button-color-darker);
-      border-color: var(--#{$variable-prefix}button-color-darker);
+      color: var(--#{$rd-prefix}button-color-darker);
+      border-color: var(--#{$rd-prefix}button-color-darker);
+    }
+
+    &#{$disabled-selector} {
+      color: var(--#{$rd-prefix}color-disabled);
+      border-color: var(--#{$rd-prefix}color-border);
     }
   }
 
   @include m(dashed) {
-    padding: 0 calc(var(--#{$variable-prefix}padding-size) - 1px);
-    color: var(--#{$variable-prefix}button-color);
+    padding: 0 calc(var(--#{$rd-prefix}padding-size) - 1px);
+    color: var(--#{$rd-prefix}button-color);
     background-color: transparent;
-    border: 1px dashed var(--#{$variable-prefix}button-color);
-
-    &#{$disabled-selector} {
-      color: var(--#{$variable-prefix}color-disabled);
-      border-color: var(--#{$variable-prefix}color-border);
-    }
-
-    @include when(loading) {
-      @include utils-loading('1px');
-    }
+    border: 1px dashed var(--#{$rd-prefix}button-color);
 
     &:hover,
-    &:focus {
-      color: var(--#{$variable-prefix}button-color-lighter);
-      border-color: var(--#{$variable-prefix}button-color-lighter);
+    &:focus,
+    &.is-loading {
+      color: var(--#{$rd-prefix}button-color-lighter);
+      border-color: var(--#{$rd-prefix}button-color-lighter);
     }
 
     &:active {
-      color: var(--#{$variable-prefix}button-color-darker);
-      border-color: var(--#{$variable-prefix}button-color-darker);
+      color: var(--#{$rd-prefix}button-color-darker);
+      border-color: var(--#{$rd-prefix}button-color-darker);
+    }
+
+    &#{$disabled-selector} {
+      color: var(--#{$rd-prefix}color-disabled);
+      border-color: var(--#{$rd-prefix}color-border);
     }
   }
 
   @include m(text) {
-    padding: 0 var(--#{$variable-prefix}padding-size);
-    color: var(--#{$variable-prefix}text-color);
+    padding: 0 var(--#{$rd-prefix}padding-size);
+    color: var(--#{$rd-prefix}text-color);
     background-color: transparent;
     border: none;
 
-    @include when(loading) {
-      @include utils-loading;
-    }
-
-    @include utils-disabled(true, $disabled-selector);
-
     &:hover,
-    &:focus {
-      color: var(--#{$variable-prefix}button-color-lighter);
-      background-color: var(--#{$variable-prefix}button-text-hover-background);
+    &:focus,
+    &.is-loading {
+      color: var(--#{$rd-prefix}button-color-lighter);
+      background-color: var(--#{$rd-prefix}button-text-hover-background);
     }
 
     &:active {
-      color: var(--#{$variable-prefix}button-color-darker);
-      background-color: var(--#{$variable-prefix}button-text-active-background);
+      color: var(--#{$rd-prefix}button-color-darker);
+      background-color: var(--#{$rd-prefix}button-text-active-background);
+    }
+
+    &#{$disabled-selector} {
+      color: var(--#{$rd-prefix}color-disabled);
+      pointer-events: none;
+      background-color: var(--#{$rd-prefix}background-color-disabled);
     }
   }
 
   @include m(link) {
-    padding: 0 var(--#{$variable-prefix}padding-size);
-    color: var(--#{$variable-prefix}button-color);
+    height: auto;
+    padding: 0;
+    color: var(--#{$rd-prefix}button-color);
     background-color: transparent;
     border: none;
 
-    &#{$disabled-selector} {
-      color: var(--#{$variable-prefix}color-disabled);
-    }
-
-    @include when(loading) {
-      @include utils-loading;
-    }
-
     &:hover,
-    &:focus {
-      color: var(--#{$variable-prefix}button-color-lighter);
+    &:focus,
+    &.is-loading {
+      color: var(--#{$rd-prefix}button-color-lighter);
     }
 
     &:active {
-      color: var(--#{$variable-prefix}button-color-darker);
+      color: var(--#{$rd-prefix}button-color-darker);
+    }
+
+    &#{$disabled-selector} {
+      color: var(--#{$rd-prefix}color-disabled);
     }
   }
 
@@ -182,19 +183,7 @@
   }
 
   @include m(round) {
-    border-radius: var(--#{$variable-prefix}size);
-  }
-
-  @include m(smaller) {
-    --#{$variable-prefix}size: var(--#{$variable-prefix}size-smaller);
-    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-smaller);
-    --#{$variable-prefix}padding-size: var(--#{$variable-prefix}padding-size-smaller);
-  }
-
-  @include m(larger) {
-    --#{$variable-prefix}size: var(--#{$variable-prefix}size-larger);
-    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-larger);
-    --#{$variable-prefix}padding-size: var(--#{$variable-prefix}padding-size-larger);
+    border-radius: calc(var(--#{$rd-prefix}size) / 2);
   }
 
   @include m(block) {
@@ -212,22 +201,16 @@
     }
   }
 
-  @each $theme, $rgb in $themes {
-    @include theme(#{$theme}) {
-      --#{$variable-prefix}button-color: var(--#{$variable-prefix}color-#{$theme});
-      --#{$variable-prefix}button-color-lighter: var(--#{$variable-prefix}color-#{$theme}-lighter);
-      --#{$variable-prefix}button-color-darker: var(--#{$variable-prefix}color-#{$theme}-darker);
-      --#{$variable-prefix}button-text-hover-background: var(--#{$variable-prefix}background-color-hover-#{$theme});
-      --#{$variable-prefix}button-text-active-background: var(--#{$variable-prefix}background-color-#{$theme});
+  @include m(icon-right) {
+    flex-direction: row-reverse;
+
+    @include e(icon) {
+      justify-content: flex-end;
     }
   }
 
   @include e(icon) {
     display: inline-flex;
     width: calc(1em + 8px);
-
-    @include m(right) {
-      justify-content: flex-end;
-    }
   }
 }

@@ -1,36 +1,57 @@
-import type { FormGroup } from './form-control';
+import type { DFormControl } from './FormItem';
+import type { AbstractControl } from './abstract-control';
+import type { FormGroup } from './form-group';
 
-import { useMemo, useState } from 'react';
+import { isUndefined } from 'lodash';
+import React, { useContext, useEffect, useState } from 'react';
 
-export interface DFormInstance {
-  form: FormGroup;
-  initForm: () => void;
-  updateForm: () => void;
+import { useEventCallback } from '@react-devui/hooks';
+
+export const DFormUpdateContext = React.createContext<(() => void) | null>(null);
+
+export function useForm<T extends { [K in keyof T]: AbstractControl } = any>(cb: () => FormGroup<T>) {
+  const [form, setForm] = useState(() => cb());
+
+  const updateForm = useEventCallback((val?: FormGroup) => {
+    isUndefined(val) ? setForm((draft) => draft.clone()) : setForm(val);
+  });
+
+  return [form, updateForm] as const;
 }
 
-export function useForm(initData: () => FormGroup): DFormInstance {
-  const [form, setForm] = useState(() => initData());
-  const [formChange, setFormChange] = useState(0);
+export type DFormControlInject = [any, (val: any) => void] | undefined;
 
-  const updateForm = () => {
-    setFormChange((n) => n + 1);
-  };
+export function useFormControl(formControl?: DFormControl): DFormControlInject {
+  const updateForm = useContext(DFormUpdateContext);
 
-  const initForm = () => {
-    const data = initData();
-    setForm(data);
-    updateForm();
-  };
+  const control = formControl?.control;
 
-  const formInstance = useMemo(
-    () => ({
-      form,
-      initForm,
-      updateForm,
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [formChange]
-  );
+  useEffect(() => {
+    if (control) {
+      const ob = control.asyncVerifyComplete$.subscribe({
+        next: (val) => {
+          if (val.dirty) {
+            updateForm?.();
+          }
+        },
+      });
 
-  return formInstance;
+      return () => {
+        ob.unsubscribe();
+      };
+    }
+  }, [control, updateForm]);
+
+  return control
+    ? [
+        control.value,
+        (val: any) => {
+          if (control) {
+            control.markAsDirty(true);
+            control.setValue(val);
+            updateForm?.();
+          }
+        },
+      ]
+    : undefined;
 }

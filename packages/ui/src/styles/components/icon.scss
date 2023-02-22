@@ -1,9 +1,9 @@
 @include b(icon) {
   display: block;
 
-  @each $theme, $rgb in $themes {
+  @each $theme, $rgb in $rd-themes {
     @include theme(#{$theme}) {
-      color: var(--#{$variable-prefix}color-#{$theme});
+      color: var(--#{$rd-prefix}color-#{$theme});
     }
   }
 }

@@ -1,1 +1,6 @@
-export const SSR_ENV = typeof window === 'undefined';
+export const TTANSITION_DURING_SLOW = 300;
+export const TTANSITION_DURING_BASE = 200;
+export const TTANSITION_DURING_FAST = 100;
+export const TTANSITION_DURING_POPUP = 116;
+
+export const WINDOW_SPACE = 10;

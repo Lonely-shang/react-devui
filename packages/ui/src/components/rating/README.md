@@ -1,24 +1,39 @@
 ---
 group: Data Entry
 title: Rating
+aria: radiobutton
 ---
 
 ## API
 
 ### DRatingProps
 
-Extend `React.HTMLAttributes<HTMLDivElement>`.
+```tsx
+interface DRatingProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+  dFormControl?: DFormControl;
+  dModel?: number;
+  dName?: string;
+  dDisabled?: boolean;
+  dTotal?: number;
+  dHalf?: boolean;
+  dReadOnly?: boolean;
+  dCustomIcon?: React.ReactNode | ((value: number) => React.ReactNode);
+  dTooltip?: (value: number) => React.ReactNode;
+  onModelChange?: (value: number) => void;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dModel | Manual control value | [number, Updater\<number\>?] | - |
-| dName | The `name` attribute of a radio option | string | - |
-| dTotal | Number of ratings | number | 5 |
-| dHalf | Whether to allow semi-selection | boolean | false |
-| disabled | Whether to disable | boolean | false |
-| dReadOnly | Whether read-only | boolean | false |
-| dCustomIcon | Custom display | React.ReactNode \| `((value: number) => React.ReactNode)` | - |
-| dTooltip | Set reminder | `(value: number) => React.ReactNode` | - |
-| onModelChange | Callback for selected item change | `(value: number) => void` | - |
+| dFormControl | Support Forms | - | |
+| dModel | scoring, controlled, default `null` | - | |
+| dName | Sets the `name` attribute of the `input` element | - | |
+| dDisabled | Whether to disable | `false` | |
+| dTotal | Set the total score | `5` | |
+| dHalf | Whether to choose in half | `false` | |
+| dReadOnly | Whether to read only | `false` | |
+| dCustomIcon | Custom item icon | - | |
+| dTooltip | Set Item Tips | - | |
+| onModelChange | callback for score change | - | |
 <!-- prettier-ignore-end -->

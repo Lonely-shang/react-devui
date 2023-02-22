@@ -1,0 +1,49 @@
+@import 'mixins/overwrite';
+
+@include b(accordion) {
+  @include e(item) {
+    border-top: 1px solid var(--#{$rd-prefix}color-border);
+    border-right: 1px solid var(--#{$rd-prefix}color-border);
+    border-left: 1px solid var(--#{$rd-prefix}color-border);
+
+    @include m(last) {
+      border-bottom: 1px solid var(--#{$rd-prefix}color-border);
+    }
+  }
+
+  @include e(item-button) {
+    display: flex;
+    gap: 0 10px;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    background-color: var(--#{$rd-prefix}background-color-light-gray);
+
+    @include when(disabled) {
+      color: var(--#{$rd-prefix}color-disabled);
+      pointer-events: none;
+    }
+
+    @include m(arrow-left) {
+      flex-direction: row-reverse;
+    }
+  }
+
+  @include e(item-title) {
+    @include utils-ellipsis;
+
+    flex: 1 0 0;
+  }
+
+  @include e(item-arrow) {
+    @include overwrite-component(icon) {
+      font-size: 0.9em;
+      transition: transform var(--#{$rd-prefix}animation-duration-base) linear;
+    }
+  }
+
+  @include e(item-region) {
+    padding: 16px;
+    border-top: 1px solid var(--#{$rd-prefix}color-border);
+  }
+}

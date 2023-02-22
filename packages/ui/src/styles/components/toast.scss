@@ -1,40 +1,34 @@
+@import 'mixins/toast';
+
 @mixin toast-root {
   position: fixed;
   right: 20px;
   left: 20px;
-  z-index: var(--#{$variable-prefix}zindex-max);
+  z-index: var(--#{$rd-prefix}zindex-max);
   display: flex;
   flex-direction: column;
   pointer-events: none;
 }
 
-##{$variable-prefix}toast-t-root {
+##{$rd-prefix}toast-t-root {
   top: 20px;
 
   @include toast-root;
 }
 
-##{$variable-prefix}toast-b-root {
+##{$rd-prefix}toast-b-root {
   bottom: 20px;
 
   @include toast-root;
 }
 
 @include b(toast) {
-  position: relative;
-  display: flex;
-  align-items: center;
+  @include component-toast;
+
   max-width: calc(100vw - 40px);
-  padding: 8px 16px;
+  padding: 10px 16px;
   margin: 0 auto 12px;
   pointer-events: all;
-  background-color: var(--#{$variable-prefix}background-color);
-  border-radius: var(--#{$variable-prefix}border-radius);
-  box-shadow: var(--#{$variable-prefix}shadow-dialog);
-
-  @include e(icon) {
-    flex-shrink: 0;
-    margin-right: 10px;
-    font-size: 1.25em;
-  }
+  background-color: var(--#{$rd-prefix}background-color);
+  box-shadow: var(--#{$rd-prefix}shadow-dialog);
 }

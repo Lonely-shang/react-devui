@@ -1,85 +1,83 @@
-import type { DUpdater } from '../../hooks/common/useTwoWayBinding';
-import type { DId } from '../../types';
+import type { DId } from '../../utils/types';
 import type { DFormControl } from '../form';
 
-import { usePrefixConfig, useComponentConfig, useTwoWayBinding, useGeneralState } from '../../hooks';
-import { registerComponentMate, getClassName } from '../../utils';
+import { getClassName } from '@react-devui/utils';
+
+import { useGeneralContext, useDValue } from '../../hooks';
+import { cloneHTMLElement, registerComponentMate } from '../../utils';
+import { useFormControl } from '../form';
+import { useComponentConfig, usePrefixConfig } from '../root';
 import { DCheckbox } from './Checkbox';
 
-export interface DCheckboxOption<V extends DId> {
+export interface DCheckboxItem<V extends DId> {
   label: React.ReactNode;
   value: V;
   disabled?: boolean;
 }
 export interface DCheckboxGroupProps<V extends DId> extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
   dFormControl?: DFormControl;
-  dOptions: DCheckboxOption<V>[];
-  dModel?: [V[], DUpdater<V[]>?];
+  dModel?: V[];
+  dList: DCheckboxItem<V>[];
   dDisabled?: boolean;
   dVertical?: boolean;
   onModelChange?: (values: V[]) => void;
 }
 
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DCheckboxGroup' });
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DCheckbox.Group' as const });
 export function DCheckboxGroup<V extends DId>(props: DCheckboxGroupProps<V>): JSX.Element | null {
   const {
     dFormControl,
-    dOptions,
+    dList,
     dModel,
     dDisabled = false,
     dVertical = false,
     onModelChange,
 
-    className,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const { gDisabled } = useGeneralState();
+  const { gDisabled } = useGeneralContext();
   //#endregion
 
-  const [value, changeValue] = useTwoWayBinding<V[]>([], dModel, onModelChange, {
-    formControl: dFormControl?.control,
-  });
+  const formControlInject = useFormControl(dFormControl);
+  const [value, changeValue] = useDValue<V[]>([], dModel, onModelChange, undefined, formControlInject);
 
-  const disabled = dDisabled || gDisabled || dFormControl?.disabled;
+  const disabled = dDisabled || gDisabled || dFormControl?.control.disabled;
 
   return (
     <div
       {...restProps}
-      className={getClassName(className, `${dPrefix}checkbox-group`, {
+      className={getClassName(restProps.className, `${dPrefix}checkbox-group`, {
         [`${dPrefix}checkbox-group--vertical`]: dVertical,
       })}
       role="group"
     >
-      {dOptions.map((option, index) => (
+      {dList.map((item, index) => (
         <DCheckbox
-          key={option.value}
-          dDisabled={option.disabled || disabled}
-          dInputProps={
-            index === 0
-              ? {
-                  ...dFormControl?.inputAttrs,
-                  id: dFormControl?.controlId,
-                }
-              : undefined
+          key={item.value}
+          dDisabled={item.disabled || disabled}
+          dInputRender={(el) =>
+            cloneHTMLElement(el, {
+              ['data-form-item-label-for' as string]: index === 0,
+            })
           }
-          dModel={[value.includes(option.value)]}
+          dModel={value.includes(item.value)}
           onModelChange={(checked) => {
             changeValue((draft) => {
               if (checked) {
-                draft.push(option.value);
+                draft.push(item.value);
               } else {
                 draft.splice(
-                  draft.findIndex((v) => v === option.value),
+                  draft.findIndex((v) => v === item.value),
                   1
                 );
               }
             });
           }}
         >
-          {option.label}
+          {item.label}
         </DCheckbox>
       ))}
     </div>

@@ -1,100 +1,18 @@
 /* stylelint-disable declaration-property-value-allowed-list */
-/* stylelint-disable scss/operator-no-unspaced */
-@import '~rfs/scss';
+$rd-namespace: 'rd' !default;
+$rd-prefix: '#{$rd-namespace}-' !default;
 
-$namespace: 'd' !default;
-$variable-prefix: '#{$namespace}-' !default;
-$themes: (
+$rd-themes: (
   'primary': 94 124 224,
   'success': 45 211 111,
   'warning': 255 196 9,
   'danger': 235 68 90,
 ) !default;
 
-$colors: (
+$rd-colors: (
   'white': #fff,
+  'black': #000,
 ) !default;
 
-:root {
-  /** z-index **/
-  --#{$variable-prefix}zindex-absolute: 100;
-  --#{$variable-prefix}zindex-sticky: 900;
-  --#{$variable-prefix}zindex-fixed: 1000;
-  --#{$variable-prefix}zindex-max: 10000;
-
-  /** size **/
-  --#{$variable-prefix}size: 36px;
-  --#{$variable-prefix}size-smaller: 32px;
-  --#{$variable-prefix}size-larger: 40px;
-  --#{$variable-prefix}padding-size: 16px;
-  --#{$variable-prefix}padding-size-smaller: 12px;
-  --#{$variable-prefix}padding-size-larger: 20px;
-  --#{$variable-prefix}horizontal-space-size: 12px;
-  --#{$variable-prefix}horizontal-space-size-smaller: 10px;
-  --#{$variable-prefix}horizontal-space-size-larger: 14px;
-  --#{$variable-prefix}margin-size: 8px;
-  --#{$variable-prefix}margin-size-smaller: 6px;
-  --#{$variable-prefix}margin-size-larger: 10px;
-  --#{$variable-prefix}icon-size: 1.1em;
-  @include rfs(1rem, --#{$variable-prefix}font-size);
-  @include rfs(0.85rem, --#{$variable-prefix}font-size-smaller);
-  @include rfs(1.1rem, --#{$variable-prefix}font-size-larger);
-
-  /** animation **/
-  --#{$variable-prefix}animation-duration-slow: 300ms;
-  --#{$variable-prefix}animation-duration-base: 200ms;
-  --#{$variable-prefix}animation-duration-fast: 100ms;
-
-  /** border-radius **/
-  --#{$variable-prefix}border-radius: 2px;
-  --#{$variable-prefix}border-radius-larger: 4px;
-
-  /** shadow **/
-  --#{$variable-prefix}shadow-color: rgb(0 0 0 / 20%);
-  --#{$variable-prefix}shadow-popup: rgb(0 0 0 / 6%) 0 0 20px 2px, rgb(0 0 0 / 10%) 0 4px 10px 0;
-  --#{$variable-prefix}shadow-dialog: rgb(0 0 0 / 6%) 0 0 32px 2px, rgb(0 0 0 / 10%) 0 4px 12px 0;
-  --#{$variable-prefix}shadow-normal: 16%;
-  --#{$variable-prefix}shadow-darker: 26%;
-
-  /** basic **/
-  --#{$variable-prefix}text-color: rgb(33 37 41);
-  --#{$variable-prefix}text-color-rgb: 33 37 41;
-  --#{$variable-prefix}text-color-sub: #999;
-  --#{$variable-prefix}background-color: rgb(255 255 255);
-  --#{$variable-prefix}background-color-rgb: 255 255 255;
-  --#{$variable-prefix}background-color-hover: rgb(0 0 0 / 4%);
-  --#{$variable-prefix}background-color-input: #fff;
-  --#{$variable-prefix}background-color-indicator: #dfe1e6;
-  --#{$variable-prefix}background-color-disabled: #f5f5f5;
-  --#{$variable-prefix}color-divider: #eee;
-  --#{$variable-prefix}color-border: #d9d9d9;
-  --#{$variable-prefix}color-disabled: #d5d5d5;
-  --#{$variable-prefix}color-icon-decorator: #7e8083;
-
-  @each $theme, $rgb in $themes {
-    /** rgb **/
-    --#{$variable-prefix}color-#{$theme}-rgb: #{$rgb};
-
-    /** theme **/
-    --#{$variable-prefix}color-#{$theme}: rgb(#{$rgb});
-
-    /** lighter **/
-    --#{$variable-prefix}color-#{$theme}-lighter: #{color.scale(rgb($rgb), $lightness: 30%)};
-
-    /** darker **/
-    --#{$variable-prefix}color-#{$theme}-darker: #{color.scale(rgb($rgb), $lightness: -10%, $saturation: -10%)};
-
-    /** background **/
-    --#{$variable-prefix}background-color-#{$theme}: #{color.scale(rgb($rgb), $alpha: -90%)};
-    --#{$variable-prefix}background-color-hover-#{$theme}: #{color.scale(rgb($rgb), $alpha: -96%)};
-  }
-
-  /** component **/
-  --#{$variable-prefix}tooltip-text-color: #dfe1e6;
-  --#{$variable-prefix}tooltip-background-color: #464d6e;
-  --#{$variable-prefix}mask-background-color: rgb(0 0 0 / 20%);
-  --#{$variable-prefix}empty-color: #a8afbc;
-  --#{$variable-prefix}switch-background-color: #d4d6d9;
-  --#{$variable-prefix}tag-background-color: rgb(0 0 0 / 6%);
-  --#{$variable-prefix}compose-item-gray-background-color: hsl(0deg 0% 98%);
-}
+$rd-placeholder-color: rgb(var(--#{$rd-prefix}text-color-rgb) / 24%) !default;
+$rd-placeholder-disabled-color: rgb(var(--#{$rd-prefix}text-color-rgb) / 8%) !default;

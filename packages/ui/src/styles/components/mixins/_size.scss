@@ -1,0 +1,17 @@
+@mixin component-size {
+  @include m(smaller) {
+    --#{$rd-prefix}size: var(--#{$rd-prefix}size-smaller);
+    --#{$rd-prefix}padding-size: var(--#{$rd-prefix}padding-size-smaller);
+    --#{$rd-prefix}horizontal-space-size: var(--#{$rd-prefix}horizontal-space-size-smaller);
+
+    @include font-size(0.9rem);
+  }
+
+  @include m(larger) {
+    --#{$rd-prefix}size: var(--#{$rd-prefix}size-larger);
+    --#{$rd-prefix}padding-size: var(--#{$rd-prefix}padding-size-larger);
+    --#{$rd-prefix}horizontal-space-size: var(--#{$rd-prefix}horizontal-space-size-larger);
+
+    @include font-size(1.15rem);
+  }
+}

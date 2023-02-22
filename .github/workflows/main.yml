@@ -14,7 +14,7 @@ jobs:
       - uses: nrwl/nx-set-shas@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '16.13'
+          node-version: '16'
           cache: 'yarn'
       - run: yarn install --frozen-lockfile
       - run: yarn lint:affected
@@ -28,7 +28,7 @@ jobs:
       - uses: nrwl/nx-set-shas@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '16.13'
+          node-version: '16'
           cache: 'yarn'
       - run: yarn install --frozen-lockfile
       - run: yarn test:affected
@@ -42,17 +42,55 @@ jobs:
       - uses: nrwl/nx-set-shas@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '16.13'
+          node-version: '16'
           cache: 'yarn'
       - run: yarn install --frozen-lockfile
       - run: yarn nx build site --configuration=production --skip-nx-cache
       - uses: garygrossgarten/github-action-scp@release
         with:
           local: './dist/packages/site'
-          remote: '/var/www/html'
+          remote: '/var/www/react-devui.com'
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           rmRemote: true
           dotfiles: true
+      - run: cp ./dist/packages/site/index.html ./dist/packages/site/200.html
+      - uses: dswistowski/surge-sh-action@v1
+        with:
+          domain: 'react-devui.surge.sh'
+          project: './dist/packages/site'
+          login: ${{ secrets.SURGE_LOGIN }}
+          token: ${{ secrets.SURGE_TOKEN }}
+  build-platform:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: nrwl/nx-set-shas@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - run: yarn nx build platform --configuration=production --skip-nx-cache
+      - uses: garygrossgarten/github-action-scp@release
+        with:
+          local: './dist/packages/platform'
+          remote: '/var/www/admin.react-devui.com'
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          rmRemote: true
+          dotfiles: true
+      - run: cp ./dist/packages/platform/index.html ./dist/packages/platform/200.html
+      - uses: dswistowski/surge-sh-action@v1
+        with:
+          domain: 'rd-platform.surge.sh'
+          project: './dist/packages/platform'
+          login: ${{ secrets.SURGE_LOGIN }}
+          token: ${{ secrets.SURGE_TOKEN }}

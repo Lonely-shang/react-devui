@@ -18,8 +18,24 @@
             "allow": [],
             "depConstraints": [
               {
-                "sourceTag": "*",
-                "onlyDependOnLibsWithTags": ["*"]
+                "sourceTag": "scope:shared",
+                "onlyDependOnLibsWithTags": ["scope:shared"]
+              },
+              {
+                "sourceTag": "scope:icons",
+                "onlyDependOnLibsWithTags": ["scope:shared", "scope:icons"]
+              },
+              {
+                "sourceTag": "scope:ui",
+                "onlyDependOnLibsWithTags": ["scope:shared", "scope:icons", "scope:ui"]
+              },
+              {
+                "sourceTag": "scope:platform",
+                "onlyDependOnLibsWithTags": ["scope:shared", "scope:icons", "scope:ui", "scope:platform"]
+              },
+              {
+                "sourceTag": "scope:site",
+                "onlyDependOnLibsWithTags": ["scope:shared", "scope:icons", "scope:ui", "scope:site"]
               }
             ]
           }
@@ -82,6 +98,10 @@
       "rules": {
         "jsdoc/require-jsdoc": "off"
       }
+    },
+    {
+      "files": ["*.tsx", "*.jsx"],
+      "rules": {}
     },
     {
       "files": ["**/*.md/*.ts", "**/*.md/*.tsx"],

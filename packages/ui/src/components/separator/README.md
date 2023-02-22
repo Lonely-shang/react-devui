@@ -7,12 +7,16 @@ title: Separator
 
 ### DSeparatorProps
 
-Extend `React.HTMLAttributes<HTMLElement>`.
+```tsx
+interface DSeparatorProps extends React.HTMLAttributes<HTMLElement> {
+  dTextAlign?: 'left' | 'right' | 'center';
+  dVertical?: boolean;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dTag | The `tag` of the rendered element | string | 'hr' |
-| dTextAlign | The position of the separator content | 'left' \| 'right' \| 'center' | 'left' |
-| dVertical | Vertical separator | boolean | false |
+| dTextAlign | Set text position | `'left'` |  |
+| dVertical | Set vertical separator | `false` |  |
 <!-- prettier-ignore-end -->

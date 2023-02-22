@@ -7,15 +7,20 @@ title: Tag
 
 ### DTagProps
 
-Extend `React.HTMLAttributes<HTMLDivElement>`.
+```tsx
+interface DTagProps extends React.HTMLAttributes<HTMLDivElement> {
+  dType?: 'primary' | 'fill' | 'outline';
+  dTheme?: 'primary' | 'success' | 'warning' | 'danger';
+  dColor?: string;
+  dSize?: DSize;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dType | Set tag type | 'primary' \| 'fill' \| 'outline' | 'primary' |
-| dTheme | Set tag theme | 'primary' \| 'success' \| 'warning' \| 'danger' | - |
-| dColor | Custom tag color | string | - |
-| dSize | Set tag size | 'smaller' \| 'larger' | - |
-| dClosable | Whether the tag can be closed | boolean | false |
-| onClose | Callback when the close button is clicked | React.MouseEventHandler\<HTMLSpanElement\> | - |
+| dType | Set tag type | `'primary'` |  |
+| dTheme | Set the tag theme color | - |  |
+| dColor | custom color | - |  |
+| dSize | set tag size | - |  |
 <!-- prettier-ignore-end -->

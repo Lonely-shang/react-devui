@@ -1,79 +1,100 @@
-import type { DUpdater } from '../../hooks/common/useTwoWayBinding';
+import type { DCloneHTMLElement } from '../../utils/types';
 import type { DFormControl } from '../form';
 
-import { usePrefixConfig, useComponentConfig, useTwoWayBinding, useGeneralState } from '../../hooks';
-import { registerComponentMate, getClassName, mergeAriaDescribedby } from '../../utils';
+import { isUndefined } from 'lodash';
+
+import { checkNodeExist, getClassName } from '@react-devui/utils';
+
+import { useGeneralContext, useDValue } from '../../hooks';
+import { registerComponentMate } from '../../utils';
+import { DBaseInput } from '../_base-input';
+import { useFormControl } from '../form';
+import { useComponentConfig, usePrefixConfig } from '../root';
+import { DCheckboxGroup } from './CheckboxGroup';
 
 export interface DCheckboxProps extends React.HTMLAttributes<HTMLElement> {
+  dRef?: {
+    input?: React.ForwardedRef<HTMLInputElement>;
+  };
   dFormControl?: DFormControl;
-  dModel?: [boolean, DUpdater<boolean>?];
+  dModel?: boolean;
   dDisabled?: boolean;
   dIndeterminate?: boolean;
-  dInputProps?: React.InputHTMLAttributes<HTMLInputElement>;
-  dInputRef?: React.Ref<HTMLInputElement>;
+  dInputRender?: DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>;
   onModelChange?: (checked: boolean) => void;
 }
 
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DCheckbox' });
-export function DCheckbox(props: DCheckboxProps): JSX.Element | null {
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DCheckbox' as const });
+export const DCheckbox: {
+  (props: DCheckboxProps): JSX.Element | null;
+  Group: typeof DCheckboxGroup;
+} = (props) => {
   const {
     children,
+    dRef,
     dFormControl,
     dModel,
     dDisabled = false,
     dIndeterminate = false,
-    dInputProps,
-    dInputRef,
+    dInputRender,
     onModelChange,
 
-    className,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const { gDisabled } = useGeneralState();
+  const { gDisabled } = useGeneralContext();
   //#endregion
 
-  const [checked, changeChecked] = useTwoWayBinding<boolean | undefined, boolean>(false, dIndeterminate ? [false] : dModel, onModelChange, {
-    formControl: dFormControl?.control,
-  });
+  const formControlInject = useFormControl(dFormControl);
+  const [checked, changeChecked] = useDValue<boolean | undefined, boolean>(
+    false,
+    dIndeterminate ? false : dModel,
+    onModelChange,
+    undefined,
+    formControlInject
+  );
 
-  const disabled = dDisabled || gDisabled || dFormControl?.disabled;
+  const disabled = dDisabled || gDisabled || dFormControl?.control.disabled;
 
   return (
     <label
       {...restProps}
-      className={getClassName(className, `${dPrefix}checkbox`, {
+      className={getClassName(restProps.className, `${dPrefix}checkbox`, {
         'is-indeterminate': dIndeterminate,
         'is-checked': checked,
         'is-disabled': disabled,
       })}
     >
       <div className={`${dPrefix}checkbox__state-container`}>
-        <input
-          {...dInputProps}
-          {...dFormControl?.inputAttrs}
-          id={dInputProps?.id ?? dFormControl?.controlId}
-          ref={dInputRef}
-          className={getClassName(dInputProps?.className, `${dPrefix}checkbox__input`)}
-          type="checkbox"
-          disabled={disabled}
-          aria-checked={dIndeterminate ? 'mixed' : checked}
-          aria-describedby={mergeAriaDescribedby(dInputProps?.['aria-describedby'], dFormControl?.inputAttrs?.['aria-describedby'])}
-          onChange={(e) => {
-            dInputProps?.onChange?.(e);
+        <DBaseInput dFormControl={dFormControl} dLabelFor>
+          {({ render: renderBaseInput }) => {
+            const input = renderBaseInput(
+              <input
+                ref={dRef?.input}
+                className={`${dPrefix}checkbox__input`}
+                type="checkbox"
+                disabled={disabled}
+                aria-checked={dIndeterminate ? 'mixed' : checked}
+                onChange={() => {
+                  changeChecked(!checked);
+                }}
+              />
+            );
 
-            changeChecked(!checked);
+            return isUndefined(dInputRender) ? input : dInputRender(input);
           }}
-        />
+        </DBaseInput>
         {dIndeterminate ? (
           <div className={`${dPrefix}checkbox__indeterminate`}></div>
         ) : (
           checked && <div className={`${dPrefix}checkbox__tick`}></div>
         )}
       </div>
-      {children && <div className={`${dPrefix}checkbox__label`}>{children}</div>}
+      {checkNodeExist(children) && <div className={`${dPrefix}checkbox__label`}>{children}</div>}
     </label>
   );
-}
+};
+
+DCheckbox.Group = DCheckboxGroup;

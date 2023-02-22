@@ -1,37 +1,69 @@
 ---
 group: Data Entry
 title: Radio
+aria: radiobutton
 ---
 
 ## API
 
 ### DRadioProps
 
-Extend `React.HTMLAttributes<HTMLElement>`.
+```tsx
+interface DRadioProps extends React.HTMLAttributes<HTMLElement> {
+  dRef?: {
+    input?: React.ForwardedRef<HTMLInputElement>;
+  };
+  dFormControl?: DFormControl;
+  dModel?: boolean;
+  dDisabled?: boolean;
+  dInputRender?: DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>;
+  onModelChange?: (checked: boolean) => void;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dModel | Manual control is selected | [boolean, Updater\<boolean\>?] | - |
-| disabled | Whether to disable | boolean | false |
-| dValue | Pass as an identifier in radio group | any  | - |
-| dInputProps | Attributes applied to the `input` element | React.InputHTMLAttributes\<HTMLInputElement\>  | - |
-| dInputRef | Pass a `ref` to the `input` element | React.Ref\<HTMLInputElement\>  | - |
-| onModelChange | Selected change callback | `(checked: boolean) => void` | - |
+| dRef | pass ref | - | |
+| dFormControl | Support Forms | - | |
+| dModel | Checked, controlled, default `false` | - | |
+| dDisabled | Whether to disable | `false` | |
+| dInputRender | custom input element | - | |
+| onModelChange | Callback for selected state changes | - | |
 <!-- prettier-ignore-end -->
 
 ### DRadioGroupProps
 
-Extend `React.HTMLAttributes<HTMLDivElement>`.
+```tsx
+interface DRadioItem<V extends DId> {
+  label: React.ReactNode;
+  value: V;
+  disabled?: boolean;
+}
+
+interface DRadioGroupProps<V extends DId> extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+  dFormControl?: DFormControl;
+  dList: DRadioItem<V>[];
+  dModel?: V | null;
+  dName?: string;
+  dDisabled?: boolean;
+  dType?: 'outline' | 'fill';
+  dSize?: DSize;
+  dVertical?: boolean;
+  onModelChange?: (value: V) => void;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dModel | Manual control selection | [any, Updater\<any\>?] | - |
-| dName | Single option `name` attribute | string | - |
-| disabled | Whether to disable | boolean | false |
-| dType | Radio group style | 'outline' \| 'fill' | - |
-| dSize | Radio button size | 'smaller' \| 'larger' | - |
-| dVertical | Radio group arranged vertically | boolean | false |
-| onModelChange | Callback when the selected item is changed | `(value: any) => void` | - |
+| dFormControl | Support Forms | - | |
+| dList | data list | - | |
+| dModel | selected item, controlled, default `nth(dList, 0)?.value ?? null` | - | |
+| dName | Sets the `name` attribute of the `input` element | - | |
+| dDisabled | Whether to disable | `false` | |
+| dType | Set radio group type | - | |
+| dSize | set the size of the single option | - | |
+| dVertical | whether vertical layout | `false` | |
+| onModelChange | Callback when the selected item changes | - | |
 <!-- prettier-ignore-end -->

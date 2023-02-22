@@ -1,0 +1,53 @@
+@use 'sass:map';
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  font-weight: 400;
+  color: var(--#{$rd-prefix}text-color);
+  background-color: var(--app-background-color);
+  text-size-adjust: 100%;
+
+  @include font-size(1rem);
+}
+
+.app-link {
+  font: inherit;
+  color: var(--#{$rd-prefix}color-primary);
+  text-decoration: none;
+  transition: color var(--#{$rd-prefix}animation-duration-base) linear;
+
+  &:hover,
+  &:focus {
+    color: var(--#{$rd-prefix}color-primary-lighter);
+  }
+
+  &:active {
+    color: var(--#{$rd-prefix}color-primary-darker);
+  }
+}
+
+.app-menu-link {
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+
+  &::after {
+    position: absolute;
+    inset: 0;
+    content: '';
+  }
+}
+
+.app-colon {
+  &::after {
+    margin-left: 2px;
+    content: ':';
+  }
+}
+
+.app-title {
+  font-size: 1.1em;
+  font-weight: 500;
+}

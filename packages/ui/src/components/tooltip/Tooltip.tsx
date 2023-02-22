@@ -1,60 +1,62 @@
-import type { DUpdater } from '../../hooks/common/useTwoWayBinding';
-import type { DElementSelector } from '../../hooks/ui/useElement';
-import type { DExtendsPopupProps } from '../_popup';
-import type { DPlacement } from './utils';
+import type { DRefExtra } from '@react-devui/hooks/useRefExtra';
+import type { DPopupPlacement } from '@react-devui/utils/position';
 
 import { isUndefined } from 'lodash';
-import React, { useId, useImperativeHandle, useRef, useState } from 'react';
+import React, { useImperativeHandle, useRef, useState } from 'react';
+import ReactDOM from 'react-dom';
 
-import { usePrefixConfig, useComponentConfig, useTwoWayBinding, useEventCallback, useElement, useMaxIndex } from '../../hooks';
-import { registerComponentMate, getClassName } from '../../utils';
+import { useEvent, useEventCallback, useId, useRefExtra } from '@react-devui/hooks';
+import { getClassName, getPopupPosition } from '@react-devui/utils';
+
+import { useMaxIndex, useDValue } from '../../hooks';
+import { checkNoExpandedEl, registerComponentMate } from '../../utils';
+import { ESC_CLOSABLE_DATA } from '../../utils/checkNoExpandedEl';
 import { DPopup } from '../_popup';
 import { DTransition } from '../_transition';
-import { getPopupPlacementStyle } from './utils';
+import { useComponentConfig, usePrefixConfig } from '../root';
 
 export interface DTooltipRef {
   updatePosition: () => void;
 }
 
-export interface DTooltipProps extends DExtendsPopupProps, React.HTMLAttributes<HTMLDivElement> {
+export interface DTooltipProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
   children: React.ReactElement;
-  dVisible?: [boolean, DUpdater<boolean>?];
-  dTitle: React.ReactNode;
-  dContainer?: DElementSelector | false;
-  dPlacement?: DPlacement;
+  dVisible?: boolean;
+  dTrigger?: 'hover' | 'click';
+  dContainer?: DRefExtra | false;
+  dPlacement?: DPopupPlacement;
+  dEscClosable?: boolean;
   dArrow?: boolean;
   dDistance?: number;
+  dInWindow?: number | false;
+  dMouseEnterDelay?: number;
+  dMouseLeaveDelay?: number;
   dZIndex?: number | string;
+  dTitle: React.ReactNode;
   onVisibleChange?: (visible: boolean) => void;
   afterVisibleChange?: (visible: boolean) => void;
 }
 
 const TTANSITION_DURING = { enter: 86, leave: 100 };
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DTooltip' });
-function Tooltip(props: DTooltipProps, ref: React.ForwardedRef<DTooltipRef>) {
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DTooltip' as const });
+function Tooltip(props: DTooltipProps, ref: React.ForwardedRef<DTooltipRef>): JSX.Element | null {
   const {
     children,
     dVisible,
-    dTitle,
+    dTrigger = 'hover',
     dContainer,
-    dTrigger,
-    dMouseEnterDelay,
-    dMouseLeaveDelay,
-    dEscClosable,
     dPlacement = 'top',
+    dEscClosable = true,
     dArrow = true,
-    dDisabled = false,
     dDistance = 10,
+    dInWindow = false,
+    dMouseEnterDelay = 150,
+    dMouseLeaveDelay = 200,
     dZIndex,
+    dTitle,
     onVisibleChange,
     afterVisibleChange,
 
-    id,
-    className,
-    style,
-    onMouseEnter,
-    onMouseLeave,
-    onClick,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
@@ -63,20 +65,38 @@ function Tooltip(props: DTooltipProps, ref: React.ForwardedRef<DTooltipRef>) {
   //#endregion
 
   //#region Ref
+  const windowRef = useRefExtra(() => window);
+  const triggerRef = useRefExtra<HTMLElement>(() => document.querySelector(`[aria-describedby="${id}"]`));
   const popupRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRefExtra(
+    isUndefined(dContainer)
+      ? () => {
+          let el = document.getElementById(`${dPrefix}tooltip-root`);
+          if (!el) {
+            el = document.createElement('div');
+            el.id = `${dPrefix}tooltip-root`;
+            document.body.appendChild(el);
+          }
+          return el;
+        }
+      : dContainer === false
+      ? () => {
+          return triggerRef.current?.parentElement ?? null;
+        }
+      : dContainer,
+    true
+  );
   //#endregion
 
   const uniqueId = useId();
-  const _id = id ?? `${dPrefix}tooltip-${uniqueId}`;
+  const id = restProps.id ?? `${dPrefix}tooltip-${uniqueId}`;
 
-  const [visible, changeVisible] = useTwoWayBinding<boolean>(false, dVisible, onVisibleChange);
-
-  const isFixed = isUndefined(dContainer);
+  const [visible, changeVisible] = useDValue<boolean>(false, dVisible, onVisibleChange);
 
   const maxZIndex = useMaxIndex(visible);
   const zIndex = (() => {
     if (isUndefined(dZIndex)) {
-      if (isFixed) {
+      if (isUndefined(dContainer)) {
         return maxZIndex;
       } else {
         return `var(--${dPrefix}zindex-absolute)`;
@@ -86,40 +106,19 @@ function Tooltip(props: DTooltipProps, ref: React.ForwardedRef<DTooltipRef>) {
     }
   })();
 
-  const containerEl = useElement(
-    isUndefined(dContainer) || dContainer === false
-      ? () => {
-          if (isUndefined(dContainer)) {
-            let el = document.getElementById(`${dPrefix}tooltip-root`);
-            if (!el) {
-              el = document.createElement('div');
-              el.id = `${dPrefix}tooltip-root`;
-              document.body.appendChild(el);
-            }
-            return el;
-          } else {
-            const triggerEl = document.querySelector(`[aria-describedby="${_id}"]`) as HTMLElement | null;
-            return triggerEl?.parentElement ?? null;
-          }
-        }
-      : dContainer
-  );
-
   const [popupPositionStyle, setPopupPositionStyle] = useState<React.CSSProperties>({
-    top: -9999,
-    left: -9999,
+    top: '-200vh',
+    left: '-200vw',
   });
-  const [placement, setPlacement] = useState<DPlacement>(dPlacement);
+  const [placement, setPlacement] = useState<DPopupPlacement>(dPlacement);
   const [transformOrigin, setTransformOrigin] = useState<string>();
   const updatePosition = useEventCallback(() => {
-    const triggerEl = document.querySelector(`[aria-describedby="${_id}"]`) as HTMLElement | null;
-
-    if (popupRef.current && triggerEl && containerEl) {
+    if (visible && popupRef.current && triggerRef.current) {
       let currentPlacement = dPlacement;
 
       let space: [number, number, number, number] = [0, 0, 0, 0];
-      if (!isFixed) {
-        const containerRect = containerEl.getBoundingClientRect();
+      if (!isUndefined(dContainer) && containerRef.current) {
+        const containerRect = containerRef.current.getBoundingClientRect();
         space = [
           containerRect.top,
           window.innerWidth - containerRect.left - containerRect.width,
@@ -127,19 +126,30 @@ function Tooltip(props: DTooltipProps, ref: React.ForwardedRef<DTooltipRef>) {
           containerRect.left,
         ];
       }
-      const position = getPopupPlacementStyle(popupRef.current, triggerEl, dPlacement, dDistance, isFixed, space);
+      const position = getPopupPosition(
+        popupRef.current,
+        triggerRef.current,
+        {
+          placement: dPlacement,
+          offset: dDistance,
+          inWindow: dInWindow,
+        },
+        space
+      );
       if (position) {
         currentPlacement = position.placement;
         setPlacement(position.placement);
         setPopupPositionStyle({
-          position: isFixed ? undefined : 'absolute',
           top: position.top,
           left: position.left,
         });
       } else {
-        const position = getPopupPlacementStyle(popupRef.current, triggerEl, placement, dDistance, isFixed);
+        const position = getPopupPosition(popupRef.current, triggerRef.current, {
+          placement,
+          offset: dDistance,
+          inWindow: dInWindow,
+        });
         setPopupPositionStyle({
-          position: isFixed ? undefined : 'absolute',
           top: position.top,
           left: position.left,
         });
@@ -202,6 +212,18 @@ function Tooltip(props: DTooltipProps, ref: React.ForwardedRef<DTooltipRef>) {
     }
   });
 
+  useEvent<KeyboardEvent>(
+    windowRef,
+    'keydown',
+    (e) => {
+      if (e.code === 'Escape' && popupRef.current && checkNoExpandedEl(popupRef.current)) {
+        changeVisible(false);
+      }
+    },
+    {},
+    !dEscClosable || !visible
+  );
+
   useImperativeHandle(
     ref,
     () => ({
@@ -211,122 +233,96 @@ function Tooltip(props: DTooltipProps, ref: React.ForwardedRef<DTooltipRef>) {
   );
 
   return (
-    <DTransition
-      dIn={visible}
-      dDuring={TTANSITION_DURING}
-      onEnterRendered={updatePosition}
-      afterEnter={() => {
-        afterVisibleChange?.(true);
+    <DPopup
+      dVisible={visible}
+      dTrigger={dTrigger}
+      dMouseEnterDelay={dMouseEnterDelay}
+      dMouseLeaveDelay={dMouseLeaveDelay}
+      dUpdatePosition={{
+        fn: updatePosition,
+        triggerRef,
+        popupRef,
+        extraScrollRefs: [isUndefined(dContainer) ? undefined : containerRef],
       }}
-      afterLeave={() => {
-        afterVisibleChange?.(false);
-      }}
+      onVisibleChange={changeVisible}
     >
-      {(state) => {
-        let transitionStyle: React.CSSProperties = {};
-        switch (state) {
-          case 'enter':
-            transitionStyle = { transform: 'scale(0.3)', opacity: 0 };
-            break;
-
-          case 'entering':
-            transitionStyle = {
-              transition: `transform ${TTANSITION_DURING.enter}ms ease-out, opacity ${TTANSITION_DURING.enter}ms ease-out`,
-              transformOrigin,
-            };
-            break;
-
-          case 'leaving':
-            transitionStyle = {
-              transform: 'scale(0.3)',
-              opacity: 0,
-              transition: `transform ${TTANSITION_DURING.leave}ms ease-in, opacity ${TTANSITION_DURING.leave}ms ease-in`,
-              transformOrigin,
-            };
-            break;
-
-          case 'leaved':
-            transitionStyle = { display: 'none' };
-            break;
-
-          default:
-            break;
-        }
-
-        return (
-          <DPopup
-            dDisabled={dDisabled}
-            dVisible={visible}
-            dPopup={({ pOnClick, pOnMouseEnter, pOnMouseLeave, ...restPCProps }) => (
-              <div
-                {...restProps}
-                {...restPCProps}
-                ref={popupRef}
-                id={_id}
-                className={getClassName(className, `${dPrefix}tooltip`, `${dPrefix}tooltip--` + placement)}
-                style={{
-                  ...style,
-                  ...popupPositionStyle,
-                  ...transitionStyle,
-                  zIndex,
+      {({ renderTrigger, renderPopup }) => (
+        <>
+          {renderTrigger(
+            React.cloneElement(children, {
+              'aria-describedby': id,
+              [ESC_CLOSABLE_DATA]: dEscClosable && visible,
+            })
+          )}
+          {containerRef.current &&
+            ReactDOM.createPortal(
+              <DTransition
+                dIn={visible}
+                dDuring={TTANSITION_DURING}
+                onEnter={updatePosition}
+                afterEnter={() => {
+                  afterVisibleChange?.(true);
                 }}
-                role="tooltip"
-                onClick={(e) => {
-                  onClick?.(e);
-                  pOnClick?.();
-                }}
-                onMouseEnter={(e) => {
-                  onMouseEnter?.(e);
-                  pOnMouseEnter?.();
-                }}
-                onMouseLeave={(e) => {
-                  onMouseLeave?.(e);
-                  pOnMouseLeave?.();
+                afterLeave={() => {
+                  afterVisibleChange?.(false);
                 }}
               >
-                {dArrow && <div className={`${dPrefix}tooltip__arrow`}></div>}
-                {dTitle}
-              </div>
+                {(state) => {
+                  let transitionStyle: React.CSSProperties = {};
+                  switch (state) {
+                    case 'enter':
+                      transitionStyle = { transform: 'scale(0.3)', opacity: 0 };
+                      break;
+
+                    case 'entering':
+                      transitionStyle = {
+                        transition: ['transform', 'opacity'].map((attr) => `${attr} ${TTANSITION_DURING.enter}ms ease-out`).join(', '),
+                        transformOrigin,
+                      };
+                      break;
+
+                    case 'leaving':
+                      transitionStyle = {
+                        transform: 'scale(0.3)',
+                        opacity: 0,
+                        transition: ['transform', 'opacity'].map((attr) => `${attr} ${TTANSITION_DURING.leave}ms ease-in`).join(', '),
+                        transformOrigin,
+                      };
+                      break;
+
+                    case 'leaved':
+                      transitionStyle = { display: 'none' };
+                      break;
+
+                    default:
+                      break;
+                  }
+
+                  return renderPopup(
+                    <div
+                      {...restProps}
+                      ref={popupRef}
+                      id={id}
+                      className={getClassName(restProps.className, `${dPrefix}tooltip`, `${dPrefix}tooltip--` + placement)}
+                      style={{
+                        ...restProps.style,
+                        ...popupPositionStyle,
+                        zIndex,
+                        ...transitionStyle,
+                      }}
+                      role="tooltip"
+                    >
+                      {dArrow && <div className={`${dPrefix}tooltip__arrow`}></div>}
+                      {dTitle}
+                    </div>
+                  );
+                }}
+              </DTransition>,
+              containerRef.current
             )}
-            dContainer={containerEl}
-            dTrigger={dTrigger}
-            dMouseEnterDelay={dMouseEnterDelay}
-            dMouseLeaveDelay={dMouseLeaveDelay}
-            dEscClosable={dEscClosable}
-            onVisibleChange={changeVisible}
-            onUpdate={updatePosition}
-          >
-            {({ pOnClick, pOnFocus, pOnBlur, pOnMouseEnter, pOnMouseLeave, ...restPCProps }) =>
-              React.cloneElement<React.HTMLAttributes<HTMLElement>>(children, {
-                ...children.props,
-                ...restPCProps,
-                'aria-describedby': _id,
-                onClick: (e) => {
-                  children.props.onClick?.(e);
-                  pOnClick?.();
-                },
-                onFocus: (e) => {
-                  children.props.onFocus?.(e);
-                  pOnFocus?.();
-                },
-                onBlur: (e) => {
-                  children.props.onBlur?.(e);
-                  pOnBlur?.();
-                },
-                onMouseEnter: (e) => {
-                  children.props.onMouseEnter?.(e);
-                  pOnMouseEnter?.();
-                },
-                onMouseLeave: (e) => {
-                  children.props.onMouseLeave?.(e);
-                  pOnMouseLeave?.();
-                },
-              })
-            }
-          </DPopup>
-        );
-      }}
-    </DTransition>
+        </>
+      )}
+    </DPopup>
   );
 }
 

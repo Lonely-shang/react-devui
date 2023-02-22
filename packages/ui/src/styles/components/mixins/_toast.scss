@@ -1,0 +1,55 @@
+@mixin component-toast {
+  display: flex;
+  align-items: center;
+  border-radius: var(--#{$rd-prefix}border-radius);
+
+  @each $theme, $rgb in $rd-themes {
+    @include theme(#{$theme}) {
+      @include e(icon) {
+        color: var(--#{$rd-prefix}color-#{$theme});
+      }
+    }
+  }
+
+  @include e(icon) {
+    flex-shrink: 0;
+    margin-right: 10px;
+    font-size: 1.2em;
+  }
+
+  @include e(content) {
+    flex-grow: 1;
+  }
+
+  @include e(actions) {
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 0 4px;
+    align-items: center;
+
+    .#{$rd-prefix}button {
+      --#{$rd-prefix}size: 28px;
+      --#{$rd-prefix}padding-size: 10px;
+    }
+  }
+
+  @include e(close) {
+    @include utils-button;
+
+    padding: 0;
+    margin: 0;
+    color: rgb(var(--#{$rd-prefix}text-color-rgb) / 50%);
+    background-color: transparent;
+    border: none;
+    transition: color var(--#{$rd-prefix}animation-duration-base) linear;
+
+    &:hover,
+    &:focus {
+      color: var(--#{$rd-prefix}color-primary-lighter);
+    }
+
+    &:active {
+      color: var(--#{$rd-prefix}color-primary-darker);
+    }
+  }
+}

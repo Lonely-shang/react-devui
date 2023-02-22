@@ -1,372 +1,277 @@
-import type { DSize } from '../../types';
+import type { DCloneHTMLElement, DSize } from '../../utils/types';
+import type { DFormControl } from '../form';
 
-import React, { useId, useRef, useState } from 'react';
-import { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { filter } from 'rxjs';
+import { fromEvent } from 'rxjs';
 
-import {
-  useAsync,
-  usePrefixConfig,
-  useGeneralState,
-  useTranslation,
-  useEventCallback,
-  useElement,
-  useMaxIndex,
-  useContentScrollViewChange,
-  useFocusVisible,
-} from '../../hooks';
-import { CloseCircleFilled, DownOutlined, LoadingOutlined, SearchOutlined } from '../../icons';
-import { getClassName, getNoTransformSize, getVerticalSidePosition } from '../../utils';
-import { DTransition } from '../_transition';
-import { useCompose } from '../compose';
+import { useForkRef, useRefExtra, useResize } from '@react-devui/hooks';
+import { CloseCircleFilled, DownOutlined, LoadingOutlined, SearchOutlined } from '@react-devui/icons';
+import { checkNodeExist, getClassName } from '@react-devui/utils';
 
-export type DExtendsSelectboxProps = Pick<
-  DSelectboxProps,
-  'dPlaceholder' | 'dDisabled' | 'dSearchable' | 'dSize' | 'dLoading' | 'onClear' | 'onVisibleChange'
->;
+import { useMaxIndex } from '../../hooks';
+import { cloneHTMLElement } from '../../utils';
+import { ESC_CLOSABLE_DATA } from '../../utils/checkNoExpandedEl';
+import { DBaseDesign } from '../_base-design';
+import { DBaseInput } from '../_base-input';
+import { DFocusVisible } from '../_focus-visible';
+import { useGlobalScroll, useLayout, usePrefixConfig, useTranslation } from '../root';
 
-export interface DSelectboxRenderProps {
-  'data-selectbox-popupid': string;
-  sOnMouseDown: React.MouseEventHandler;
-  sOnMouseUp: React.MouseEventHandler;
-  sStyle: React.CSSProperties;
+export interface DSelectboxProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+  children: (props: { renderPopup: DCloneHTMLElement }) => JSX.Element | null;
+  dRef: {
+    box: React.ForwardedRef<HTMLDivElement>;
+    input: React.ForwardedRef<HTMLInputElement> | undefined;
+  };
+  dClassNamePrefix: string;
+  dFormControl: DFormControl | undefined;
+  dVisible: boolean;
+  dContent: React.ReactNode | undefined;
+  dContentTitle: string | undefined;
+  dPlaceholder: string | undefined;
+  dSuffix: React.ReactNode | undefined;
+  dSize: DSize | undefined;
+  dLoading: boolean;
+  dSearchable: boolean;
+  dClearable: boolean;
+  dDisabled: boolean;
+  dUpdatePosition: {
+    fn: () => void;
+    popupRef: React.RefObject<HTMLElement>;
+    extraScrollRefs: (React.RefObject<HTMLElement> | undefined)[];
+  };
+  dInputRender: DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>;
+  onFocusVisibleChange: (visible: boolean) => void;
+  onClear: () => void;
 }
 
-export interface DSelectboxProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: (props: DSelectboxRenderProps) => JSX.Element | null;
-  dVisible?: boolean;
-  dContent?: React.ReactNode;
-  dContentTitle?: string;
-  dPlaceholder?: string;
-  dSuffix?: React.ReactNode;
-  dAutoMaxWidth?: boolean;
-  dCustomWidth?: boolean;
-  dSize?: DSize;
-  dSearchable?: boolean;
-  dShowClear?: boolean;
-  dDisabled?: boolean;
-  dLoading?: boolean;
-  dInputProps: React.InputHTMLAttributes<HTMLInputElement> & { 'aria-controls': string };
-  onVisibleChange?: (visible: boolean) => void;
-  onFocusVisibleChange?: (visible: boolean) => void;
-  onClear?: () => void;
-}
-
-const TTANSITION_DURING = 116;
 export function DSelectbox(props: DSelectboxProps): JSX.Element | null {
   const {
     children,
-    dVisible = false,
+    dRef,
+    dClassNamePrefix,
+    dFormControl,
+    dVisible,
     dContent,
     dContentTitle,
     dPlaceholder,
     dSuffix,
-    dAutoMaxWidth = false,
-    dCustomWidth = false,
     dSize,
-    dSearchable = false,
-    dShowClear = false,
-    dLoading = false,
-    dDisabled = false,
-    dInputProps,
-    onVisibleChange,
+    dLoading,
+    dSearchable,
+    dClearable,
+    dDisabled,
+    dUpdatePosition,
+    dInputRender,
     onFocusVisibleChange,
     onClear,
 
-    className,
-    onMouseDown,
-    onMouseUp,
-    onClick,
     ...restProps
   } = props;
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const { gSize, gDisabled } = useGeneralState();
+  const { dPageScrollRef, dContentResizeRef } = useLayout();
   //#endregion
 
   //#region Ref
   const boxRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
-  //#endregion
-
-  const asyncCapture = useAsync();
-  const [t] = useTranslation();
-  const { fvOnFocus, fvOnBlur, fvOnKeyDown } = useFocusVisible(onFocusVisibleChange);
-
-  const uniqueId = useId();
-
-  const [searchValue, setSearchValue] = useState('');
-  const [isFocus, setIsFocus] = useState(false);
-
-  const size = dSize ?? gSize;
-  const disabled = dDisabled || gDisabled;
-
-  const showClear = !dVisible && !dLoading && !disabled && dShowClear;
-
-  const iconSize = size === 'smaller' ? 12 : size === 'larger' ? 16 : 14;
-
-  const containerEl = useElement(() => {
-    let el = document.getElementById(`${dPrefix}selectbox-root`);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRefExtra(() => {
+    let el = document.getElementById(`${prefix}-root`);
     if (!el) {
       el = document.createElement('div');
-      el.id = `${dPrefix}selectbox-root`;
+      el.id = `${prefix}-root`;
       document.body.appendChild(el);
     }
     return el;
-  });
+  }, true);
+  const combineBoxRef = useForkRef(boxRef, dRef.box);
+  const combineInputRef = useForkRef(inputRef, dRef.input);
+  //#endregion
+
+  const prefix = `${dPrefix}${dClassNamePrefix}`;
+
+  const [t] = useTranslation();
+
+  const [isFocus, setIsFocus] = useState(false);
+
+  const inputable = dSearchable && dVisible;
+  const clearable = dClearable && dContent && !dVisible && !dLoading && !dDisabled;
 
   const maxZIndex = useMaxIndex(dVisible);
 
-  const changeVisible = useEventCallback((visible: boolean) => {
-    onVisibleChange?.(visible);
-  });
-
-  const [popupPositionStyle, setPopupPositionStyle] = useState<React.CSSProperties>({
-    top: -9999,
-    left: -9999,
-  });
-  const [transformOrigin, setTransformOrigin] = useState<string>();
-  const updatePosition = useEventCallback(() => {
-    const popupEl = document.querySelector(`[data-selectbox-popupid="${uniqueId}"]`) as HTMLElement | null;
-    if (boxRef.current && popupEl) {
-      const width = boxRef.current.getBoundingClientRect().width;
-      const { height } = getNoTransformSize(popupEl);
-      const { top, left, transformOrigin } = getVerticalSidePosition(boxRef.current, { width, height }, 'bottom-left', 8);
-      setPopupPositionStyle({
-        top,
-        left,
-        width: dCustomWidth ? undefined : width,
-        maxWidth: dAutoMaxWidth ? window.innerWidth - left - 20 : undefined,
-      });
-      setTransformOrigin(transformOrigin);
-    }
-  });
-
-  useContentScrollViewChange(dVisible ? updatePosition : undefined);
-  useEffect(() => {
-    if (dVisible) {
-      const [asyncGroup, asyncId] = asyncCapture.createGroup();
-
-      if (boxRef.current) {
-        asyncGroup.onResize(boxRef.current, () => {
-          updatePosition();
-        });
-      }
-
-      const popupEl = document.querySelector(`[data-selectbox-popupid="${uniqueId}"]`) as HTMLElement | null;
-      if (popupEl) {
-        asyncGroup.onResize(popupEl, () => {
-          updatePosition();
-        });
-      }
-
-      asyncGroup.onGlobalScroll(() => {
-        updatePosition();
-      });
-
-      return () => {
-        asyncCapture.deleteGroup(asyncId);
-      };
-    }
-  }, [asyncCapture, dVisible, uniqueId, updatePosition]);
-
-  useEffect(() => {
-    if (dVisible) {
-      const [asyncGroup, asyncId] = asyncCapture.createGroup();
-
-      asyncGroup
-        .fromEvent<KeyboardEvent>(window, 'keydown')
-        .pipe(filter((e) => e.code === 'Escape'))
-        .subscribe({
-          next: () => {
-            changeVisible(false);
-          },
-        });
-
-      return () => {
-        asyncCapture.deleteGroup(asyncId);
-      };
-    }
-  }, [asyncCapture, changeVisible, dVisible]);
-
   const preventBlur: React.MouseEventHandler = (e) => {
-    if (e.button === 0) {
+    if (e.target !== inputRef.current && e.button === 0) {
       e.preventDefault();
     }
   };
 
-  const composeDataAttrs = useCompose(isFocus, disabled);
+  const globalScroll = useGlobalScroll(dUpdatePosition.fn, !dVisible);
+  useEffect(() => {
+    if (!dVisible || !globalScroll) {
+      const ob = fromEvent(
+        [dPageScrollRef, ...dUpdatePosition.extraScrollRefs].map((ref) => ref?.current).filter((el) => el) as HTMLElement[],
+        'scroll',
+        { passive: true }
+      ).subscribe({
+        next: () => {
+          dUpdatePosition.fn();
+        },
+      });
+      return () => {
+        ob.unsubscribe();
+      };
+    }
+  });
+
+  useResize(boxRef, dUpdatePosition.fn, !dVisible);
+  useResize(dUpdatePosition.popupRef, dUpdatePosition.fn, !dVisible);
+  useResize(dContentResizeRef, dUpdatePosition.fn, !dVisible);
 
   return (
     <>
-      <div
-        {...restProps}
-        {...composeDataAttrs}
-        ref={boxRef}
-        className={getClassName(className, `${dPrefix}selectbox`, {
-          [`${dPrefix}selectbox--${size}`]: size,
-          'is-expanded': dVisible,
-          'is-disabled': disabled,
-          'is-focus': isFocus,
-        })}
-        onMouseDown={(e) => {
-          onMouseDown?.(e);
-
-          preventBlur(e);
+      <DBaseDesign
+        dComposeDesign={{
+          active: isFocus,
+          disabled: dDisabled,
         }}
-        onMouseUp={(e) => {
-          onMouseUp?.(e);
-
-          preventBlur(e);
-        }}
-        onClick={(e) => {
-          onClick?.(e);
-
-          changeVisible(!dVisible);
-          searchRef.current?.focus({ preventScroll: true });
+        dFormDesign={{
+          control: dFormControl,
         }}
       >
-        <div className={`${dPrefix}selectbox__container`} title={dContentTitle}>
-          <input
-            {...dInputProps}
-            ref={searchRef}
-            className={getClassName(`${dPrefix}selectbox__search`, dInputProps?.className)}
-            style={{
-              ...dInputProps?.style,
-              opacity: dSearchable && dVisible ? undefined : 0,
-              zIndex: dSearchable && dVisible ? undefined : -1,
-            }}
-            type="text"
-            autoComplete="off"
-            value={searchValue}
-            disabled={disabled}
-            role="combobox"
-            aria-haspopup="listbox"
-            aria-expanded={dVisible}
-            aria-controls={dInputProps['aria-controls']}
-            onChange={(e) => {
-              dInputProps?.onChange?.(e);
+        {({ render: renderBaseDesign }) =>
+          renderBaseDesign(
+            <div
+              {...restProps}
+              {...{ [ESC_CLOSABLE_DATA]: dVisible }}
+              ref={combineBoxRef}
+              className={getClassName(restProps.className, prefix, {
+                [`${prefix}--${dSize}`]: dSize,
+                'is-expanded': dVisible,
+                'is-focus': isFocus,
+                'is-disabled': dDisabled,
+              })}
+              onMouseDown={(e) => {
+                restProps.onMouseDown?.(e);
 
-              setSearchValue(e.currentTarget.value);
-            }}
-            onKeyDown={(e) => {
-              dInputProps?.onKeyDown?.(e);
-              fvOnKeyDown(e);
+                preventBlur(e);
+              }}
+              onMouseUp={(e) => {
+                restProps.onMouseUp?.(e);
 
-              if (!dVisible) {
-                if (e.code === 'Space' || e.code === 'Enter') {
-                  e.preventDefault();
+                preventBlur(e);
+              }}
+              onClick={(e) => {
+                restProps.onClick?.(e);
 
-                  changeVisible(true);
-                }
-              }
-            }}
-            onFocus={(e) => {
-              dInputProps?.onFocus?.(e);
-              fvOnFocus();
+                inputRef.current?.focus({ preventScroll: true });
+              }}
+            >
+              <div className={`${prefix}__container`} title={dContentTitle}>
+                <DFocusVisible onFocusVisibleChange={onFocusVisibleChange}>
+                  {({ render: renderFocusVisible }) => (
+                    <DBaseInput dFormControl={dFormControl} dLabelFor>
+                      {({ render: renderBaseInput }) => {
+                        return dInputRender(
+                          renderFocusVisible(
+                            renderBaseInput(
+                              <input
+                                ref={combineInputRef}
+                                className={`${prefix}__search`}
+                                style={{
+                                  opacity: inputable ? undefined : 0,
+                                  zIndex: inputable ? undefined : -1,
+                                }}
+                                type="text"
+                                autoComplete="off"
+                                disabled={dDisabled}
+                                role="combobox"
+                                aria-haspopup="listbox"
+                                aria-expanded={dVisible}
+                                onFocus={() => {
+                                  setIsFocus(true);
+                                }}
+                                onBlur={() => {
+                                  setIsFocus(false);
+                                }}
+                              />
+                            )
+                          )
+                        );
+                      }}
+                    </DBaseInput>
+                  )}
+                </DFocusVisible>
+                {!inputable &&
+                  (dContent ? (
+                    <div className={`${prefix}__content`}>{dContent}</div>
+                  ) : dPlaceholder ? (
+                    <div className={`${prefix}__placeholder-wrapper`}>
+                      <div className={`${prefix}__placeholder`}>{dPlaceholder}</div>
+                    </div>
+                  ) : null)}
+              </div>
+              {checkNodeExist(dSuffix) && (
+                <div
+                  className={`${prefix}__suffix`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  {dSuffix}
+                </div>
+              )}
+              {clearable && (
+                <div
+                  className={`${prefix}__clear`}
+                  role="button"
+                  aria-label={t('Clear')}
+                  onClick={(e) => {
+                    e.stopPropagation();
 
-              setIsFocus(true);
-            }}
-            onBlur={(e) => {
-              dInputProps?.onBlur?.(e);
-              fvOnBlur();
-
-              setIsFocus(false);
-              changeVisible(false);
-            }}
-          />
-          {!(dSearchable && dVisible) && dContent && <div className={`${dPrefix}selectbox__content`}>{dContent}</div>}
-          {!(dSearchable && dVisible) && !dContent && dPlaceholder && (
-            <div className={`${dPrefix}selectbox__placeholder-wrapper`}>
-              <div className={`${dPrefix}selectbox__placeholder`}>{dPlaceholder}</div>
+                    onClear();
+                  }}
+                >
+                  <CloseCircleFilled />
+                </div>
+              )}
+              <div
+                className={getClassName(`${prefix}__icon`, {
+                  'is-arrow-up': !dLoading && !inputable && dVisible,
+                })}
+                style={{
+                  opacity: clearable ? 0 : 1,
+                }}
+              >
+                {dLoading ? <LoadingOutlined dSpin /> : inputable ? <SearchOutlined /> : <DownOutlined />}
+              </div>
             </div>
-          )}
-        </div>
-        {dSuffix && (
-          <div
-            className={`${dPrefix}selectbox__suffix`}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            {dSuffix}
-          </div>
-        )}
-        {showClear && (
-          <button
-            className={getClassName(`${dPrefix}icon-button`, `${dPrefix}selectbox__clear`)}
-            style={{ width: iconSize, height: iconSize }}
-            aria-label={t('Common', 'Clear')}
-            onClick={onClear}
-          >
-            <CloseCircleFilled dSize="0.8em" />
-          </button>
-        )}
-        <div
-          className={getClassName(`${dPrefix}selectbox__icon`, {
-            'is-expand': !dLoading && !dSearchable && dVisible,
-          })}
-          style={{
-            fontSize: iconSize,
-            opacity: showClear ? 0 : 1,
-          }}
-        >
-          {dLoading ? <LoadingOutlined dSpin /> : dSearchable && dVisible ? <SearchOutlined /> : <DownOutlined />}
-        </div>
-      </div>
-      {containerEl &&
+          )
+        }
+      </DBaseDesign>
+      {containerRef.current &&
         ReactDOM.createPortal(
-          <DTransition dIn={dVisible} dDuring={TTANSITION_DURING} onEnterRendered={updatePosition}>
-            {(state) => {
-              let transitionStyle: React.CSSProperties = {};
-              switch (state) {
-                case 'enter':
-                  transitionStyle = { transform: 'scaleY(0.7)', opacity: 0 };
-                  break;
-
-                case 'entering':
-                  transitionStyle = {
-                    transition: `transform ${TTANSITION_DURING}ms ease-out, opacity ${TTANSITION_DURING}ms ease-out`,
-                    transformOrigin,
-                  };
-                  break;
-
-                case 'leaving':
-                  transitionStyle = {
-                    transform: 'scaleY(0.7)',
-                    opacity: 0,
-                    transition: `transform ${TTANSITION_DURING}ms ease-in, opacity ${TTANSITION_DURING}ms ease-in`,
-                    transformOrigin,
-                  };
-                  break;
-
-                case 'leaved':
-                  transitionStyle = { display: 'none' };
-                  break;
-
-                default:
-                  break;
-              }
-
-              return children({
-                'data-selectbox-popupid': uniqueId,
-                sStyle: {
-                  ...popupPositionStyle,
-                  ...transitionStyle,
+          children({
+            renderPopup: (el) =>
+              cloneHTMLElement(el, {
+                style: {
+                  ...el.props.style,
                   zIndex: maxZIndex,
                 },
-                sOnMouseDown: (e) => {
+                onMouseDown: (e) => {
+                  el.props.onMouseDown?.(e);
+
                   preventBlur(e);
                 },
-                sOnMouseUp: (e) => {
+                onMouseUp: (e) => {
+                  el.props.onMouseUp?.(e);
+
                   preventBlur(e);
                 },
-              });
-            }}
-          </DTransition>,
-          containerEl
+              }),
+          }),
+          containerRef.current
         )}
     </>
   );

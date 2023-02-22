@@ -1,0 +1,286 @@
+@use 'sass:map';
+@import 'mixins/overwrite';
+
+@keyframes fab-popup {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@include b(fab) {
+  $selector: &;
+  $disabled-selector: ':disabled:not(.is-loading)';
+
+  --#{$rd-prefix}fab-size: 56px;
+
+  position: relative;
+  display: inline-block;
+  /* stylelint-disable-next-line declaration-property-value-allowed-list */
+  font-size: 24px;
+  vertical-align: top;
+
+  @include e(button) {
+    @include utils-button;
+
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--#{$rd-prefix}fab-size);
+    height: var(--#{$rd-prefix}fab-size);
+    padding: 0;
+    margin: 0;
+    /* stylelint-disable-next-line declaration-property-value-allowed-list */
+    border-radius: 4px;
+    box-shadow: var(--#{$rd-prefix}fab-shadow);
+    transition: border-color var(--#{$rd-prefix}animation-duration-base) linear, color var(--#{$rd-prefix}animation-duration-base) linear,
+      background-color var(--#{$rd-prefix}animation-duration-base) linear;
+
+    &:disabled {
+      pointer-events: none;
+    }
+
+    @include when(loading) {
+      pointer-events: none;
+    }
+
+    @include when(expand) {
+      @include e(close-icon) {
+        opacity: 1;
+        transform: rotate(90deg);
+      }
+
+      @include e(button-content) {
+        opacity: 0;
+      }
+    }
+
+    @each $theme, $rgb in $rd-themes {
+      @include theme(#{$theme}) {
+        --#{$rd-prefix}fab-color: var(--#{$rd-prefix}color-#{$theme});
+        --#{$rd-prefix}fab-color-lighter: var(--#{$rd-prefix}color-#{$theme}-lighter);
+        --#{$rd-prefix}fab-color-darker: var(--#{$rd-prefix}color-#{$theme}-darker);
+        --#{$rd-prefix}fab-text-hover-background: var(--#{$rd-prefix}background-color-#{$theme}-hover);
+        --#{$rd-prefix}fab-text-active-background: var(--#{$rd-prefix}background-color-#{$theme});
+      }
+    }
+
+    @include m(primary) {
+      color: map.get($rd-colors, 'white');
+      background-color: var(--#{$rd-prefix}fab-color);
+      border: 1px solid var(--#{$rd-prefix}fab-color);
+
+      &:hover,
+      &:focus,
+      &.is-loading {
+        background-color: var(--#{$rd-prefix}fab-color-lighter);
+        border-color: var(--#{$rd-prefix}fab-color-lighter);
+      }
+
+      &:active {
+        background-color: var(--#{$rd-prefix}fab-color-darker);
+        border-color: var(--#{$rd-prefix}fab-color-darker);
+      }
+
+      &#{$disabled-selector} {
+        filter: saturate(50%) grayscale(50%);
+      }
+    }
+
+    @include m(secondary) {
+      color: var(--#{$rd-prefix}text-color);
+      background-color: transparent;
+      border: 1px solid var(--#{$rd-prefix}color-border);
+
+      &:hover,
+      &:focus,
+      &.is-loading {
+        color: var(--#{$rd-prefix}fab-color-lighter);
+        border-color: var(--#{$rd-prefix}fab-color-lighter);
+      }
+
+      &:active {
+        color: var(--#{$rd-prefix}fab-color-darker);
+        border-color: var(--#{$rd-prefix}fab-color-darker);
+      }
+
+      &#{$disabled-selector} {
+        color: var(--#{$rd-prefix}color-disabled);
+        pointer-events: none;
+        background-color: var(--#{$rd-prefix}background-color-disabled);
+      }
+    }
+
+    @include m(outline) {
+      color: var(--#{$rd-prefix}fab-color);
+      background-color: transparent;
+      border: 1px solid var(--#{$rd-prefix}fab-color);
+
+      &:hover,
+      &:focus,
+      &.is-loading {
+        color: var(--#{$rd-prefix}fab-color-lighter);
+        border-color: var(--#{$rd-prefix}fab-color-lighter);
+      }
+
+      &:active {
+        color: var(--#{$rd-prefix}fab-color-darker);
+        border-color: var(--#{$rd-prefix}fab-color-darker);
+      }
+
+      &#{$disabled-selector} {
+        color: var(--#{$rd-prefix}color-disabled);
+        border-color: var(--#{$rd-prefix}color-border);
+      }
+    }
+
+    @include m(dashed) {
+      color: var(--#{$rd-prefix}fab-color);
+      background-color: transparent;
+      border: 1px dashed var(--#{$rd-prefix}fab-color);
+
+      &:hover,
+      &:focus,
+      &.is-loading {
+        color: var(--#{$rd-prefix}fab-color-lighter);
+        border-color: var(--#{$rd-prefix}fab-color-lighter);
+      }
+
+      &:active {
+        color: var(--#{$rd-prefix}fab-color-darker);
+        border-color: var(--#{$rd-prefix}fab-color-darker);
+      }
+
+      &#{$disabled-selector} {
+        color: var(--#{$rd-prefix}color-disabled);
+        border-color: var(--#{$rd-prefix}color-border);
+      }
+    }
+
+    @include m(text) {
+      color: var(--#{$rd-prefix}text-color);
+      background-color: transparent;
+      border: none;
+
+      &:hover,
+      &:focus,
+      &.is-loading {
+        color: var(--#{$rd-prefix}fab-color-lighter);
+        background-color: var(--#{$rd-prefix}fab-text-hover-background);
+      }
+
+      &:active {
+        color: var(--#{$rd-prefix}fab-color-darker);
+        background-color: var(--#{$rd-prefix}fab-text-active-background);
+      }
+
+      &#{$disabled-selector} {
+        color: var(--#{$rd-prefix}color-disabled);
+        pointer-events: none;
+        background-color: var(--#{$rd-prefix}background-color-disabled);
+      }
+    }
+
+    @include m(link) {
+      color: var(--#{$rd-prefix}fab-color);
+      background-color: transparent;
+      border: none;
+
+      &:hover,
+      &:focus,
+      &.is-loading {
+        color: var(--#{$rd-prefix}fab-color-lighter);
+      }
+
+      &:active {
+        color: var(--#{$rd-prefix}fab-color-darker);
+      }
+
+      &#{$disabled-selector} {
+        color: var(--#{$rd-prefix}color-disabled);
+      }
+    }
+
+    @include m(circle) {
+      border-radius: 50%;
+    }
+
+    @include m(round) {
+      border-radius: calc(var(--#{$rd-prefix}fab-size) / 2);
+    }
+  }
+
+  @include e(close-icon) {
+    @include overwrite-component(icon) {
+      position: absolute;
+      font-size: 1.2em;
+      opacity: 0;
+      transition: opacity var(--#{$rd-prefix}animation-duration-base) linear, transform var(--#{$rd-prefix}animation-duration-base) linear;
+    }
+  }
+
+  @include e(button-content) {
+    opacity: 1;
+    transition: opacity var(--#{$rd-prefix}animation-duration-base) linear;
+
+    & > svg:only-child {
+      font-size: 1.2em;
+    }
+  }
+
+  @include e(actions) {
+    --#{$rd-prefix}fab-size: 40px;
+
+    position: absolute;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    /* stylelint-disable-next-line declaration-property-value-allowed-list */
+    font-size: 16px;
+
+    @include m(top) {
+      top: -16px;
+      left: 0;
+      flex-direction: column-reverse;
+      gap: 10px 0;
+      width: 100%;
+      transform: translateY(-100%);
+    }
+
+    @include m(right) {
+      top: 0;
+      right: -16px;
+      flex-direction: row;
+      gap: 0 10px;
+      height: 100%;
+      transform: translateX(100%);
+    }
+
+    @include m(bottom) {
+      bottom: -16px;
+      left: 0;
+      flex-direction: column;
+      gap: 10px 0;
+      width: 100%;
+      transform: translateY(100%);
+    }
+
+    @include m(left) {
+      top: 0;
+      left: -16px;
+      flex-direction: row-reverse;
+      gap: 0 10px;
+      height: 100%;
+      transform: translateX(-100%);
+    }
+  }
+
+  @include e(action) {
+    animation: fab-popup 133ms linear;
+    animation-fill-mode: both;
+  }
+}

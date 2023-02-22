@@ -1,21 +1,26 @@
-import type { DUpdater } from '../../hooks/common/useTwoWayBinding';
-import type { DElementSelector } from '../../hooks/ui/useElement';
 import type { DTransitionState } from '../_transition';
-import type { DDrawerFooterProps, DDrawerFooterPropsWithPrivate } from './DrawerFooter';
-import type { DDrawerHeaderProps, DDrawerHeaderPropsWithPrivate } from './DrawerHeader';
+import type { DDrawerFooterPrivateProps } from './DrawerFooter';
+import type { DDrawerHeaderPrivateProps } from './DrawerHeader';
+import type { DRefExtra } from '@react-devui/hooks/useRefExtra';
 
 import { isString, isUndefined } from 'lodash';
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 
-import { usePrefixConfig, useComponentConfig, useElement, useLockScroll, useMaxIndex, useEventCallback, useAsync } from '../../hooks';
-import { registerComponentMate, getClassName, toPx } from '../../utils';
+import { useId, useLockScroll, useRefExtra } from '@react-devui/hooks';
+import { getClassName, toPx } from '@react-devui/utils';
+
+import { useMaxIndex, useDValue } from '../../hooks';
+import { registerComponentMate, handleModalKeyDown, TTANSITION_DURING_BASE, checkNoExpandedEl } from '../../utils';
 import { DMask } from '../_mask';
 import { DTransition } from '../_transition';
+import { useComponentConfig, usePrefixConfig } from '../root';
+import { DDrawerFooter } from './DrawerFooter';
+import { DDrawerHeader } from './DrawerHeader';
 
 export interface DDrawerProps extends React.HTMLAttributes<HTMLDivElement> {
-  dVisible: [boolean, DUpdater<boolean>?];
-  dContainer?: DElementSelector | false;
+  dVisible: boolean;
+  dContainer?: DRefExtra | false;
   dPlacement?: 'top' | 'right' | 'bottom' | 'left';
   dWidth?: number | string;
   dHeight?: number | string;
@@ -23,21 +28,26 @@ export interface DDrawerProps extends React.HTMLAttributes<HTMLDivElement> {
   dMask?: boolean;
   dMaskClosable?: boolean;
   dEscClosable?: boolean;
-  dHeader?: React.ReactElement<DDrawerHeaderProps>;
-  dFooter?: React.ReactElement<DDrawerFooterProps>;
-  dChildDrawer?: React.ReactElement<DDrawerProps>;
+  dSkipFirstTransition?: boolean;
+  dDestroyAfterClose?: boolean;
+  dHeader?: React.ReactElement | string;
+  dFooter?: React.ReactElement;
+  dChildDrawer?: React.ReactElement;
   onClose?: () => void;
   afterVisibleChange?: (visible: boolean) => void;
 }
 
-export interface DDrawerPropsWithPrivate extends DDrawerProps {
+export interface DDrawerPrivateProps {
   __zIndex?: number | string;
   __onVisibleChange?: (distance: { visible: boolean; top: number; right: number; bottom: number; left: number }) => void;
 }
 
-const TTANSITION_DURING = 200;
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DDrawer' });
-export function DDrawer(props: DDrawerProps): JSX.Element | null {
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DDrawer' as const });
+export const DDrawer: {
+  (props: DDrawerProps): JSX.Element | null;
+  Header: typeof DDrawerHeader;
+  Footer: typeof DDrawerFooter;
+} = (props) => {
   const {
     children,
     dVisible,
@@ -49,6 +59,8 @@ export function DDrawer(props: DDrawerProps): JSX.Element | null {
     dMask = true,
     dMaskClosable = true,
     dEscClosable = true,
+    dSkipFirstTransition = true,
+    dDestroyAfterClose = true,
     dHeader,
     dFooter,
     dChildDrawer,
@@ -57,10 +69,8 @@ export function DDrawer(props: DDrawerProps): JSX.Element | null {
     __zIndex,
     __onVisibleChange,
 
-    className,
-    style,
     ...restProps
-  } = useComponentConfig(COMPONENT_NAME, props as DDrawerPropsWithPrivate);
+  } = useComponentConfig(COMPONENT_NAME, props as DDrawerProps & DDrawerPrivateProps);
 
   //#region Context
   const dPrefix = usePrefixConfig();
@@ -68,14 +78,35 @@ export function DDrawer(props: DDrawerProps): JSX.Element | null {
 
   //#region Ref
   const drawerRef = useRef<HTMLDivElement>(null);
-  const drawerContentRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRefExtra(
+    isUndefined(dContainer)
+      ? () => {
+          let el = document.getElementById(`${dPrefix}drawer-root`);
+          if (!el) {
+            el = document.createElement('div');
+            el.id = `${dPrefix}drawer-root`;
+            document.body.appendChild(el);
+          }
+          return el;
+        }
+      : dContainer === false
+      ? () => {
+          return drawerRef.current?.parentElement ?? null;
+        }
+      : dContainer,
+    true
+  );
   //#endregion
 
-  const asyncCapture = useAsync();
+  const dataRef = useRef<{
+    prevActiveEl: HTMLElement | null;
+  }>({
+    prevActiveEl: null,
+  });
 
   const uniqueId = useId();
-  const headerId = `${dPrefix}drawer-header-${uniqueId}`;
-  const contentId = `${dPrefix}drawer-content-${uniqueId}`;
+  const titleId = `${dPrefix}drawer-title-${uniqueId}`;
+  const bodyId = `${dPrefix}drawer-content-${uniqueId}`;
 
   const [distance, setDistance] = useState<{ visible: boolean; top: number; right: number; bottom: number; left: number }>({
     visible: false,
@@ -96,7 +127,7 @@ export function DDrawer(props: DDrawerProps): JSX.Element | null {
         : `translateX(${(distance[dPlacement] / 3) * 2}px)`,
   };
 
-  const [visible, setVisible] = dVisible;
+  const [visible, changeVisible] = useDValue<boolean>(false, dVisible, onClose);
 
   const isFixed = isUndefined(dContainer);
 
@@ -115,29 +146,6 @@ export function DDrawer(props: DDrawerProps): JSX.Element | null {
       return __zIndex;
     }
   })();
-
-  const containerEl = useElement(
-    isUndefined(dContainer) || dContainer === false
-      ? () => {
-          if (isUndefined(dContainer)) {
-            let el = document.getElementById(`${dPrefix}drawer-root`);
-            if (!el) {
-              el = document.createElement('div');
-              el.id = `${dPrefix}drawer-root`;
-              document.body.appendChild(el);
-            }
-            return el;
-          } else {
-            return drawerRef.current?.parentElement ?? null;
-          }
-        }
-      : dContainer
-  );
-
-  const closeDrawer = useEventCallback(() => {
-    setVisible?.(false);
-    onClose?.();
-  });
 
   useLockScroll(isFixed && visible);
 
@@ -161,18 +169,17 @@ export function DDrawer(props: DDrawerProps): JSX.Element | null {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
-  const prevActiveEl = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (visible) {
-      prevActiveEl.current = document.activeElement as HTMLElement | null;
+      dataRef.current.prevActiveEl = document.activeElement as HTMLElement | null;
 
-      if (drawerContentRef.current) {
-        drawerContentRef.current.focus({ preventScroll: true });
+      if (drawerRef.current) {
+        drawerRef.current.focus({ preventScroll: true });
       }
-    } else if (prevActiveEl.current) {
-      prevActiveEl.current.focus({ preventScroll: true });
+    } else if (dataRef.current.prevActiveEl) {
+      dataRef.current.prevActiveEl.focus({ preventScroll: true });
     }
-  }, [asyncCapture, visible]);
+  }, [visible]);
 
   const transitionStyles: Partial<Record<DTransitionState, React.CSSProperties>> = (() => {
     const transform =
@@ -186,16 +193,20 @@ export function DDrawer(props: DDrawerProps): JSX.Element | null {
 
     return {
       enter: { transform },
-      entering: { transition: `transform ${TTANSITION_DURING}ms ease-out` },
-      leaving: { transform, transition: `transform ${TTANSITION_DURING}ms ease-in` },
+      entering: {
+        transition: ['transform'].map((attr) => `${attr} ${TTANSITION_DURING_BASE}ms ease-out`).join(', '),
+      },
+      leaving: {
+        transform,
+        transition: ['transform'].map((attr) => `${attr} ${TTANSITION_DURING_BASE}ms ease-in`).join(', '),
+      },
       leaved: { transform },
     };
   })();
 
   const childDrawer = (() => {
     if (dChildDrawer) {
-      return React.cloneElement<DDrawerPropsWithPrivate>(dChildDrawer, {
-        ...dChildDrawer.props,
+      return React.cloneElement<DDrawerPrivateProps>(dChildDrawer, {
         __zIndex: isUndefined(zIndex) ? zIndex : `calc(${zIndex} + 1)`,
         __onVisibleChange: (distance) => {
           setDistance(distance);
@@ -205,11 +216,25 @@ export function DDrawer(props: DDrawerProps): JSX.Element | null {
     return null;
   })();
 
+  const headerNode = (() => {
+    if (dHeader) {
+      const node = isString(dHeader) ? <DDrawerHeader>{dHeader}</DDrawerHeader> : dHeader;
+      return React.cloneElement<DDrawerHeaderPrivateProps>(node, {
+        __id: titleId,
+        __onClose: () => {
+          changeVisible(false);
+        },
+      });
+    }
+  })();
+
   const drawerNode = (
     <>
       <DTransition
         dIn={visible}
-        dDuring={TTANSITION_DURING}
+        dDuring={TTANSITION_DURING_BASE}
+        dSkipFirstTransition={dSkipFirstTransition}
+        dDestroyWhenLeaved={dDestroyAfterClose}
         afterEnter={() => {
           afterVisibleChange?.(true);
         }}
@@ -221,56 +246,56 @@ export function DDrawer(props: DDrawerProps): JSX.Element | null {
           <div
             {...restProps}
             ref={drawerRef}
-            className={getClassName(className, `${dPrefix}drawer`)}
+            className={getClassName(restProps.className, `${dPrefix}drawer`)}
             style={{
-              ...style,
+              ...restProps.style,
               ...nestedStyle,
               display: state === 'leaved' ? 'none' : undefined,
               position: isFixed ? undefined : 'absolute',
               zIndex,
             }}
+            tabIndex={restProps.tabIndex ?? -1}
             role="dialog"
-            aria-modal="true"
-            aria-labelledby={dHeader ? headerId : undefined}
-            aria-describedby={contentId}
+            aria-modal
+            aria-labelledby={headerNode ? titleId : undefined}
+            aria-describedby={bodyId}
+            onKeyDown={(e) => {
+              restProps.onKeyDown?.(e);
+
+              if (dEscClosable && checkNoExpandedEl(e.currentTarget) && e.code === 'Escape') {
+                changeVisible(false);
+              }
+
+              handleModalKeyDown(e);
+            }}
           >
             {dMask && (
               <DMask
                 dVisible={visible}
                 onClose={() => {
                   if (dMaskClosable) {
-                    closeDrawer();
+                    changeVisible(false);
                   }
                 }}
               />
             )}
             <div
-              ref={drawerContentRef}
-              id={contentId}
               className={getClassName(`${dPrefix}drawer__content`, `${dPrefix}drawer__content--${dPlacement}`)}
               style={{
                 width: dPlacement === 'left' || dPlacement === 'right' ? dWidth : undefined,
                 height: dPlacement === 'bottom' || dPlacement === 'top' ? dHeight : undefined,
                 ...transitionStyles[state],
               }}
-              tabIndex={-1}
-              onKeyDown={(e) => {
-                if (dEscClosable && e.code === 'Escape') {
-                  closeDrawer();
-                }
-              }}
             >
-              {dHeader &&
-                React.cloneElement<DDrawerHeaderPropsWithPrivate>(dHeader, {
-                  ...dHeader.props,
-                  __id: headerId,
-                  __onClose: closeDrawer,
-                })}
-              <div className={`${dPrefix}drawer__body`}>{children}</div>
+              {headerNode}
+              <div id={bodyId} className={`${dPrefix}drawer__body`}>
+                {children}
+              </div>
               {dFooter &&
-                React.cloneElement<DDrawerFooterPropsWithPrivate>(dFooter, {
-                  ...dFooter.props,
-                  __onClose: closeDrawer,
+                React.cloneElement<DDrawerFooterPrivateProps>(dFooter, {
+                  __onClose: () => {
+                    changeVisible(false);
+                  },
                 })}
             </div>
           </div>
@@ -280,5 +305,8 @@ export function DDrawer(props: DDrawerProps): JSX.Element | null {
     </>
   );
 
-  return dContainer === false ? drawerNode : containerEl && ReactDOM.createPortal(drawerNode, containerEl);
-}
+  return dContainer === false ? drawerNode : containerRef.current && ReactDOM.createPortal(drawerNode, containerRef.current);
+};
+
+DDrawer.Header = DDrawerHeader;
+DDrawer.Footer = DDrawerFooter;

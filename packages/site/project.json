@@ -1,17 +1,31 @@
 {
-  "root": "packages/site",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/site/src",
   "projectType": "application",
+  "tags": ["scope:site"],
   "targets": {
-    "build-base": {
-      "executor": "./tools/executors/site/build-base:build-base",
-      "options": {},
-      "configurations": {
-        "production": {}
+    "build-dependencies": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "tsc --project tools/executors/tsconfig.json",
+          "tsc --project packages/site/executors/tsconfig.json",
+          "yarn util:base64-data"
+        ]
       }
     },
+    "build-base": {
+      "executor": "./packages/site/executors:build-base",
+      "options": {},
+      "dependsOn": [
+        {
+          "target": "build-dependencies",
+          "projects": "self"
+        }
+      ]
+    },
     "build": {
-      "executor": "@nrwl/web:webpack",
+      "executor": "@nrwl/webpack:webpack",
       "outputs": ["{options.outputPath}"],
       "options": {
         "compiler": "babel",
@@ -50,7 +64,7 @@
       ]
     },
     "serve-base": {
-      "executor": "@nrwl/web:dev-server",
+      "executor": "@nrwl/webpack:dev-server",
       "options": {
         "buildTarget": "site:build",
         "port": 4300,
@@ -58,7 +72,7 @@
       }
     },
     "serve": {
-      "executor": "./tools/executors/multiple:multiple",
+      "executor": "./tools/executors:multiple",
       "options": {
         "tasks": [
           {
@@ -77,7 +91,13 @@
             }
           }
         ]
-      }
+      },
+      "dependsOn": [
+        {
+          "target": "build-dependencies",
+          "projects": "self"
+        }
+      ]
     },
     "lint": {
       "executor": "@nrwl/linter:eslint",
@@ -91,10 +111,8 @@
       "outputs": ["coverage/packages/site"],
       "options": {
         "jestConfig": "packages/site/jest.config.js",
-        "passWithNoTests": true,
-        "coverageReporters": ["clover", "json", "lcov", "text"]
+        "passWithNoTests": true
       }
     }
-  },
-  "tags": []
+  }
 }

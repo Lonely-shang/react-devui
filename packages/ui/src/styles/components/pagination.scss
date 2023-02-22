@@ -1,140 +1,170 @@
+@import 'mixins/overwrite';
+
 @include b(pagination) {
-  --#{$variable-prefix}pagination-item-size: 32px;
+  --#{$rd-prefix}pagination-size: 32px;
+  --#{$rd-prefix}pagination-space: 16px;
+  --#{$rd-prefix}pagination-button-space: 8px;
 
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
+  gap: 8px 0;
   align-items: center;
   padding: 0;
   margin: 0;
 
   @include when(change) {
-    .#{$variable-prefix}pagination__item--number {
-      transition: none;
+    @include e(button) {
+      @include m(number) {
+        transition: none;
+      }
     }
   }
 
   @include m(mini) {
-    --#{$variable-prefix}pagination-item-size: 24px;
+    --#{$rd-prefix}pagination-size: 24px;
+    --#{$rd-prefix}pagination-space: 8px;
+    --#{$rd-prefix}pagination-button-space: 2px;
 
-    gap: 4px 8px;
+    gap: 4px 0;
 
     @include font-size(0.8rem);
 
-    .#{$variable-prefix}pagination__list {
-      gap: 4px 2px;
+    @include e(button) {
+      &:not(.is-active) {
+        border-color: transparent;
+      }
+
+      @include m(number) {
+        padding: 0 4px;
+      }
     }
 
-    .#{$variable-prefix}pagination__item--button:not(.is-active) {
-      border: none;
+    @include e(page-size) {
+      height: 26px;
+      padding: 0 6px;
+    }
+
+    @include e(jump-wrapper) {
+      gap: 0 2px;
+    }
+
+    @include e(jump-input) {
+      width: 3em;
+      height: 26px;
+      padding: 0 6px;
     }
   }
 
-  @include e(list) {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 0;
-    margin: 0;
-    list-style: none;
-  }
-
-  @include e(item) {
+  @include e(total) {
     position: relative;
     display: inline-flex;
     align-items: center;
+    margin-right: var(--#{$rd-prefix}pagination-space);
     vertical-align: top;
+  }
 
-    @include m(button) {
-      justify-content: center;
-      min-width: var(--#{$variable-prefix}pagination-item-size);
-      height: var(--#{$variable-prefix}pagination-item-size);
-      cursor: pointer;
-      user-select: none;
-      border-radius: var(--#{$variable-prefix}border-radius);
-      transition: border-color var(--#{$variable-prefix}animation-duration-base) linear,
-        color var(--#{$variable-prefix}animation-duration-base) linear;
+  @include e(button) {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--#{$rd-prefix}pagination-size);
+    height: var(--#{$rd-prefix}pagination-size);
+    margin-right: var(--#{$rd-prefix}pagination-button-space);
+    vertical-align: top;
+    cursor: pointer;
+    user-select: none;
+    border-radius: var(--#{$rd-prefix}border-radius);
+    outline: none;
+    transition: border-color var(--#{$rd-prefix}animation-duration-base) linear, color var(--#{$rd-prefix}animation-duration-base) linear;
 
-      @include utils-disabled;
+    &:hover,
+    &:focus {
+      color: var(--#{$rd-prefix}color-primary-lighter);
+      border-color: var(--#{$rd-prefix}color-primary-lighter);
+    }
 
-      &:hover,
-      &:focus {
-        color: var(--#{$variable-prefix}color-primary-lighter);
-        border-color: var(--#{$variable-prefix}color-primary-lighter);
-      }
+    @include when(disabled) {
+      color: var(--#{$rd-prefix}color-disabled);
+      pointer-events: none;
+    }
 
-      @include when(active) {
-        color: var(--#{$variable-prefix}color-primary);
-        border-color: var(--#{$variable-prefix}color-primary);
-      }
+    @include when(active) {
+      color: var(--#{$rd-prefix}color-primary);
+      border-color: var(--#{$rd-prefix}color-primary);
     }
 
     @include m(number) {
-      outline: none;
-      transition: border-color var(--#{$variable-prefix}animation-duration-base) linear,
-        color var(--#{$variable-prefix}animation-duration-base) linear, box-shadow var(--#{$variable-prefix}animation-duration-base) linear;
+      padding: 0 8px;
+      transition: border-color var(--#{$rd-prefix}animation-duration-base) linear, color var(--#{$rd-prefix}animation-duration-base) linear,
+        box-shadow var(--#{$rd-prefix}animation-duration-base) linear;
 
       &:focus-visible {
-        box-shadow: 0 0 0 3px rgb(var(--#{$variable-prefix}color-primary-rgb) / var(--#{$variable-prefix}shadow-normal));
+        box-shadow: 0 0 0 3px rgb(var(--#{$rd-prefix}color-primary-rgb) / var(--#{$rd-prefix}shadow-normal));
       }
     }
 
     @include m(border) {
-      border: 1px solid var(--#{$variable-prefix}color-border);
+      border: 1px solid var(--#{$rd-prefix}color-border);
     }
 
     @include m(jump5) {
-      .#{$variable-prefix}icon {
-        color: var(--#{$variable-prefix}color-primary);
-        opacity: 0;
-        transition: opacity var(--#{$variable-prefix}animation-duration-fast) linear;
-      }
-
       &:hover,
       &:focus {
-        .#{$variable-prefix}icon {
+        @include e(jump5-icon) {
           opacity: 1;
         }
-        .#{$variable-prefix}pagination__ellipsis {
+
+        @include e(ellipsis) {
           opacity: 0;
         }
+      }
+
+      @include e(jump5-icon) {
+        color: var(--#{$rd-prefix}color-primary);
+        opacity: 0;
+        transition: opacity var(--#{$rd-prefix}animation-duration-fast) linear;
       }
     }
   }
 
   @include e(ellipsis) {
     position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85em;
-    color: var(--#{$variable-prefix}color-disabled);
-    letter-spacing: 1.5px;
-    transition: opacity var(--#{$variable-prefix}animation-duration-fast) linear;
+    color: var(--#{$rd-prefix}color-disabled);
+    transition: opacity var(--#{$rd-prefix}animation-duration-fast) linear;
+    transform: scale(1.5);
   }
 
-  @include e(size-select, true) {
-    width: auto;
-    font-size: inherit;
-
-    @include m(mini) {
-      height: 26px;
-      padding: 0 6px;
+  @include e(page-size) {
+    @include overwrite-component(select) {
+      width: auto;
+      margin-right: var(--#{$rd-prefix}pagination-space);
+      font-size: inherit;
     }
   }
 
-  @include e(jump-input, true) {
-    width: 4.5em;
-    font-size: inherit;
+  @include e(jump) {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-right: var(--#{$rd-prefix}pagination-space);
+    vertical-align: top;
+  }
 
-    @include m(mini) {
-      width: 3em;
-      height: 26px;
-      padding: 0 6px;
+  @include e(jump-wrapper) {
+    display: flex;
+    gap: 0 4px;
+    align-items: center;
+  }
+
+  @include e(jump-input) {
+    @include overwrite-component(input) {
+      width: 4.5em;
+      font-size: inherit;
     }
   }
 }

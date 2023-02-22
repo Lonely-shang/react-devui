@@ -1,0 +1,250 @@
+@use 'sass:map';
+
+@include b(upload) {
+  display: none;
+
+  @include e(picture-preview) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    font-size: 0.9em;
+  }
+
+  @include e(action) {
+    @include utils-button;
+
+    min-width: 24px;
+    height: 24px;
+    padding: 0;
+    margin: 0;
+    color: var(--#{$rd-prefix}upload-action-color);
+    background-color: transparent;
+    border: none;
+    transition: color var(--#{$rd-prefix}animation-duration-base) linear,
+      background-color var(--#{$rd-prefix}animation-duration-base) linear;
+
+    &:hover,
+    &:focus {
+      color: var(--#{$rd-prefix}upload-action-color-lighter);
+      background-color: var(--#{$rd-prefix}upload-action-background-color-hover);
+    }
+
+    &:disabled,
+    &.is-disabled {
+      pointer-events: none;
+      filter: opacity(50%);
+    }
+
+    @include m(preview) {
+      text-decoration: none;
+    }
+  }
+
+  @include e(list) {
+    --#{$rd-prefix}upload-action-color: rgb(var(--#{$rd-prefix}text-color-rgb) / 50%);
+    --#{$rd-prefix}upload-action-color-lighter: var(--#{$rd-prefix}text-color);
+    --#{$rd-prefix}upload-action-background-color-hover: var(--#{$rd-prefix}background-color-hover);
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px 0;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  @include e(list-item) {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 24px;
+    transition: background-color var(--#{$rd-prefix}animation-duration-base) linear;
+
+    &:hover {
+      background-color: var(--#{$rd-prefix}background-color-hover);
+
+      @include e(list-actions) {
+        opacity: 1;
+      }
+    }
+
+    @include m(picture) {
+      --#{$rd-prefix}upload-picture-list-item-border-color: var(--#{$rd-prefix}color-border);
+
+      height: 66px;
+      padding: 8px;
+      border: 1px solid var(--#{$rd-prefix}upload-picture-list-item-border-color);
+
+      @include e(list-icon) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        margin-right: 8px;
+        font-size: 1.75em;
+      }
+
+      @include e(list-link) {
+        line-height: 48px;
+
+        @include font-size(1rem);
+      }
+
+      @include e(list-progress-wrapper) {
+        bottom: 16px;
+        left: 64px;
+        width: calc(100% - 74px);
+      }
+    }
+
+    @include m(error) {
+      --#{$rd-prefix}upload-action-color: var(--#{$rd-prefix}color-danger);
+      --#{$rd-prefix}upload-action-color-lighter: var(--#{$rd-prefix}color-danger);
+      --#{$rd-prefix}upload-picture-list-item-border-color: var(--#{$rd-prefix}color-danger);
+
+      @include e(list-icon) {
+        color: var(--#{$rd-prefix}color-danger);
+      }
+
+      @include e(list-link) {
+        color: var(--#{$rd-prefix}color-danger);
+      }
+    }
+  }
+
+  @include e(list-icon) {
+    width: 24px;
+    color: var(--#{$rd-prefix}upload-action-color);
+  }
+
+  @include e(list-link) {
+    @include utils-ellipsis;
+
+    display: inline-block;
+    flex: 1 0 0;
+    font-size: 0.9em;
+    color: var(--#{$rd-prefix}text-color);
+    text-decoration: none;
+
+    @include when(active) {
+      color: var(--#{$rd-prefix}color-primary);
+    }
+  }
+
+  @include e(list-actions) {
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity var(--#{$rd-prefix}animation-duration-base) linear;
+  }
+
+  @include e(list-progress-wrapper) {
+    position: absolute;
+    bottom: -4px;
+    left: 24px;
+    width: calc(100% - 24px);
+    height: 2px;
+  }
+
+  @include e(picture) {
+    --#{$rd-prefix}upload-action-color: #{map.get($rd-colors, 'white')};
+    --#{$rd-prefix}upload-action-color-lighter: #{map.get($rd-colors, 'white')};
+    --#{$rd-prefix}upload-action-background-color-hover: var(--#{$rd-prefix}background-color-light-hover);
+
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  @include e(picture-item) {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 104px;
+    height: 104px;
+    padding: 8px;
+    margin: 0;
+    vertical-align: top;
+    background-color: var(--#{$rd-prefix}background-color-light-gray);
+    border: 1px solid var(--#{$rd-prefix}color-border);
+
+    &:hover {
+      @include e(picture-actions) {
+        opacity: 1;
+      }
+    }
+
+    @include when(disabled) {
+      pointer-events: none;
+    }
+
+    @include m(button) {
+      --#{$rd-prefix}upload-action-color: #{map.get($rd-colors, 'white')};
+      --#{$rd-prefix}upload-action-color-lighter: #{map.get($rd-colors, 'white')};
+      --#{$rd-prefix}upload-action-background-color-hover: var(--#{$rd-prefix}background-color-light-hover);
+
+      cursor: pointer;
+      border-style: dashed;
+      outline: none;
+      transition: border-color var(--#{$rd-prefix}animation-duration-base) linear;
+
+      &:not(.#{$rd-prefix}upload__picture-item--error):hover,
+      &:not(.#{$rd-prefix}upload__picture-item--error):focus {
+        border-color: var(--#{$rd-prefix}color-primary);
+      }
+    }
+
+    @include m(load) {
+      background-color: transparent;
+    }
+
+    @include m(error) {
+      border-color: var(--#{$rd-prefix}color-danger);
+
+      @include e(picture-name) {
+        color: var(--#{$rd-prefix}color-danger);
+      }
+    }
+  }
+
+  @include e(picture-name) {
+    @include utils-ellipsis;
+
+    max-width: 100%;
+    margin-top: 8px;
+    font-size: 0.9em;
+  }
+
+  @include e(picture-text) {
+    margin-bottom: 8px;
+    font-size: 0.9em;
+  }
+
+  @include e(picture-actions) {
+    position: absolute;
+    inset: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--#{$rd-prefix}background-color-actions-mask);
+    opacity: 0;
+    transition: opacity var(--#{$rd-prefix}animation-duration-base) linear;
+  }
+
+  @include e(picture-button-icon) {
+    font-size: 1.1em;
+  }
+
+  @include e(picture-button-text) {
+    margin-top: 8px;
+    font-size: 0.9em;
+  }
+}

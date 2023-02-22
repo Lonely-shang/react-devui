@@ -1,31 +1,33 @@
+@import 'mixins/notification';
+
 @mixin notification-root {
   position: fixed;
-  z-index: var(--#{$variable-prefix}zindex-max);
+  z-index: var(--#{$rd-prefix}zindex-max);
   pointer-events: none;
 }
 
-##{$variable-prefix}notification-lt-root {
+##{$rd-prefix}notification-lt-root {
   top: 20px;
   left: 20px;
 
   @include notification-root;
 }
 
-##{$variable-prefix}notification-rt-root {
+##{$rd-prefix}notification-rt-root {
   top: 20px;
   right: 20px;
 
   @include notification-root;
 }
 
-##{$variable-prefix}notification-lb-root {
+##{$rd-prefix}notification-lb-root {
   bottom: 20px;
   left: 20px;
 
   @include notification-root;
 }
 
-##{$variable-prefix}notification-rb-root {
+##{$rd-prefix}notification-rb-root {
   right: 20px;
   bottom: 20px;
 
@@ -33,38 +35,14 @@
 }
 
 @include b(notification) {
-  position: relative;
-  display: flex;
+  @include component-notification;
+
   width: 380px;
   max-width: calc(100vw - 40px);
   padding: 16px 24px;
   margin-bottom: 20px;
   pointer-events: all;
-  background-color: var(--#{$variable-prefix}background-color);
-  border-radius: var(--#{$variable-prefix}border-radius);
-  box-shadow: var(--#{$variable-prefix}shadow-dialog);
-
-  @include e(icon) {
-    flex-shrink: 0;
-    margin-right: 16px;
-    font-size: 1.75em;
-  }
-
-  @include e(content) {
-    flex-grow: 1;
-  }
-
-  @include e(title) {
-    margin-bottom: 8px;
-    font-size: 1.15em;
-  }
-
-  @include e(close) {
-    position: absolute;
-    top: 10px;
-    right: 12px;
-    z-index: 1;
-    width: 28px;
-    height: 28px;
-  }
+  background-color: var(--#{$rd-prefix}background-color);
+  outline: none;
+  box-shadow: var(--#{$rd-prefix}shadow-dialog);
 }

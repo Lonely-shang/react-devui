@@ -1,17 +1,9 @@
 import { isArray, isNumber } from 'lodash';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { useAsync, useForceUpdate, useMount } from '../..//hooks';
+import { useAsync } from '@react-devui/hooks';
 
 export type DTransitionState = 'enter' | 'entering' | 'entered' | 'leave' | 'leaving' | 'leaved';
-const [T_ENTER, T_ENTERING, T_ENTERED, T_LEAVE, T_LEAVING, T_LEAVED] = [
-  'enter',
-  'entering',
-  'entered',
-  'leave',
-  'leaving',
-  'leaved',
-] as DTransitionState[];
 
 export interface DTransitionProps {
   children: (state: DTransitionState) => JSX.Element | null;
@@ -19,7 +11,8 @@ export interface DTransitionProps {
   dDuring: number | { enter: number; leave: number };
   dMountBeforeFirstEnter?: boolean;
   dSkipFirstTransition?: boolean | [boolean, boolean];
-  onEnterRendered?: () => void;
+  dDestroyWhenLeaved?: boolean;
+  onEnter?: () => void;
   afterEnter?: () => void;
   afterLeave?: () => void;
 }
@@ -31,19 +24,22 @@ export function DTransition(props: DTransitionProps): JSX.Element | null {
     dDuring,
     dMountBeforeFirstEnter = true,
     dSkipFirstTransition = true,
-    onEnterRendered,
+    dDestroyWhenLeaved = false,
+    onEnter,
     afterEnter,
     afterLeave,
   } = props;
 
-  const [initState] = useState(() => {
+  const initState = useMemo<DTransitionState>(() => {
     const [skipEnter, skipLeave] = isArray(dSkipFirstTransition) ? dSkipFirstTransition : [dSkipFirstTransition, dSkipFirstTransition];
     if (dIn) {
-      return skipEnter ? T_ENTERED : T_ENTER;
+      return skipEnter ? 'entered' : 'enter';
     } else {
-      return skipLeave ? T_LEAVED : T_LEAVE;
+      return skipLeave ? 'leaved' : 'leave';
     }
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const dataRef = useRef<{
     prevIn: boolean;
     state: DTransitionState;
@@ -55,51 +51,71 @@ export function DTransition(props: DTransitionProps): JSX.Element | null {
     isFirstEnter: !dIn,
   });
 
-  const asyncCapture = useAsync();
-  const forceUpdate = useForceUpdate();
+  const async = useAsync();
 
-  const updateTransitionState = (state: DTransitionState) => {
-    dataRef.current.state = state;
-    forceUpdate();
-  };
+  const [stateChange, setStateChange] = useState(0);
 
   if (dataRef.current.prevIn !== dIn) {
     dataRef.current.prevIn = dIn;
-    dataRef.current.state = dIn ? T_ENTER : T_LEAVE;
+    dataRef.current.state = dIn ? 'enter' : 'leave';
     dataRef.current.isFirstEnter = false;
   }
 
-  useMount(() => {
-    const state = dataRef.current.state;
-    if (state === T_ENTERED) {
-      onEnterRendered?.();
+  const state = dataRef.current.state;
+
+  const nextFrame = (cb: () => void) => {
+    dataRef.current.clearTid = async.requestAnimationFrame(() => {
+      dataRef.current.clearTid = async.setTimeout(cb);
+    });
+  };
+
+  useEffect(() => {
+    if (state === 'entered') {
+      onEnter?.();
     }
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     dataRef.current.clearTid?.();
-
-    const state = dataRef.current.state;
-    if (state === T_ENTER || state === T_LEAVE) {
-      if (state === T_ENTER) {
-        onEnterRendered?.();
-      }
-
-      dataRef.current.clearTid = asyncCapture.afterNextAnimationFrame(() => {
-        updateTransitionState(state === T_ENTER ? T_ENTERING : T_LEAVING);
-
-        const endState = state === T_ENTER ? T_ENTERED : T_LEAVED;
-        const during = isNumber(dDuring) ? dDuring : state === T_ENTER ? dDuring.enter : dDuring.leave;
-        dataRef.current.clearTid = asyncCapture.setTimeout(() => {
-          updateTransitionState(endState);
-          endState === T_ENTERED ? afterEnter?.() : afterLeave?.();
-        }, during);
+    if (state === 'enter') {
+      onEnter?.();
+      nextFrame(() => {
+        dataRef.current.state = 'entering';
+        setStateChange((prevStateChange) => prevStateChange + 1);
+      });
+    } else if (state === 'leave') {
+      nextFrame(() => {
+        dataRef.current.state = 'leaving';
+        setStateChange((prevStateChange) => prevStateChange + 1);
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dIn]);
 
+  useEffect(() => {
+    if (dataRef.current.state === 'entering' || dataRef.current.state === 'leaving') {
+      const during = isNumber(dDuring) ? dDuring : dIn ? dDuring.enter : dDuring.leave;
+      dataRef.current.clearTid = async.setTimeout(() => {
+        dataRef.current.state = dIn ? 'entered' : 'leaved';
+        setStateChange((prevStateChange) => prevStateChange + 1);
+      }, during);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stateChange]);
+
+  useEffect(() => {
+    if (dataRef.current.state === 'entered' || dataRef.current.state === 'leaved') {
+      dIn ? afterEnter?.() : afterLeave?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stateChange]);
+
   const shouldRender = (() => {
+    if (state === 'leaved' && dDestroyWhenLeaved) {
+      return false;
+    }
+
     if (dataRef.current.isFirstEnter && !dMountBeforeFirstEnter) {
       return false;
     }
@@ -107,5 +123,5 @@ export function DTransition(props: DTransitionProps): JSX.Element | null {
     return true;
   })();
 
-  return shouldRender ? children(dataRef.current.state) : null;
+  return shouldRender ? children(state) : null;
 }

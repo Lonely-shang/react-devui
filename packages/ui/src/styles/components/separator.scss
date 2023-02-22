@@ -4,7 +4,7 @@
   padding: 0;
   margin: 16px 0;
   list-style: none;
-  background-color: var(--#{$variable-prefix}color-divider);
+  background-color: var(--#{$rd-prefix}color-divider);
   border: none;
 
   @include m(text) {
@@ -16,16 +16,16 @@
     &::before {
       height: 1px;
       content: '';
-      background-color: var(--#{$variable-prefix}color-divider);
+      background-color: var(--#{$rd-prefix}color-divider);
     }
 
     &::after {
       height: 1px;
       content: '';
-      background-color: var(--#{$variable-prefix}color-divider);
+      background-color: var(--#{$rd-prefix}color-divider);
     }
 
-    &.#{$variable-prefix}separator--vertical {
+    &.#{$rd-prefix}separator--vertical {
       width: auto;
       margin: 0 24px;
 
@@ -39,7 +39,7 @@
         height: unset;
       }
 
-      .#{$variable-prefix}separator__text {
+      @include e(text) {
         padding: 8px 0;
       }
     }
@@ -78,20 +78,15 @@
   @include m(vertical) {
     display: inline-flex;
     flex-direction: column;
+    align-self: stretch;
     width: 1px;
     height: unset;
-    margin: 4px 8px;
-
-    &::before {
-      flex: 1 0 0;
-      content: '';
-      background-color: var(--#{$variable-prefix}color-divider);
-    }
+    margin: 2px 8px;
   }
 
   @include e(text) {
     flex: 0 0 auto;
     padding: 0 8px;
-    font-size: 0.95em;
+    font-size: 0.9em;
   }
 }

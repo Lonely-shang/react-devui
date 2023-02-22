@@ -1,0 +1,14 @@
+@import 'variables';
+
+@import '~bootstrap/scss/functions';
+@import '~bootstrap/scss/variables';
+@import '~bootstrap/scss/maps';
+@import '~bootstrap/scss/mixins';
+
+@import '~@react-devui/ui/styles/variables';
+@import '~@react-devui/ui/styles/mixins';
+
+@mixin app-route {
+  position: relative;
+  padding: 20px;
+}

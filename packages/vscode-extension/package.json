@@ -1,0 +1,75 @@
+{
+  "name": "react-devui",
+  "displayName": "React DevUI",
+  "version": "0.0.3",
+  "private": true,
+  "description": "The extension for React DevUI development",
+  "categories": [
+    "Other"
+  ],
+  "homepage": "https://github.com/DevCloudFE/react-devui/tree/main/packages/vscode-extension#readme",
+  "bugs": {
+    "url": "https://github.com/DevCloudFE/react-devui/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DevCloudFE/react-devui.git"
+  },
+  "license": "MIT",
+  "author": "Xie Jay <xiejay97@gmail.com>",
+  "publisher": "xiejay97",
+  "contributes": {
+    "commands": [
+      {
+        "title": "Run Jest",
+        "category": "React DevUI",
+        "command": "react-devui.runJest"
+      },
+      {
+        "title": "Run Jest",
+        "category": "React DevUI",
+        "command": "react-devui.runJestFolder"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorFocus",
+          "submenu": "react-devui.menus",
+          "group": "02_react-devui"
+        }
+      ],
+      "explorer/context": [
+        {
+          "submenu": "react-devui.menus",
+          "group": "02_react-devui"
+        }
+      ],
+      "react-devui.menus": [
+        {
+          "when": "!explorerResourceIsFolder && resourceFilename =~ /.test.[tj]sx?$|.spec.[tj]sx?$/",
+          "group": "1_jest@1",
+          "command": "react-devui.runJest"
+        },
+        {
+          "when": "explorerResourceIsFolder",
+          "group": "1_jest@1",
+          "command": "react-devui.runJestFolder"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "react-devui.menus",
+        "label": "React DevUI"
+      }
+    ]
+  },
+  "activationEvents": [
+    "*"
+  ],
+  "dependencies": {},
+  "engines": {
+    "vscode": "^1.70.0"
+  }
+}

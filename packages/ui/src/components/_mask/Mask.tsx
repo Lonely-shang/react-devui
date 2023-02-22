@@ -1,8 +1,10 @@
 import type { DTransitionState } from '../_transition';
 
-import { usePrefixConfig } from '../../hooks';
-import { getClassName } from '../../utils';
+import { getClassName } from '@react-devui/utils';
+
+import { TTANSITION_DURING_FAST } from '../../utils';
 import { DTransition } from '../_transition';
+import { usePrefixConfig } from '../root';
 
 export interface DMaskProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
   dVisible: boolean;
@@ -10,16 +12,12 @@ export interface DMaskProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
   afterVisibleChange?: (visible: boolean) => void;
 }
 
-const TTANSITION_DURING = 100;
 export function DMask(props: DMaskProps): JSX.Element | null {
   const {
     dVisible,
     onClose,
     afterVisibleChange,
 
-    className,
-    style,
-    onClick,
     ...restProps
   } = props;
 
@@ -29,15 +27,22 @@ export function DMask(props: DMaskProps): JSX.Element | null {
 
   const transitionStyles: Partial<Record<DTransitionState, React.CSSProperties>> = {
     enter: { opacity: 0 },
-    entering: { transition: `opacity ${TTANSITION_DURING}ms linear` },
-    leaving: { opacity: 0, transition: `opacity ${TTANSITION_DURING}ms linear` },
+    entering: {
+      transition: ['opacity'].map((attr) => `${attr} ${TTANSITION_DURING_FAST}ms linear`).join(', '),
+    },
+    leaving: {
+      opacity: 0,
+      transition: ['opacity'].map((attr) => `${attr} ${TTANSITION_DURING_FAST}ms linear`).join(', '),
+    },
     leaved: { display: 'none' },
   };
 
   return (
     <DTransition
       dIn={dVisible}
-      dDuring={TTANSITION_DURING}
+      dDuring={TTANSITION_DURING_FAST}
+      // TODO: Should it be controllable?
+      dSkipFirstTransition={false}
       afterEnter={() => {
         afterVisibleChange?.(true);
       }}
@@ -48,13 +53,13 @@ export function DMask(props: DMaskProps): JSX.Element | null {
       {(state) => (
         <div
           {...restProps}
-          className={getClassName(className, `${dPrefix}mask`)}
+          className={getClassName(restProps.className, `${dPrefix}mask`)}
           style={{
-            ...style,
+            ...restProps.style,
             ...transitionStyles[state],
           }}
           onClick={(e) => {
-            onClick?.(e);
+            restProps.onClick?.(e);
 
             onClose?.();
           }}

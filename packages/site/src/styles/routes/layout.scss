@@ -1,0 +1,237 @@
+@include b(layout-header) {
+  position: relative;
+  z-index: 910;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 64px;
+  padding: 0 20px;
+  background-color: var(--#{$rd-prefix}background-color);
+  box-shadow: 0 2px 8px 0 var(--#{$rd-prefix}shadow-color);
+
+  @include e(logo-container) {
+    display: inline-flex;
+    align-items: center;
+    margin-right: auto;
+    font: inherit;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  @include e(logo-title) {
+    margin-left: 8px;
+
+    @include font-size(1.5rem);
+  }
+
+  @include e(button-container) {
+    display: inline-flex;
+    gap: 0 8px;
+    align-items: center;
+  }
+
+  @include e(button) {
+    @include utils-button;
+
+    min-width: 36px;
+    height: 36px;
+    padding: 0;
+    margin: 0;
+    color: var(--#{$rd-prefix}text-color);
+    text-decoration: none;
+    background-color: transparent;
+    border: none;
+    transition: color var(--#{$rd-prefix}animation-duration-base) linear;
+
+    @include font-size(1.2rem);
+
+    &:hover,
+    &:focus {
+      color: var(--#{$rd-prefix}color-primary-lighter);
+    }
+
+    &:active {
+      color: var(--#{$rd-prefix}color-primary-darker);
+    }
+
+    @include m(menu) {
+      padding: 4px;
+      margin-right: auto;
+      border: none;
+    }
+  }
+
+  @include e(language-item-region) {
+    display: inline-block;
+    margin-right: 8px;
+    font-size: 1.1em;
+  }
+
+  @include e(hamburger) {
+    position: relative;
+    width: 28px;
+    height: 22px;
+    cursor: pointer;
+
+    div {
+      position: absolute;
+      left: 0;
+      display: block;
+      width: 28px;
+      height: 2px;
+      background-color: var(--#{$rd-prefix}text-color);
+      /* stylelint-disable-next-line declaration-property-value-allowed-list */
+      border-radius: 1px;
+      /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+      transition: all 300ms linear;
+      transform-origin: center;
+
+      &:nth-child(1) {
+        top: 2px;
+      }
+
+      &:nth-child(2) {
+        top: 10px;
+      }
+
+      &:nth-child(3) {
+        top: 18px;
+      }
+    }
+
+    @include when(active) {
+      div {
+        background-color: var(--#{$rd-prefix}color-primary-lighter);
+      }
+
+      div:nth-child(1) {
+        top: 10px;
+        transform: rotate(45deg);
+      }
+
+      div:nth-child(2) {
+        opacity: 0;
+      }
+
+      div:nth-child(3) {
+        top: 10px;
+        transform: rotate(-45deg);
+      }
+    }
+  }
+
+  @include e(menu) {
+    min-width: unset;
+    height: 100%;
+
+    &::after {
+      content: none;
+    }
+
+    .#{$rd-prefix}menu__item--horizontal {
+      height: 100%;
+
+      &::after {
+        top: -8px;
+        bottom: unset;
+      }
+    }
+
+    a {
+      font: inherit;
+      color: inherit;
+      text-decoration: none;
+
+      &::after {
+        position: absolute;
+        inset: 0;
+        content: '';
+      }
+    }
+  }
+}
+
+@include b(layout-sidebar) {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 260px;
+  height: calc(100% - 64px);
+  padding: 0;
+  overflow: auto;
+  background-color: var(--#{$rd-prefix}background-color);
+
+  &::after {
+    position: absolute;
+    top: 20px;
+    right: 0;
+    width: 1px;
+    height: calc(100% - 40px);
+    content: '';
+    background-color: var(--#{$rd-prefix}color-divider);
+  }
+
+  @include e(menu) {
+    a {
+      font: inherit;
+      color: inherit;
+      text-decoration: none;
+
+      &::after {
+        position: absolute;
+        inset: 0;
+        content: '';
+      }
+    }
+  }
+
+  @include e(menu-subtitle) {
+    margin-left: 4px;
+    font-size: 0.8em;
+  }
+
+  @include e(drawer) {
+    .#{$rd-prefix}drawer__header-title {
+      display: flex;
+      align-items: center;
+    }
+
+    .#{$rd-prefix}drawer__body {
+      padding: 0;
+    }
+  }
+
+  @include e(header-logo) {
+    @include utils-button;
+
+    gap: 0 4px;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  @include e(button-container) {
+    display: flex;
+    flex-direction: column;
+    gap: 10px 0;
+    padding: 0 10px;
+    margin-top: 12px;
+  }
+
+  @include e(link-button) {
+    @include utils-button;
+
+    gap: 0 4px;
+    width: 100%;
+    height: 42px;
+    padding: 0 20px 0 16px;
+    color: inherit;
+    text-decoration: none;
+    border: 1px solid var(--#{$rd-prefix}color-border);
+    /* stylelint-disable-next-line declaration-property-value-allowed-list */
+    border-radius: 8px;
+
+    svg:last-child {
+      margin-left: auto;
+    }
+  }
+}

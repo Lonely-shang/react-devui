@@ -1,10 +1,7 @@
-export { findNested } from './array';
-export { getClassName, mergeAriaDescribedby } from './attributes';
-export { pSBC, convertHex } from './color';
-export { COMPONENT_MATES, registerComponentMate } from './component-mate';
-export { copy } from './copy';
-export { toPx, getNoTransformSize } from './measure';
-export { getFillingPosition, getHorizontalSidePosition, getVerticalSidePosition } from './position';
-export { scrollTo, scrollElementToView } from './scroll';
-export { getPositionedParent } from './selector';
 export * from './vars';
+
+export { checkNoExpandedEl } from './checkNoExpandedEl';
+export { cloneHTMLElement } from './cloneHTMLElement';
+export { convertHex } from './convertHex';
+export { handleModalKeyDown } from './handleModalKeyDown';
+export { registerComponentMate } from './registerComponentMate';

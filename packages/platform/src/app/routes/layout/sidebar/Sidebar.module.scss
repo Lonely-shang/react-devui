@@ -1,0 +1,18 @@
+@import '~styles/module';
+
+@include b(sidebar) {
+  position: relative;
+  z-index: 5;
+  flex-shrink: 0;
+  height: 100%;
+  padding: 0;
+  overflow: hidden auto;
+  background-color: var(--#{$rd-prefix}background-color);
+  box-shadow: -2px 0 8px 0 var(--#{$rd-prefix}shadow-color);
+
+  @include e(drawer) {
+    :global(.#{$rd-prefix}drawer__body) {
+      padding: 0;
+    }
+  }
+}

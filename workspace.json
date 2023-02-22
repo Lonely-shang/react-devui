@@ -1,7 +1,12 @@
 {
   "version": 2,
   "projects": {
+    "hooks": "packages/hooks",
+    "icons": "packages/icons",
+    "platform": "packages/platform",
     "site": "packages/site",
-    "ui": "packages/ui"
+    "ui": "packages/ui",
+    "utils": "packages/utils",
+    "vscode-extension": "packages/vscode-extension"
   }
 }

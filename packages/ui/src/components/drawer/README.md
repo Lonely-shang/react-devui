@@ -1,48 +1,93 @@
 ---
 group: Feedback
 title: Drawer
+aria: dialogmodal
 ---
 
 ## API
 
 ### DDrawerProps
 
-Extend `React.HTMLAttributes<HTMLDivElement>`.
+```tsx
+interface DDrawerProps extends React.HTMLAttributes<HTMLDivElement> {
+  dVisible: boolean;
+  dContainer?: DRefExtra | false;
+  dPlacement?: 'top' | 'right' | 'bottom' | 'left';
+  dWidth?: number | string;
+  dHeight?: number | string;
+  dZIndex?: number | string;
+  dMask?: boolean;
+  dMaskClosable?: boolean;
+  dEscClosable?: boolean;
+  dSkipFirstTransition?: boolean;
+  dDestroyAfterClose?: boolean;
+  dHeader?: React.ReactElement | string;
+  dFooter?: React.ReactElement;
+  dChildDrawer?: React.ReactElement;
+  onClose?: () => void;
+  afterVisibleChange?: (visible: boolean) => void;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dVisible | Is the drawer visible | [boolean, Updater\<boolean\>?] | - |
-| dContainer | The mounted node of the drawer, `false` means it is mounted on the current node | [DElementSelector](/components/Interface#DElementSelector) \| false | - |
-| dPlacement | Drawer pop-up direction | 'top' \| 'right' \| 'bottom' \| 'left'  | 'right' |
-| dWidth | Drawer width | number \| string | 400 |
-| dHeight | Drawer height | number \| string | 280 |
-| dZIndex | Manually control the value of `z-index` | number \| string | - |
-| dMask | Whether to show the mask | boolean | true |
-| dMaskClosable | Click on the mask to close the drawer | boolean | true |
-| dEscClosable | Whether to close by pressing Esc | boolean | true |
-| dHeader | Drawer header | React.ReactNode | - |
-| dFooter | Drawer footer | React.ReactNode | - |
-| dChildDrawer | Nested child drawer | React.ReactNode | - |
-| onClose | Callback when the drawer is closed | `() => void` | - |
-| afterVisibleChange | Callback for the end of the drawer opening/closing animation | `(visible: boolean) => void` | - |
+| dVisible | whether the drawer is visible, controlled, default `false` | - | |
+| dContainer | set the parent container, `false` means `parentElement` of the element | - | |
+| dPlacement | set drawer position | `'right'` | |
+| dWidth | set drawer width | `400` | |
+| dHeight | set drawer height | `280` | |
+| dZIndex | Set the `z-index` of the drawer | - | |
+| dMask | Whether to display the mask layer | `true` | |
+| dMaskClosable | Click the mask to close the drawer | `true` | |
+| dEscClosable | Whether the drawer can be closed by Esc | `true` | |
+| dSkipFirstTransition | Whether to skip the first animation | `true` | |
+| dDestroyAfterClose | Whether to destroy the node after closing the drawer | `true` | |
+| dHeader | set header | - | |
+| dFooter | set footer | - | |
+| dChildDrawer | set nested drawer | - | |
+| onClose | Callback for closing the drawer | - | |
+| afterVisibleChange | Finished visible/hidden callback | - | |
 <!-- prettier-ignore-end -->
 
 ### DDrawerHeaderProps
 
-Equal `Omit<DHeaderProps, 'onClose'>`.
+```tsx
+interface DDrawerHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+  dActions?: React.ReactNode[];
+  dCloseProps?: DButtonProps;
+  onCloseClick?: () => void | boolean | Promise<boolean>;
+}
+```
 
-Please refer to [DHeaderProps](/components/Interface#DHeaderProps).
+<!-- prettier-ignore-start -->
+| Property | Description | Default | Version | 
+| --- | --- | --- | --- | 
+| dActions | action button, `'close'` means close button | `['close']` | |
+| dCloseProps | set the props of the close button | - | |
+| onCloseClick | Callback for clicking the close button | - |
+<!-- prettier-ignore-end -->
 
 ### DDrawerFooterProps
 
-Extend `DFooterProps`.
-
-Please refer to [DFooterProps](/components/Interface#DFooterProps).
+```tsx
+interface DDrawerFooterProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+  dAlign?: 'left' | 'center' | 'right';
+  dActions?: React.ReactNode[];
+  dCancelProps?: DButtonProps;
+  dOkProps?: DButtonProps;
+  onCancelClick?: () => void | boolean | Promise<boolean>;
+  onOkClick?: () => void | boolean | Promise<boolean>;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| onOkClick | The callback of clicking the OK button, the operation feedback depends on the return value, and asynchronous operation can be achieved through `Promise` | `() => void \| boolean \| Promise<void \| boolean>` | - |
-| onCancelClick | The callback of clicking the cancel button, the operation feedback depends on the return value, and asynchronous operation can be achieved through `Promise` | `() => void \| boolean \| Promise<void \| boolean>` | - |
+| dAlign | set button position | `'right'` | |
+| dActions | action button, `'cancel'` means cancel button, `'ok'` means confirm button | `['cancel', 'ok']` | |
+| dCancelProps | set the props of cancel button | - | |
+| dOkProps | Set the props of the confirm button | - | |
+| onCancelClick | The callback of clicking the cancel button, when `false` is returned, the window will be terminated, `Promise` is supported | - | |
+| onOkClick | Callback for clicking the confirm button, when returning `false`, stop closing the window, support `Promise` | - | |
 <!-- prettier-ignore-end -->

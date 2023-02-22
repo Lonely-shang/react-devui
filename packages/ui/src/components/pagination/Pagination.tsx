@@ -1,47 +1,46 @@
-import type { DUpdater } from '../../hooks/common/useTwoWayBinding';
-
 import { isNull } from 'lodash';
-import { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-import { usePrefixConfig, useComponentConfig, useTwoWayBinding, useTranslation, useAsync } from '../../hooks';
-import { DoubleLeftOutlined, DoubleRightOutlined, LeftOutlined, RightOutlined } from '../../icons';
-import { registerComponentMate, getClassName } from '../../utils';
+import { DoubleLeftOutlined, DoubleRightOutlined, EllipsisOutlined, LeftOutlined, RightOutlined } from '@react-devui/icons';
+import { getClassName } from '@react-devui/utils';
+
+import { useDValue } from '../../hooks';
+import { cloneHTMLElement, registerComponentMate } from '../../utils';
 import { DInput } from '../input';
+import { useComponentConfig, usePrefixConfig, useTranslation } from '../root';
 import { DSelect } from '../select';
+import { getButtonRoleAttributes } from './utils';
 
 export interface DPaginationProps extends Omit<React.HTMLAttributes<HTMLElement>, 'children'> {
-  dActive?: [number, DUpdater<number>?];
+  dActive?: number;
   dTotal: number;
-  dPageSize?: [number, DUpdater<number>?];
-  dPageSizeOptions?: number[];
-  dCompose?: ('total' | 'pages' | 'size' | 'jump')[];
+  dPageSize?: number;
+  dPageSizeList?: number[];
+  dCompose?: ('total' | 'pages' | 'page-size' | 'jump')[];
   dCustomRender?: {
     total?: (range: [number, number]) => React.ReactNode;
     prev?: React.ReactNode;
     page?: (page: number) => React.ReactNode;
     next?: React.ReactNode;
-    sizeOption?: (size: number) => React.ReactNode;
+    pageSize?: (pageSize: number) => React.ReactNode;
     jump?: (input: React.ReactNode) => React.ReactNode;
   };
   dMini?: boolean;
-  onActiveChange?: (page: number) => void;
-  onPageSizeChange?: (size: number) => void;
+  onPaginationChange?: (page: number, pageSize: number) => void;
 }
 
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DPagination' });
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DPagination' as const });
 export function DPagination(props: DPaginationProps): JSX.Element | null {
   const {
     dActive,
     dTotal,
     dPageSize,
-    dPageSizeOptions = [10, 20, 50, 100],
+    dPageSizeList = [10, 20, 50, 100],
     dCompose = ['pages'],
     dCustomRender,
     dMini = false,
-    onActiveChange,
-    onPageSizeChange,
+    onPaginationChange,
 
-    className,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
@@ -53,40 +52,41 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
   const navRef = useRef<HTMLElement>(null);
   //#endregion
 
-  const dataRef = useRef<{
-    clearTid?: () => void;
-  }>({});
+  const [t] = useTranslation();
 
-  const asyncCapture = useAsync();
-  const [t] = useTranslation('DPagination');
+  const [active, _changeActive] = useDValue<number>(1, dActive);
+  const changeActive = (_active: number) => {
+    setIsChange(true);
+    const newActive = Math.max(Math.min(_active, lastPage), 1);
+    _changeActive(newActive);
 
-  const [active, _changeActive] = useTwoWayBinding<number>(1, dActive, onActiveChange);
-  const changeActive = (active: number, max = lastPage) => {
-    _changeActive(Math.max(Math.min(active, max), 1));
-
-    if (navRef.current) {
-      navRef.current.classList.toggle('is-change', true);
-
-      dataRef.current.clearTid?.();
-      dataRef.current.clearTid = asyncCapture.afterNextAnimationFrame(() => {
-        if (navRef.current) {
-          navRef.current.classList.toggle('is-change', false);
-        }
-      });
+    if (!Object.is(newActive, active)) {
+      onPaginationChange?.(newActive, pageSize);
     }
   };
 
-  const [pageSize, _changePageSize] = useTwoWayBinding<number>(dPageSizeOptions[0] ?? 10, dPageSize, onPageSizeChange);
-  const changePageSize = (size: number) => {
-    _changePageSize(size);
+  const [isChange, setIsChange] = useState(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (isChange) {
+      setIsChange(false);
+    }
+  });
 
-    const lastPage = Math.max(Math.ceil(dTotal / size), 1);
-    changeActive(active, lastPage);
+  const [pageSize, _changePageSize] = useDValue<number>(dPageSizeList[0] ?? 10, dPageSize);
+  const changePageSize = (_pageSize: number) => {
+    _changePageSize(_pageSize);
+
+    const lastPage = Math.max(Math.ceil(dTotal / _pageSize), 1);
+    const newActive = Math.max(Math.min(active, lastPage), 1);
+
+    if (!Object.is(newActive, active) || !Object.is(_pageSize, pageSize)) {
+      onPaginationChange?.(newActive, _pageSize);
+    }
   };
 
   const [jumpValue, setJumpValue] = useState('');
   const lastPage = Math.max(Math.ceil(dTotal / pageSize), 1);
-  const iconSize = '0.9em';
 
   const totalNode = (() => {
     if (dCompose.includes('total')) {
@@ -96,7 +96,7 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
       } else {
         return (
           <div>
-            {t('Total')} {dTotal} {t('items')}
+            {t('Pagination', 'Total')} {dTotal} {t('Pagination', 'items')}
           </div>
         );
       }
@@ -109,40 +109,32 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
     if (dCompose.includes('pages')) {
       prevNode = (
         <li
-          className={getClassName(
-            `${dPrefix}pagination__item`,
-            `${dPrefix}pagination__item--button`,
-
-            {
-              'is-disabled': active === 1,
-              [`${dPrefix}pagination__item--border`]: !(dCustomRender && dCustomRender.prev),
-            }
-          )}
-          title={t('Previous page')}
-          role="button"
-          aria-disabled={active === 1}
-          onClick={() => {
+          {...getButtonRoleAttributes(() => {
             changeActive(active - 1);
-          }}
+          }, active === 1)}
+          className={getClassName(`${dPrefix}pagination__button`, {
+            'is-disabled': active === 1,
+            [`${dPrefix}pagination__button--border`]: !(dCustomRender && dCustomRender.prev),
+          })}
+          title={t('Pagination', 'Previous page')}
         >
-          {dCustomRender && dCustomRender.prev ? dCustomRender.prev : <LeftOutlined dSize={iconSize} />}
+          {dCustomRender && dCustomRender.prev ? dCustomRender.prev : <LeftOutlined />}
         </li>
       );
 
       nextNode = (
         <li
-          className={getClassName(`${dPrefix}pagination__item`, `${dPrefix}pagination__item--button`, {
-            'is-disabled': active === lastPage,
-            [`${dPrefix}pagination__item--border`]: !(dCustomRender && dCustomRender.next),
-          })}
-          title={t('Next page')}
-          role="button"
-          aria-disabled={active === lastPage}
-          onClick={() => {
+          {...getButtonRoleAttributes(() => {
             changeActive(active + 1);
-          }}
+          }, active === lastPage)}
+          className={getClassName(`${dPrefix}pagination__button`, {
+            'is-disabled': active === lastPage,
+            [`${dPrefix}pagination__button--border`]: !(dCustomRender && dCustomRender.next),
+          })}
+          style={{ marginRight: dCompose[dCompose.length - 1] === 'pages' ? 0 : `var(--${dPrefix}pagination-space)` }}
+          title={t('Pagination', 'Next page')}
         >
-          {dCustomRender && dCustomRender.next ? dCustomRender.next : <RightOutlined dSize={iconSize} />}
+          {dCustomRender && dCustomRender.next ? dCustomRender.next : <RightOutlined />}
         </li>
       );
     }
@@ -159,22 +151,21 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
     ];
   })();
 
-  const sizeNode = (() => {
-    const options = dPageSizeOptions.map((size) => ({
+  const pageSizeNode = (() => {
+    const list = dPageSizeList.map((size) => ({
       label: size.toString(),
       value: size,
     }));
 
     return (
       <DSelect
-        key="size"
-        className={getClassName(`${dPrefix}pagination__size-select`, {
-          [`${dPrefix}pagination__size-select--mini`]: dMini,
-        })}
-        dOptions={options}
-        dModel={[pageSize]}
-        dCustomOption={(option) => (dCustomRender && dCustomRender.sizeOption ? dCustomRender.sizeOption(option.value) : option.label)}
-        dCustomSelected={(select) => `${select.label}${t(' / Page')}`}
+        key="page-size"
+        className={`${dPrefix}pagination__page-size`}
+        style={{ marginRight: dCompose[dCompose.length - 1] === 'page-size' ? 0 : undefined }}
+        dList={list}
+        dModel={pageSize}
+        dCustomItem={(item) => (dCustomRender && dCustomRender.pageSize ? dCustomRender.pageSize(item.value) : item.label)}
+        dCustomSelected={(select) => `${select.label}${t('Pagination', ' / Page')}`}
         onModelChange={(value) => {
           if (!isNull(value)) {
             changePageSize(value);
@@ -188,27 +179,30 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
     if (dCompose.includes('jump')) {
       const jumpInput = (
         <DInput
-          className={getClassName(`${dPrefix}pagination__jump-input`, {
-            [`${dPrefix}pagination__jump-input--mini`]: dMini,
-          })}
+          className={`${dPrefix}pagination__jump-input`}
           dType="number"
           dMax={lastPage}
           dMin={1}
           dStep={1}
-          dModel={[jumpValue, setJumpValue]}
+          dModel={jumpValue}
           dNumbetButton={!dMini}
-          dInputProps={{
-            onKeyDown: (e) => {
-              if (e.code === 'Space' || e.code === 'Enter') {
-                e.preventDefault();
+          dInputRender={(el) =>
+            cloneHTMLElement(el, {
+              onKeyDown: (e) => {
+                el.props.onKeyDown?.(e);
 
-                const val = Number(jumpValue);
-                if (!isNaN(val)) {
-                  changeActive(val);
+                if (e.code === 'Enter') {
+                  e.preventDefault();
+
+                  const val = Number(jumpValue);
+                  if (!isNaN(val)) {
+                    changeActive(val);
+                  }
                 }
-              }
-            },
-          }}
+              },
+            })
+          }
+          onModelChange={setJumpValue}
         />
       );
 
@@ -216,8 +210,8 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
         return dCustomRender.jump(jumpInput);
       } else {
         return (
-          <div>
-            {t('Go')} {jumpInput} {t('Page')}
+          <div className={`${dPrefix}pagination__jump-wrapper`}>
+            {t('Pagination', 'Go')} {jumpInput} {t('Pagination', 'Page')}
           </div>
         );
       }
@@ -229,16 +223,21 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
     <nav
       {...restProps}
       ref={navRef}
-      className={getClassName(className, `${dPrefix}pagination`, {
+      className={getClassName(restProps.className, `${dPrefix}pagination`, {
         [`${dPrefix}pagination--mini`]: dMini,
+        'is-change': isChange,
       })}
       role="navigation"
-      aria-label="Pagination Navigation"
+      aria-label={restProps['aria-label'] ?? 'Pagination Navigation'}
     >
       {dCompose.map((item) => {
         if (item === 'total') {
           return (
-            <div key="total" className={getClassName(`${dPrefix}pagination__item`)}>
+            <div
+              key="total"
+              className={`${dPrefix}pagination__total`}
+              style={{ marginRight: dCompose[dCompose.length - 1] === 'total' ? 0 : undefined }}
+            >
               {totalNode}
             </div>
           );
@@ -248,9 +247,7 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
           let pages: (number | 'prev5' | 'next5')[] = [];
 
           if (lastPage <= 7) {
-            pages = Array(lastPage)
-              .fill(0)
-              .map((n, index) => index + 1);
+            pages = Array.from({ length: lastPage }).map((_, index) => index + 1);
           } else {
             for (let n = -3; n <= 3; n++) {
               pages.push(active + n);
@@ -274,45 +271,39 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
           }
 
           return (
-            <ul key="pages" className={`${dPrefix}pagination__list`}>
+            <React.Fragment key="pages">
               {prevNode}
               {pages.map((n) => {
                 if (n === 'prev5') {
                   return (
                     <li
-                      key="prev5"
-                      className={getClassName(
-                        `${dPrefix}pagination__item`,
-                        `${dPrefix}pagination__item--button`,
-                        `${dPrefix}pagination__item--jump5`
-                      )}
-                      title={t('5 pages forward')}
-                      role="button"
-                      onClick={() => {
+                      {...getButtonRoleAttributes(() => {
                         changeActive(active - 5);
-                      }}
+                      })}
+                      key="prev5"
+                      className={getClassName(`${dPrefix}pagination__button`, `${dPrefix}pagination__button--jump5`)}
+                      title={t('Pagination', '5 pages forward')}
                     >
-                      <DoubleLeftOutlined dSize={iconSize} />
-                      <div className={`${dPrefix}pagination__ellipsis`}>•••</div>
+                      <DoubleLeftOutlined className={`${dPrefix}pagination__jump5-icon`} />
+                      <div className={`${dPrefix}pagination__ellipsis`}>
+                        <EllipsisOutlined />
+                      </div>
                     </li>
                   );
                 } else if (n === 'next5') {
                   return (
                     <li
-                      key="next5"
-                      className={getClassName(
-                        `${dPrefix}pagination__item`,
-                        `${dPrefix}pagination__item--button`,
-                        `${dPrefix}pagination__item--jump5`
-                      )}
-                      title={t('5 pages backward')}
-                      role="button"
-                      onClick={() => {
+                      {...getButtonRoleAttributes(() => {
                         changeActive(active + 5);
-                      }}
+                      })}
+                      key="next5"
+                      className={getClassName(`${dPrefix}pagination__button`, `${dPrefix}pagination__button--jump5`)}
+                      title={t('Pagination', '5 pages backward')}
                     >
-                      <DoubleRightOutlined dSize={iconSize} />
-                      <div className={`${dPrefix}pagination__ellipsis`}>•••</div>
+                      <DoubleRightOutlined className={`${dPrefix}pagination__jump5-icon`} />
+                      <div className={`${dPrefix}pagination__ellipsis`}>
+                        <EllipsisOutlined />
+                      </div>
                     </li>
                   );
                 } else {
@@ -320,15 +311,14 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
                     <li
                       key={n}
                       className={getClassName(
-                        `${dPrefix}pagination__item`,
-                        `${dPrefix}pagination__item--button`,
-                        `${dPrefix}pagination__item--border`,
-                        `${dPrefix}pagination__item--number`,
+                        `${dPrefix}pagination__button`,
+                        `${dPrefix}pagination__button--border`,
+                        `${dPrefix}pagination__button--number`,
                         {
                           'is-active': active === n,
                         }
                       )}
-                      tabIndex={active === n ? 0 : -1}
+                      tabIndex={0}
                       data-number={n}
                       onClick={() => {
                         changeActive(n);
@@ -373,17 +363,21 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
                 }
               })}
               {nextNode}
-            </ul>
+            </React.Fragment>
           );
         }
 
-        if (item === 'size') {
-          return sizeNode;
+        if (item === 'page-size') {
+          return pageSizeNode;
         }
 
         if (item === 'jump') {
           return (
-            <div key="jump" className={getClassName(`${dPrefix}pagination__item`)}>
+            <div
+              key="jump"
+              className={`${dPrefix}pagination__jump`}
+              style={{ marginRight: dCompose[dCompose.length - 1] === 'jump' ? 0 : undefined }}
+            >
               {jumpNode}
             </div>
           );

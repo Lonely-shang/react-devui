@@ -1,10 +1,12 @@
+@use 'sass:map';
+
 @keyframes switch-focus {
   0% {
-    box-shadow: 0 0 0 8px rgb(var(--#{$variable-prefix}color-primary-rgb) / var(--#{$variable-prefix}shadow-normal));
+    box-shadow: 0 0 0 8px rgb(var(--#{$rd-prefix}color-primary-rgb) / var(--#{$rd-prefix}shadow-normal));
   }
 
   100% {
-    box-shadow: 0 0 0 10px rgb(var(--#{$variable-prefix}color-primary-rgb) / var(--#{$variable-prefix}shadow-darker));
+    box-shadow: 0 0 0 10px rgb(var(--#{$rd-prefix}color-primary-rgb) / var(--#{$rd-prefix}shadow-darker));
   }
 }
 
@@ -21,7 +23,7 @@
   }
 
   @include when(disabled) {
-    color: var(--#{$variable-prefix}color-disabled);
+    color: var(--#{$rd-prefix}color-disabled);
     pointer-events: none;
     filter: brightness(110%) grayscale(50%);
 
@@ -36,15 +38,12 @@
 
   @include when(loading) {
     pointer-events: none;
-
-    @include e(state-container) {
-      @include utils-loading;
-    }
+    filter: opacity(70%);
   }
 
   @include when(checked) {
     @include e(state-container) {
-      background-color: var(--#{$variable-prefix}color-primary);
+      background-color: var(--#{$rd-prefix}color-primary);
     }
   }
 
@@ -52,13 +51,14 @@
     flex-direction: row-reverse;
   }
 
+  @include e(label) {
+    white-space: nowrap;
+  }
+
   @include e(input) {
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
     z-index: 5;
-    width: 100%;
-    height: 100%;
     margin: 0;
     cursor: pointer;
     opacity: 0;
@@ -73,10 +73,10 @@
     min-width: 42px;
     height: 22px;
     padding: 0 6px;
-    background-color: var(--#{$variable-prefix}switch-background-color);
+    background-color: var(--#{$rd-prefix}switch-background-color);
     /* stylelint-disable-next-line declaration-property-value-allowed-list */
     border-radius: 11px;
-    transition: background-color var(--#{$variable-prefix}animation-duration-fast) ease-out;
+    transition: background-color var(--#{$rd-prefix}animation-duration-fast) ease-out;
   }
 
   @include e(state-content) {
@@ -86,10 +86,10 @@
     /* stylelint-disable-next-line declaration-property-value-allowed-list */
     font-size: 14px;
     line-height: 1;
-    color: map.get($colors, 'white');
-    transition: opacity var(--#{$variable-prefix}animation-duration-fast) ease-out;
+    color: map.get($rd-colors, 'white');
+    transition: opacity var(--#{$rd-prefix}animation-duration-fast) ease-out;
 
-    &:first-of-type {
+    @include m(left) {
       margin-right: auto;
     }
   }
@@ -105,12 +105,12 @@
     height: 18px;
     /* stylelint-disable-next-line declaration-property-value-allowed-list */
     font-size: 14px;
-    color: var(--#{$variable-prefix}color-primary);
-    background-color: var(--#{$variable-prefix}background-color);
+    color: var(--#{$rd-prefix}color-primary);
+    background-color: var(--#{$rd-prefix}background-color);
     /* stylelint-disable-next-line declaration-property-value-allowed-list */
     border-radius: 9px;
-    box-shadow: 0 2px 1px -1px var(--#{$variable-prefix}shadow-color), 0 0 4px 0 var(--#{$variable-prefix}shadow-color);
-    transition: width var(--#{$variable-prefix}animation-duration-fast) ease-in;
+    box-shadow: 0 2px 1px -1px var(--#{$rd-prefix}shadow-color), 0 0 4px 0 var(--#{$rd-prefix}shadow-color);
+    transition: width var(--#{$rd-prefix}animation-duration-fast) ease-in;
 
     @include when(focus) {
       animation: switch-focus 1.2s linear infinite alternate;

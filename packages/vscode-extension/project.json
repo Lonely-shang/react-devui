@@ -1,0 +1,42 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/vscode-extension/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/vscode-extension",
+        "tsConfig": "packages/vscode-extension/tsconfig.lib.json",
+        "main": "packages/vscode-extension/src/extension.ts",
+        "updateBuildableProjectDepsInPackageJson": false,
+        "assets": [
+          {
+            "glob": "CHANGELOG.md",
+            "input": "packages/vscode-extension",
+            "output": "/"
+          },
+          {
+            "glob": "README.md",
+            "input": "packages/vscode-extension",
+            "output": "/"
+          },
+          {
+            "glob": "LICENSE",
+            "input": "",
+            "output": "/"
+          }
+        ]
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/vscode-extension/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

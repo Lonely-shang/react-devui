@@ -1,0 +1,40 @@
+{
+  "name": "@react-devui/hooks",
+  "version": "18.3.0",
+  "description": "DevUI hooks based on React",
+  "keywords": [
+    "ui",
+    "devui",
+    "hook",
+    "hooks",
+    "react",
+    "react-hook"
+  ],
+  "homepage": "https://github.com/DevCloudFE/react-devui/tree/main/packages/hooks#readme",
+  "bugs": {
+    "url": "https://github.com/DevCloudFE/react-devui/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DevCloudFE/react-devui.git"
+  },
+  "license": "MIT",
+  "author": "Xie Jay <xiejay97@gmail.com>",
+  "sideEffects": false,
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "dependencies": {
+    "@react-devui/utils": "file:../utils",
+    "immer": "^9.0.16",
+    "lodash": "^4.17.21",
+    "rxjs": "^7.6.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "directory": "../../dist/packages/hooks"
+  }
+}

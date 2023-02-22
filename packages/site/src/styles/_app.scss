@@ -1,0 +1,343 @@
+@use 'sass:map';
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  font-weight: 400;
+  color: var(--#{$rd-prefix}text-color);
+  background-color: var(--app-background-color);
+  text-size-adjust: 100%;
+
+  @include font-size(1rem);
+}
+
+.app-main {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: calc(100% - 64px);
+  padding: 32px 0 0;
+  overflow: auto;
+
+  @include media-breakpoint-up(md) {
+    width: calc(100% - 260px);
+  }
+}
+
+.app-icon-button {
+  color: var(--#{$rd-prefix}color-icon-decorator);
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--#{$rd-prefix}animation-duration-base) linear;
+
+  &:hover {
+    color: var(--#{$rd-prefix}color-primary);
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  .anchor {
+    display: inline-block;
+    margin-left: 8px;
+    color: var(--#{$rd-prefix}color-primary);
+    text-decoration: none;
+    opacity: 0;
+    transition: opacity var(--#{$rd-prefix}animation-duration-base) linear;
+
+    &:focus-visible {
+      opacity: 1;
+    }
+  }
+
+  &:hover .anchor {
+    opacity: 1;
+  }
+}
+
+code {
+  overflow-wrap: break-word;
+}
+
+pre > code {
+  font-family: Consolas, Menlo, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+}
+
+code:not(.hljs) {
+  padding: 4px 6px;
+  margin: 0 1px;
+  font-family: Consolas, Menlo, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  background-color: var(--app-code-background-color);
+  border-radius: var(--#{$rd-prefix}border-radius);
+}
+
+h1 {
+  margin: 8px 0 20px;
+  font-weight: 400;
+  @include font-size(2rem);
+}
+
+h2 {
+  margin: 38px 0 20px;
+  font-weight: 400;
+  @include font-size(1.5rem);
+}
+
+h3 {
+  margin: 28px 0 12px;
+  font-weight: 400;
+  @include font-size(1.25rem);
+}
+
+.app-table-container {
+  width: 100%;
+  overflow-x: auto;
+
+  table {
+    width: 100%;
+    min-width: 900px;
+    margin: 8px 0 16px;
+    overflow-wrap: break-word;
+    table-layout: fixed;
+    empty-cells: show;
+    border-spacing: 0;
+    border-collapse: collapse;
+    border: 1px solid var(--#{$rd-prefix}color-border);
+
+    th {
+      font-weight: 400;
+      white-space: nowrap;
+      background: var(--app-th-background-color);
+    }
+
+    th,
+    td {
+      padding: 16px 24px;
+      text-align: left;
+      border: 1px solid var(--#{$rd-prefix}color-divider);
+    }
+
+    th:nth-of-type(1) {
+      width: 260px;
+      white-space: nowrap;
+    }
+
+    th:nth-of-type(2) {
+      width: calc(100% - 540px);
+    }
+
+    th:nth-of-type(3) {
+      width: 160px;
+    }
+
+    th:nth-of-type(4) {
+      width: 120px;
+    }
+
+    td:nth-of-type(1),
+    td:nth-of-type(3),
+    td:nth-of-type(4) {
+      font-family: Consolas, Menlo, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    }
+  }
+}
+
+// demo general style
+.app-component-route__demos {
+  &:not([data-demo='Form']) {
+    .#{$rd-prefix}compose:not(.#{$rd-prefix}radio-group) {
+      margin-right: 8px;
+      margin-bottom: 12px;
+    }
+  }
+
+  .#{$rd-prefix}radio-group {
+    margin-bottom: 16px;
+  }
+
+  section[id='FormSupportComponentsDemo'] {
+    .#{$rd-prefix}radio-group {
+      margin-bottom: unset;
+    }
+  }
+
+  section[id^='Button'],
+  section[id^='Dropdown'],
+  section[id^='Modal'],
+  section[id^='Notification'],
+  section[id^='Stepper'],
+  section[id^='Toast'] {
+    .#{$rd-prefix}button {
+      margin-right: 8px;
+      margin-bottom: 12px;
+    }
+
+    .#{$rd-prefix}button--block {
+      margin-right: 0;
+      margin-bottom: 10px;
+    }
+
+    /* stylelint-disable-next-line no-descending-specificity */
+    .#{$rd-prefix}compose {
+      .#{$rd-prefix}button {
+        margin-right: 0;
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  @each $id,
+    $selector
+      in (
+        'AutoComplete': 'input',
+        'Badge': 'badge',
+        'Cascader': 'cascader',
+        'DatePicker': 'date-picker',
+        'Image': 'image',
+        'Input': 'input',
+        'Radio': 'radio',
+        'Select': 'select',
+        'Switch': 'switch',
+        'Tag': 'tag',
+        'TimePicker': 'time-picker',
+        'TreeSelect': 'tree-select'
+      )
+  {
+    section[id^='#{$id}'] {
+      .#{$rd-prefix}#{$selector} {
+        margin-right: 8px;
+        margin-bottom: 12px;
+      }
+
+      .#{$rd-prefix}compose {
+        .#{$rd-prefix}#{$selector} {
+          margin-right: 0;
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+
+  section[id^='Avatar'] {
+    .#{$rd-prefix}avatar {
+      margin-right: 24px;
+      margin-bottom: 12px;
+    }
+  }
+
+  section[id^='Alert'] {
+    .#{$rd-prefix}alert {
+      margin-bottom: 20px;
+    }
+  }
+
+  section[id^='Badge'] {
+    .app-demo-badge {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 52px;
+      margin-right: 24px;
+      margin-bottom: 12px;
+      text-align: center;
+      background: var(--#{$rd-prefix}background-color-primary);
+      border-radius: var(--#{$rd-prefix}border-radius);
+    }
+  }
+
+  section[id^='Checkbox'] {
+    .#{$rd-prefix}checkbox {
+      margin-right: 8px;
+      margin-bottom: 12px;
+    }
+
+    .#{$rd-prefix}checkbox-group {
+      .#{$rd-prefix}checkbox {
+        margin-right: 0;
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  section[id^='Form'] {
+    .#{$rd-prefix}form--inline {
+      min-width: 800px;
+    }
+  }
+
+  section[id^='Grid'] {
+    .app-demo-col {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 48px;
+      color: map.get($rd-colors, 'white');
+      background-color: var(--#{$rd-prefix}color-primary);
+    }
+
+    .app-demo-col--lighter {
+      background-color: var(--#{$rd-prefix}color-primary-lighter);
+    }
+  }
+
+  section[id^='Menu'] {
+    .#{$rd-prefix}menu:not(.#{$rd-prefix}menu--horizontal) {
+      max-width: 100%;
+      border-right: 1px solid var(--#{$rd-prefix}color-divider);
+    }
+  }
+
+  section[id^='Progress'] {
+    .#{$rd-prefix}progress--dashboard,
+    .#{$rd-prefix}progress--circle {
+      margin-right: 8px;
+      margin-bottom: 12px;
+    }
+  }
+
+  section[id^='Stepper'] {
+    .#{$rd-prefix}stepper:not(.#{$rd-prefix}stepper--vertical) {
+      min-width: 600px;
+    }
+  }
+
+  section[id^='Slides'] {
+    .app-demo-slide {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 160px;
+      color: map.get($rd-colors, 'white');
+    }
+  }
+
+  section[id^='Table'] {
+    .#{$rd-prefix}table {
+      min-width: 600px;
+    }
+
+    .#{$rd-prefix}pagination {
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+  }
+
+  section[id^='Transfer'] {
+    .#{$rd-prefix}transfer {
+      min-width: 400px;
+    }
+  }
+
+  .app-demo-text-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px 0;
+  }
+}

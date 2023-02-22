@@ -1,0 +1,211 @@
+@import 'mixins/overwrite';
+
+$tree-option-height: 32px;
+
+@include b(tree) {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 100%;
+  padding: 0;
+  margin: 0;
+  overflow: auto;
+  white-space: nowrap;
+  vertical-align: top;
+  list-style: none;
+  outline: none;
+
+  &[data-form-invalid-warning='true'] {
+    border-color: var(--#{$rd-prefix}color-warning) !important;
+  }
+
+  &[data-form-invalid-error='true'] {
+    border-color: var(--#{$rd-prefix}color-danger) !important;
+  }
+
+  @include when(disabled) {
+    pointer-events: none;
+    filter: opacity(50%);
+  }
+
+  @include m(line) {
+    @include e(option-group) {
+      &[role='treeitem']:not(.#{$rd-prefix}tree__option-group--root)::after {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -18px;
+        width: 1px;
+        pointer-events: none;
+        content: '';
+        background-color: var(--#{$rd-prefix}background-color-indicator);
+      }
+    }
+
+    @include e(option) {
+      &:not(.#{$rd-prefix}tree__option--root) {
+        &::before,
+        &::after {
+          position: absolute;
+          pointer-events: none;
+          content: '';
+          background-color: var(--#{$rd-prefix}background-color-indicator);
+        }
+
+        &::before {
+          top: -50%;
+          left: -18px;
+          width: 1px;
+          height: 100%;
+        }
+
+        &::after {
+          left: -18px;
+          width: 18px;
+          height: 1px;
+        }
+
+        &[role='treeitem'] {
+          &::before {
+            left: -40px;
+          }
+
+          &::after {
+            left: -40px;
+            width: 40px;
+          }
+        }
+
+        &.#{$rd-prefix}tree__option--first::before {
+          top: 0;
+          height: 50%;
+        }
+      }
+    }
+  }
+
+  @include e(option) {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 0 8px;
+    align-items: center;
+    height: $tree-option-height;
+    padding: 0 12px;
+    cursor: pointer;
+    transition: background-color var(--#{$rd-prefix}animation-duration-base) linear;
+
+    &:not(.is-selected):hover {
+      background-color: var(--#{$rd-prefix}background-color-hover);
+    }
+
+    &[role='treeitem'] {
+      margin-left: 22px;
+    }
+
+    @include when(disabled) {
+      color: var(--#{$rd-prefix}color-disabled);
+      pointer-events: none;
+    }
+
+    @include when(selected) {
+      background-color: var(--#{$rd-prefix}background-color-primary);
+    }
+  }
+
+  @include e(option-content) {
+    flex-grow: 1;
+  }
+
+  @include e(option-icon) {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: $tree-option-height;
+    /* stylelint-disable-next-line declaration-property-value-allowed-list */
+    font-size: 14px;
+    user-select: none;
+
+    &::after {
+      position: absolute;
+      inset: 0 -8px;
+      content: '';
+    }
+  }
+
+  @include e(option-arrow) {
+    @include overwrite-component(icon) {
+      transition: transform var(--#{$rd-prefix}animation-duration-base) linear;
+    }
+  }
+
+  @include e(option-group) {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+
+    &[role='group']:not(.#{$rd-prefix}tree__option-group--root) {
+      padding-left: 34px;
+    }
+  }
+
+  @include e(empty) {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    height: $tree-option-height;
+    padding: 0 12px;
+    margin-left: 22px;
+    color: var(--#{$rd-prefix}color-disabled);
+  }
+
+  @include e(search-list) {
+    position: relative;
+    max-height: 264px;
+    padding: 4px 0;
+    margin: 0;
+    overflow: hidden auto;
+    list-style: none;
+  }
+
+  @include e(search-option) {
+    position: relative;
+    display: flex;
+    gap: 0 8px;
+    align-items: center;
+    height: $tree-option-height;
+    padding: 0 12px;
+    cursor: pointer;
+    transition: background-color var(--#{$rd-prefix}animation-duration-base) linear;
+
+    &:not(.is-selected):hover {
+      background-color: var(--#{$rd-prefix}background-color-hover);
+    }
+
+    @include when(disabled) {
+      color: var(--#{$rd-prefix}color-disabled);
+      pointer-events: none;
+    }
+
+    @include when(selected) {
+      background-color: var(--#{$rd-prefix}background-color-primary);
+    }
+  }
+
+  @include e(search-option-content) {
+    @include utils-ellipsis;
+
+    flex: 1 0 0;
+  }
+
+  @include e(search-empty) {
+    display: flex;
+    align-items: center;
+    height: $tree-option-height;
+    padding: 0 12px;
+    color: var(--#{$rd-prefix}color-disabled);
+  }
+}

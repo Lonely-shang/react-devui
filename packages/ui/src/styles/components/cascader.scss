@@ -1,12 +1,63 @@
+@import 'mixins/selectbox';
+
 $cascader-option-height: 32px;
 
-@mixin cascader-list {
-  position: relative;
-  max-height: 264px;
-  padding: 4px 0;
-  margin: 0;
-  overflow: hidden auto;
-  list-style: none;
+@include b(cascader) {
+  @include component-selectbox;
+
+  @include when(disabled) {
+    @include e(multiple-tag) {
+      color: var(--#{$rd-prefix}color-disabled);
+    }
+    @include e(multiple-count) {
+      color: var(--#{$rd-prefix}color-disabled);
+    }
+  }
+
+  @include e(multiple-tag) {
+    & + & {
+      margin-left: 8px;
+    }
+  }
+
+  @include e(close) {
+    margin: 0 0 0 4px;
+    color: var(--#{$rd-prefix}color-icon-decorator);
+    transition: color var(--#{$rd-prefix}animation-duration-base) linear;
+
+    &:hover,
+    &:focus {
+      color: var(--#{$rd-prefix}color-primary-lighter);
+    }
+
+    &:active {
+      color: var(--#{$rd-prefix}color-primary-darker);
+    }
+  }
+
+  @include e(popup) {
+    position: fixed;
+    overflow: auto hidden;
+    white-space: nowrap;
+    background-color: var(--#{$rd-prefix}background-color);
+    border-radius: var(--#{$rd-prefix}border-radius);
+    box-shadow: var(--#{$rd-prefix}shadow-popup);
+  }
+
+  @include e(list) {
+    position: relative;
+    display: inline-block;
+    max-height: 264px;
+    padding: 4px 0;
+    margin: 0;
+    overflow: hidden auto;
+    vertical-align: top;
+    list-style: none;
+
+    & + & {
+      border-left: 1px solid var(--#{$rd-prefix}color-divider);
+    }
+  }
 
   @include e(option) {
     position: relative;
@@ -17,21 +68,38 @@ $cascader-option-height: 32px;
     height: $cascader-option-height;
     padding: 0 12px;
     cursor: pointer;
-    transition: background-color var(--#{$variable-prefix}animation-duration-base) linear;
-
-    @include utils-disabled;
+    transition: background-color var(--#{$rd-prefix}animation-duration-base) linear;
 
     &:not(.is-selected):hover {
-      background-color: var(--#{$variable-prefix}background-color-hover);
+      background-color: var(--#{$rd-prefix}background-color-hover);
+    }
+
+    @include when(disabled) {
+      color: var(--#{$rd-prefix}color-disabled);
+      pointer-events: none;
     }
 
     @include when(selected) {
-      background-color: var(--#{$variable-prefix}background-color-primary);
+      background-color: var(--#{$rd-prefix}background-color-primary);
+    }
+
+    @include when(focus) {
+      color: var(--#{$rd-prefix}color-primary-lighter);
     }
   }
 
   @include e(option-content) {
     @include utils-ellipsis;
+
+    flex: 1 0 0;
+  }
+
+  @include e(option-icon) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 24px;
+    font-size: 0.9em;
   }
 
   @include e(empty) {
@@ -39,81 +107,23 @@ $cascader-option-height: 32px;
     align-items: center;
     height: $cascader-option-height;
     padding: 0 12px;
-    color: var(--#{$variable-prefix}color-disabled);
-  }
-}
-
-@include b(cascader) {
-  @include when(disabled) {
-    @include e(multiple-tag) {
-      color: var(--#{$variable-prefix}color-disabled);
-    }
-    @include e(multiple-count) {
-      color: var(--#{$variable-prefix}color-disabled);
-    }
-  }
-
-  @include e(popup) {
-    position: fixed;
-    overflow: auto hidden;
-    white-space: nowrap;
-    background-color: var(--#{$variable-prefix}background-color);
-    border-radius: var(--#{$variable-prefix}border-radius);
-    box-shadow: var(--#{$variable-prefix}shadow-popup);
+    color: var(--#{$rd-prefix}color-disabled);
   }
 
   @include e(loading) {
     position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0;
     z-index: 5;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0 12px;
-    color: var(--#{$variable-prefix}color-primary);
-    background-color: rgb(var(--#{$variable-prefix}background-color-rgb) / 80%);
+    color: var(--#{$rd-prefix}color-primary);
+    background-color: rgb(var(--#{$rd-prefix}background-color-rgb) / 80%);
 
     @include m(empty) {
       justify-content: flex-start;
-      background-color: var(--#{$variable-prefix}background-color);
+      background-color: var(--#{$rd-prefix}background-color);
     }
   }
-
-  @include e(multiple-tag) {
-    & + & {
-      margin-left: 8px;
-    }
-  }
-}
-
-@include b(cascader-list) {
-  display: inline-block;
-  vertical-align: top;
-
-  @include cascader-list;
-
-  & + & {
-    border-left: 1px solid var(--#{$variable-prefix}color-divider);
-  }
-
-  @include e(icon) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-end;
-    width: 24px;
-    font-size: 0.8em;
-  }
-
-  @include e(option) {
-    @include when(focus) {
-      color: var(--#{$variable-prefix}color-primary-lighter);
-    }
-  }
-}
-
-@include b(cascader-search-list) {
-  @include cascader-list;
 }

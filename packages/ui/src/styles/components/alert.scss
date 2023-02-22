@@ -1,0 +1,23 @@
+@import 'mixins/toast';
+@import 'mixins/notification';
+
+@include b(alert) {
+  padding: 12px 16px;
+  background-color: var(--#{$rd-prefix}alert-background-color, var(--#{$rd-prefix}background-color-light-gray));
+  border: 1px solid var(--#{$rd-prefix}alert-border-color, var(--#{$rd-prefix}color-border));
+
+  @each $theme, $rgb in $rd-themes {
+    @include theme(#{$theme}) {
+      --#{$rd-prefix}alert-border-color: var(--#{$rd-prefix}color-#{$theme});
+      --#{$rd-prefix}alert-background-color: var(--#{$rd-prefix}background-color-#{$theme});
+    }
+  }
+
+  @include m(toast) {
+    @include component-toast;
+  }
+
+  @include m(notification) {
+    @include component-notification;
+  }
+}

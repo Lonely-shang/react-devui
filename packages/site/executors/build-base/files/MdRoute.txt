@@ -1,0 +1,15 @@
+// @ts-nocheck
+
+import { AppMdRoute } from 'packages/site/src/app/components';
+import React from 'react';
+
+function __Route__() {
+  const props = {
+    'en-US': { html: [__en-US__] },
+    'zh-CN': { html: [__zh-CN__] },
+  };
+
+  return <AppMdRoute {...props} />;
+}
+
+export default React.memo(__Route__);

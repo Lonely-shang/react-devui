@@ -1,0 +1,62 @@
+@import 'mixins/overwrite';
+
+@keyframes spinner-dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
+
+@include b(spinner) {
+  position: absolute;
+  inset: 0;
+  z-index: var(--#{$rd-prefix}zindex-absolute);
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--#{$rd-prefix}color-primary);
+  background-color: rgb(var(--#{$rd-prefix}background-color-rgb) / 80%);
+
+  @include m(alone) {
+    position: relative;
+    inset: unset;
+    display: inline-flex;
+    background-color: transparent;
+  }
+
+  @include e(container) {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @include e(icon) {
+    display: inline-flex;
+  }
+
+  @include e(spinner-icon) {
+    @include overwrite-component(icon) {
+      animation: spin 2s linear infinite;
+    }
+
+    circle {
+      animation: spinner-dash 1.5s linear infinite;
+    }
+  }
+
+  @include e(text) {
+    margin-top: 8px;
+  }
+}

@@ -1,12 +1,19 @@
-import type { DGeneralState, DSize } from '../../types';
+import type { DSize } from '../../utils/types';
 
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 
-import { usePrefixConfig, useComponentConfig, useGeneralState, useForkRef } from '../../hooks';
-import { DGeneralStateContext } from '../../hooks/state/useGeneralState';
-import { registerComponentMate, getClassName } from '../../utils';
+import { getClassName } from '@react-devui/utils';
 
-export type DComposeRef = HTMLDivElement;
+import { useGeneralContext } from '../../hooks';
+import { registerComponentMate } from '../../utils';
+import { useComponentConfig, usePrefixConfig } from '../root';
+import { DComposeItem } from './ComposeItem';
+
+export interface DComposeContextData {
+  gSize?: DSize;
+  gDisabled?: boolean;
+}
+export const DComposeContext = React.createContext<DComposeContextData | null>(null);
 
 export interface DComposeProps extends React.HTMLAttributes<HTMLDivElement> {
   dSize?: DSize;
@@ -14,34 +21,29 @@ export interface DComposeProps extends React.HTMLAttributes<HTMLDivElement> {
   dDisabled?: boolean;
 }
 
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DCompose' });
-function Compose(props: DComposeProps, ref: React.ForwardedRef<DComposeRef>) {
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DCompose' as const });
+export const DCompose: {
+  (props: DComposeProps): JSX.Element | null;
+  Item: typeof DComposeItem;
+} = (props) => {
   const {
     children,
     dSize,
     dVertical = false,
     dDisabled = false,
 
-    className,
-    role = 'group',
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const { gSize, gDisabled } = useGeneralState();
+  const { gSize, gDisabled } = useGeneralContext();
   //#endregion
-
-  //#region Ref
-  const elRef = useRef<HTMLDivElement>(null);
-  //#endregion
-
-  const combineElRef = useForkRef(elRef, ref);
 
   const size = dSize ?? gSize;
   const disabled = dDisabled || gDisabled;
 
-  const generalStateContextValue = useMemo<DGeneralState>(
+  const contextValue = useMemo<DComposeContextData>(
     () => ({
       gSize: size,
       gDisabled: disabled,
@@ -50,19 +52,18 @@ function Compose(props: DComposeProps, ref: React.ForwardedRef<DComposeRef>) {
   );
 
   return (
-    <DGeneralStateContext.Provider value={generalStateContextValue}>
+    <DComposeContext.Provider value={contextValue}>
       <div
         {...restProps}
-        ref={combineElRef}
-        className={getClassName(className, `${dPrefix}compose`, {
+        className={getClassName(restProps.className, `${dPrefix}compose`, {
           [`${dPrefix}compose--vertical`]: dVertical,
         })}
-        role={role}
+        role="group"
       >
         {children}
       </div>
-    </DGeneralStateContext.Provider>
+    </DComposeContext.Provider>
   );
-}
+};
 
-export const DCompose = React.forwardRef(Compose);
+DCompose.Item = DComposeItem;

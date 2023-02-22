@@ -1,42 +1,36 @@
 ---
 group: General
 title: Button
+aria: button
+compose: true
 ---
 
 ## API
 
 ### DButtonProps
 
-Extend `React.ButtonHTMLAttributes<HTMLButtonElement>`.
-
-<!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
-| --- | --- | --- | --- | 
-| dType | Set button type | 'primary' \| 'secondary' \| 'outline' \| 'dashed' \| 'text' \| 'link' | 'primary' |
-| dTheme | Set button theme | 'primary' \| 'success' \| 'warning' \| 'danger' | 'primary' |
-| dLoading | Set button loading state | boolean | false |
-| dBlock | Adjust the button width to its parent width | boolean | false |
-| dShape | Set the button shape | 'circle' \| 'round' | - |
-| dSize | Set button size | 'smaller' \| 'larger' | - |
-| dIcon | Set the icon of the button | React.ReactNode | - |
-| dIconRight | Settings icon on the right | boolean | false |
-<!-- prettier-ignore-end -->
-
-### DButtonRef
-
 ```tsx
-type DButtonRef = HTMLButtonElement;
+interface DButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  dType?: 'primary' | 'secondary' | 'outline' | 'dashed' | 'text' | 'link';
+  dTheme?: 'primary' | 'success' | 'warning' | 'danger';
+  dLoading?: boolean;
+  dBlock?: boolean;
+  dVariant?: 'circle' | 'round';
+  dSize?: DSize;
+  dIcon?: React.ReactNode;
+  dIconRight?: boolean;
+}
 ```
 
-### DButtonGroupProps
-
-Extend `React.HTMLAttributes<HTMLDivElement>`.
-
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dType | Set the shape of the buttons in the button group | Reference DButtonProps['dType'] | 'secondary' |
-| dTheme | Set the theme of the buttons in the button group | Reference DButtonProps['dTheme'] | 'primary' |
-| dSize | Set the size of the buttons in the button group | Reference DButtonProps['dSize'] | - |
-| disabled | Disable the buttons in the button group | boolean | false |
+| dType | Set button type | `'primary'` |  |
+| dTheme | Set button theme color | `'primary'` |  |
+| dLoading | The button appears to be loading | `false` |  |
+| dBlock | Set button width to 100% | `false` |  |
+| dVariant | Set button variant | - |  |
+| dSize | Set button size | - |  |
+| dIcon | Set button icon, left by default | - |  |
+| dIconRight | Whether the button icon is right | `false` |  |
 <!-- prettier-ignore-end -->

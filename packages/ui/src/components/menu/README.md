@@ -1,58 +1,46 @@
 ---
 group: Navigation
 title: Menu
+aria: menu
 ---
 
 ## API
 
 ### DMenuProps
 
-Extend `React.HTMLAttributes<HTMLElement>`.
+```tsx
+interface DMenuItem<ID extends DId> {
+  id: ID;
+  title: React.ReactNode;
+  type: 'item' | 'group' | 'sub';
+  icon?: React.ReactNode;
+  disabled?: boolean;
+  children?: DMenuItem<ID>[];
+}
+
+interface DMenuProps<ID extends DId, T extends DMenuItem<ID>> extends Omit<React.HTMLAttributes<HTMLElement>, 'children'> {
+  dList: T[];
+  dWidth?: string | number;
+  dActive?: ID | null;
+  dExpands?: ID[];
+  dMode?: DMenuMode;
+  dExpandOne?: boolean;
+  dExpandTrigger?: 'hover' | 'click';
+  onActiveChange?: (id: T['id'], item: T) => void;
+  onExpandsChange?: (ids: T['id'][], items: T[]) => void;
+}
+```
 
 <!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
+| Property | Description | Default | Version | 
 | --- | --- | --- | --- | 
-| dActive | Manually control the active menu item, the value is `dId` | [string \| null, Updater\<string \| null\>?] | - |
-| dExpands | Expanded sub-menu, the value is `dId` | [Set\<string\>, Updater\<Set\<string\>\>?]  | - |
-| dMode | Menu type | 'horizontal' \| 'vertical' \| 'popup' \| 'icon' | 'vertical' |
-| dExpandOne | Keep the same level of the menu, expand at most one sub-menu | boolean | false |
-| dExpandTrigger | How to trigger the expansion, adjust the trigger behavior according to `dMode` by default | 'hover' \| 'click' | - |
-| onActiveChange | Callback for active menu item change | `(id: string) => void` | - |
-| onExpandsChange | Callback for changes in expanded submenu | `(ids: Set<string>) => void` | - |
-<!-- prettier-ignore-end -->
-
-### DMenuGroupProps
-
-Extend `React.LiHTMLAttributes<HTMLLIElement>`.
-
-<!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
-| --- | --- | --- | --- | 
-| dTitle | The title of the menu group | React.ReactNode | - |
-<!-- prettier-ignore-end -->
-
-### DMenuSubProps
-
-Extend `React.LiHTMLAttributes<HTMLLIElement>`.
-
-<!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
-| --- | --- | --- | --- | 
-| dId | Uniquely identifies | string | - |
-| dIcon | Settings submenu icon | React.ReactNode | - |
-| dTitle | Set submenu title | React.ReactNode | - |
-| disabled | Whether to disable | boolean | false |
-| dPopupClassName | Add className to the popup | string | - |
-<!-- prettier-ignore-end -->
-
-### DMenuItemProps
-
-Extend `React.LiHTMLAttributes<HTMLLIElement>`.
-
-<!-- prettier-ignore-start -->
-| Property | Description | Type | Default | 
-| --- | --- | --- | --- | 
-| dId | Uniquely identifies | string | - |
-| dIcon | Set menu item icon | React.ReactNode | - |
-| disabled | Whether to disable | boolean | false |
+| dList | List of data | - |  |
+| dWidth | Set menu width | `'auto'` |  |
+| dActive | Active menu item, controlled, default `null` | - |  |
+| dExpands | Expand menu item, controlled, default `[]` | - |  |
+| dMode | Set menu display mode | `vertical` |  |
+| dExpandOne | Expand at most one item at the same level | `false` |  |
+| dExpandTrigger | The behavior that triggers the expansion | - |  |
+| onActiveChange | Callback for active menu item changes | - |  |
+| onExpandsChange | Callback for expand menu item changes | - |  |
 <!-- prettier-ignore-end -->

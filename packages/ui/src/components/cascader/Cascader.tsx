@@ -1,249 +1,266 @@
-import type { DUpdater } from '../../hooks/common/useTwoWayBinding';
-import type { DId, DNestedChildren } from '../../types';
-import type { DExtendsSelectboxProps } from '../_selectbox';
-import type { DDropdownOption } from '../dropdown';
+import type { DCloneHTMLElement, DId, DSize } from '../../utils/types';
+import type { ComboboxKeyDownRef } from '../_keyboard';
+import type { DDropdownItem } from '../dropdown';
 import type { DFormControl } from '../form';
-import type { DSelectOption } from '../select';
-import type { AbstractTreeNode } from '../tree';
+import type { DSelectItem } from '../select';
+import type { AbstractTreeNode, TreeOrigin } from '../tree/abstract-node';
 
-import { isArray, isNull } from 'lodash';
-import React, { useCallback, useMemo, useState, useId, useRef } from 'react';
-import { Subject } from 'rxjs';
+import { isNull, isUndefined } from 'lodash';
+import React, { useCallback, useState, useMemo, useRef, useImperativeHandle } from 'react';
 
-import { usePrefixConfig, useComponentConfig, useTwoWayBinding, useGeneralState, useEventCallback, useMemoWithUpdate } from '../../hooks';
-import { LoadingOutlined } from '../../icons';
-import { findNested, registerComponentMate, getClassName } from '../../utils';
+import { useEventCallback, useId } from '@react-devui/hooks';
+import { CloseOutlined, LoadingOutlined } from '@react-devui/icons';
+import { findNested, getClassName, getVerticalSidePosition } from '@react-devui/utils';
+
+import { useGeneralContext, useDValue } from '../../hooks';
+import { cloneHTMLElement, registerComponentMate, TTANSITION_DURING_POPUP, WINDOW_SPACE } from '../../utils';
+import { DComboboxKeyboard } from '../_keyboard';
 import { DSelectbox } from '../_selectbox';
+import { DTransition } from '../_transition';
 import { DDropdown } from '../dropdown';
+import { useFormControl } from '../form';
+import { useComponentConfig, usePrefixConfig, useTranslation } from '../root';
 import { DTag } from '../tag';
-import { useTreeData } from '../tree';
-import { SingleTreeNode, MultipleTreeNode } from '../tree';
+import { DSearchPanel as DTreeSearchPanel } from '../tree/SearchPanel';
+import { MultipleTreeNode } from '../tree/multiple-node';
+import { SingleTreeNode } from '../tree/single-node';
+import { getText, TREE_NODE_KEY } from '../tree/utils';
 import { DList } from './List';
-import { DSearchList } from './SearchList';
-import { getText, TREE_NODE_KEY } from './utils';
 
-export type DSearchOption<V extends DId, T> = DSelectOption<V> & { [TREE_NODE_KEY]: AbstractTreeNode<V, T> };
+export interface DCascaderRef {
+  updatePosition: () => void;
+}
 
-export interface DCascaderOption<V extends DId> {
+export type DSearchItem<V extends DId, T extends TreeOrigin> = DSelectItem<V> & { [TREE_NODE_KEY]: AbstractTreeNode<V, T> };
+
+export interface DCascaderItem<V extends DId> {
   label: string;
   value: V;
   loading?: boolean;
   disabled?: boolean;
+  children?: DCascaderItem<V>[];
 }
 
-export interface DCascaderBaseProps<V extends DId, T extends DCascaderOption<V>>
-  extends React.HTMLAttributes<HTMLDivElement>,
-    DExtendsSelectboxProps {
-  dFormControl?: DFormControl;
-  dOptions: DNestedChildren<T>[];
-  dVisible?: [boolean, DUpdater<boolean>?];
-  dCustomOption?: (option: DNestedChildren<T>) => React.ReactNode;
-  dCustomSelected?: (select: DNestedChildren<T>) => string;
-  dClearable?: boolean;
-  dOnlyLeafSelectable?: boolean;
-  dCustomSearch?: {
-    filter?: (value: string, option: DNestedChildren<T>) => boolean;
-    sort?: (a: DNestedChildren<T>, b: DNestedChildren<T>) => number;
+export interface DCascaderProps<V extends DId, T extends DCascaderItem<V>> extends React.HTMLAttributes<HTMLDivElement> {
+  dRef?: {
+    input?: React.ForwardedRef<HTMLInputElement>;
   };
-  dAutoMaxWidth?: boolean;
-  dPopupClassName?: string;
-  onFocusChange?: (value: V, option: DNestedChildren<T>) => void;
-  onSearch?: (value: string) => void;
-}
-
-export interface DCascaderSingleProps<V extends DId, T extends DCascaderOption<V>> extends DCascaderBaseProps<V, T> {
-  dModel?: [V | null, DUpdater<V | null>?];
-  dMultiple?: false;
-  onModelChange?: (value: V | null, option: DNestedChildren<T> | null) => void;
-}
-
-export interface DCascaderMultipleProps<V extends DId, T extends DCascaderOption<V>> extends DCascaderBaseProps<V, T> {
-  dModel?: [V[], DUpdater<V[]>?];
-  dMultiple: true;
-  onModelChange?: (values: V[], options: DNestedChildren<T>[]) => void;
-}
-
-export interface DCascaderProps<V extends DId, T extends DCascaderOption<V>> extends DCascaderBaseProps<V, T> {
-  dModel?: [any, DUpdater<any>?];
+  dFormControl?: DFormControl;
+  dList: T[];
+  dModel?: V | null | V[];
+  dVisible?: boolean;
+  dPlaceholder?: string;
+  dSize?: DSize;
+  dLoading?: boolean;
+  dSearchable?: boolean;
+  dSearchValue?: string;
+  dClearable?: boolean;
+  dDisabled?: boolean;
   dMultiple?: boolean;
-  onModelChange?: (value: any, option: any) => void;
+  dOnlyLeafSelectable?: boolean;
+  dVirtual?: boolean;
+  dCustomItem?: (item: T) => React.ReactNode;
+  dCustomSelected?: (select: T) => string;
+  dCustomSearch?: {
+    filter?: (value: string, item: T) => boolean;
+    sort?: (a: T, b: T) => number;
+  };
+  dPopupClassName?: string;
+  dInputRender?: DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>;
+  onModelChange?: (value: any, item: any) => void;
+  onVisibleChange?: (visible: boolean) => void;
+  onSearchValueChange?: (value: string) => void;
+  onClear?: () => void;
+  onFirstFocus?: (value: T['value'], item: T) => void;
+  afterVisibleChange?: (visible: boolean) => void;
 }
 
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DCascader' });
-export function DCascader<V extends DId, T extends DCascaderOption<V>>(props: DCascaderSingleProps<V, T>): JSX.Element | null;
-export function DCascader<V extends DId, T extends DCascaderOption<V>>(props: DCascaderMultipleProps<V, T>): JSX.Element | null;
-export function DCascader<V extends DId, T extends DCascaderOption<V>>(props: DCascaderProps<V, T>): JSX.Element | null;
-export function DCascader<V extends DId, T extends DCascaderOption<V>>(props: DCascaderProps<V, T>): JSX.Element | null {
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DCascader' as const });
+function Cascader<V extends DId, T extends DCascaderItem<V>>(
+  props: DCascaderProps<V, T>,
+  ref: React.ForwardedRef<DCascaderRef>
+): JSX.Element | null {
   const {
+    dRef,
     dFormControl,
-    dOptions,
+    dList,
     dModel,
     dVisible,
-    dCustomOption,
-    dCustomSelected,
-    dClearable = false,
-    dOnlyLeafSelectable = true,
-    dCustomSearch,
-    dLoading = false,
-    dMultiple = false,
-    dDisabled = false,
+    dPlaceholder,
     dSize,
-    dAutoMaxWidth = true,
+    dLoading = false,
+    dSearchable = false,
+    dSearchValue,
+    dClearable = false,
+    dDisabled = false,
+    dMultiple = false,
+    dOnlyLeafSelectable = true,
+    dVirtual = false,
+    dCustomItem,
+    dCustomSelected,
+    dCustomSearch,
     dPopupClassName,
-    onVisibleChange,
-    onFocusChange,
+    dInputRender,
     onModelChange,
+    onVisibleChange,
+    onSearchValueChange,
     onClear,
-    onSearch,
+    onFirstFocus,
+    afterVisibleChange,
 
-    className,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const { gSize, gDisabled } = useGeneralState();
+  const { gSize, gDisabled } = useGeneralContext();
   //#endregion
 
   //#region Ref
+  const boxRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
+  const comboboxKeyDownRef = useRef<ComboboxKeyDownRef>(null);
   //#endregion
+
+  const dataRef = useRef<{
+    focusList: Set<V>;
+  }>({
+    focusList: new Set(),
+  });
+
+  const [t] = useTranslation();
 
   const uniqueId = useId();
   const listId = `${dPrefix}cascader-list-${uniqueId}`;
-  const getOptionId = (val: V) => `${dPrefix}cascader-option-${uniqueId}-${val}`;
+  const getItemId = (val: V) => `${dPrefix}cascader-item-${val}-${uniqueId}`;
 
-  const [searchValue, setSearchValue] = useState('');
+  const renderNodes = useMemo(
+    () =>
+      dList.map((item) =>
+        dMultiple
+          ? new MultipleTreeNode(item, (origin) => origin.value, {
+              disabled: item.disabled,
+            })
+          : new SingleTreeNode(item, (origin) => origin.value, {
+              disabled: item.disabled,
+            })
+      ),
+    [dMultiple, dList]
+  );
+  const nodesMap = useMemo(() => {
+    const nodes = new Map<V, AbstractTreeNode<V, T>>();
+    const reduceArr = (arr: AbstractTreeNode<V, T>[]) => {
+      for (const item of arr) {
+        nodes.set(item.id, item);
+        if (item.children) {
+          reduceArr(item.children);
+        }
+      }
+    };
+    reduceArr(renderNodes);
+    return nodes;
+  }, [renderNodes]);
 
-  const [visible, changeVisible] = useTwoWayBinding<boolean>(false, dVisible, onVisibleChange);
-  const [select, changeSelect] = useTwoWayBinding<V | null | V[]>(
+  const [searchValue, changeSearchValue] = useDValue<string>('', dSearchValue, onSearchValueChange);
+
+  const [visible, changeVisible] = useDValue<boolean>(false, dVisible, onVisibleChange);
+  const formControlInject = useFormControl(dFormControl);
+  const [_select, changeSelect] = useDValue<V | null | V[]>(
     dMultiple ? [] : null,
     dModel,
     (value) => {
       if (onModelChange) {
-        if (isArray(value)) {
-          let length = value.length;
-          const options: DNestedChildren<T>[] = [];
-          const reduceArr = (arr: DNestedChildren<T>[]) => {
-            for (const item of arr) {
-              if (length === 0) {
-                break;
-              }
-              if (item.children) {
-                reduceArr(item.children);
-              } else {
-                const index = value.findIndex((val) => val === item.value);
-                if (index !== -1) {
-                  options[index] = item;
-                  length -= 1;
-                }
-              }
-            }
-          };
-          reduceArr(dOptions);
-
-          onModelChange(value, options);
+        if (dMultiple) {
+          onModelChange(
+            value,
+            (value as V[]).map((v) => nodesMap.get(v)?.origin)
+          );
         } else {
-          if (isNull(value)) {
-            onModelChange(value, null);
-          } else {
-            onModelChange(
-              value,
-              findNested(dOptions, (option) => option.value === value)
-            );
-          }
+          onModelChange(value, isNull(value) ? null : nodesMap.get(value as V)?.origin);
         }
       }
     },
-    { formControl: dFormControl?.control }
+    undefined,
+    formControlInject
   );
+  const select = useMemo(() => (dMultiple ? new Set(_select as V[]) : (_select as V | null)), [_select, dMultiple]);
+  renderNodes.forEach((node) => {
+    node.updateStatus(select);
+  });
 
   const size = dSize ?? gSize;
-  const disabled = dDisabled || gDisabled || dFormControl?.disabled;
+  const disabled = (dDisabled || gDisabled || dFormControl?.control.disabled) ?? false;
 
   const hasSearch = searchValue.length > 0;
-  const hasSelected = dMultiple ? (select as V[]).length > 0 : !isNull(select);
+  const hasSelected = dMultiple ? (select as Set<V>).size > 0 : !isNull(select);
 
-  const checkedRef = useRef<SingleTreeNode<V, T>>();
-  const getRenderNodes = useCallback(
-    (select: V | null | V[]) => {
-      let renderNodes: SingleTreeNode<V, T>[] | MultipleTreeNode<V, T>[] = [];
-      if (dMultiple) {
-        renderNodes = dOptions.map(
-          (option) =>
-            new MultipleTreeNode(option, (o) => o.value, {
-              checkeds: select as V[],
-              disabled: option.disabled,
-            })
-        );
-      } else {
-        renderNodes = dOptions.map(
-          (option) =>
-            new SingleTreeNode(option, (o) => o.value, {
-              checkedRef,
-              checked: select as V | null,
-              disabled: option.disabled,
-            })
-        );
-      }
-      return renderNodes;
-    },
-    [dMultiple, dOptions]
-  );
-  const [renderNodes, changeSelectByCache] = useTreeData(select, getRenderNodes, changeSelect);
+  const [focusVisible, setFocusVisible] = useState(false);
 
   const filterFn = useCallback(
-    (option: T, searchStr = searchValue) => {
-      const defaultFilterFn = (option: T) => {
-        return option.label.includes(searchStr);
+    (item: T, searchStr = searchValue) => {
+      const defaultFilterFn = (item: T) => {
+        return item.label.includes(searchStr);
       };
-      return dCustomSearch && dCustomSearch.filter ? dCustomSearch.filter(searchStr, option) : defaultFilterFn(option);
+      return dCustomSearch && dCustomSearch.filter ? dCustomSearch.filter(searchStr, item) : defaultFilterFn(item);
     },
     [dCustomSearch, searchValue]
   );
   const sortFn = dCustomSearch?.sort;
-  const searchOptions = useMemo(() => {
-    const searchOptions: DSearchOption<V, T>[] = [];
-    if (hasSearch) {
-      const reduceNodes = (nodes: AbstractTreeNode<V, T>[]) => {
-        nodes.forEach((node) => {
-          if ((!dMultiple && !dOnlyLeafSelectable) || node.isLeaf) {
-            if (filterFn(node.origin)) {
-              searchOptions.push({
-                label: getText(node),
-                value: node.id,
-                disabled: node.disabled,
-                [TREE_NODE_KEY]: node,
-              });
-            }
-          }
-          if (node.children) {
-            reduceNodes(node.children);
-          }
-        });
-      };
-      reduceNodes(renderNodes);
-
-      if (sortFn) {
-        searchOptions.sort((a, b) => sortFn(a[TREE_NODE_KEY].origin, b[TREE_NODE_KEY].origin));
-      }
+  const searchList = useMemo(() => {
+    if (!hasSearch) {
+      return [];
     }
-    return searchOptions;
+
+    const searchList: DSearchItem<V, T>[] = [];
+    const reduceNodes = (nodes: AbstractTreeNode<V, T>[]) => {
+      nodes.forEach((node) => {
+        if ((!dMultiple && !dOnlyLeafSelectable) || node.isLeaf) {
+          if (filterFn(node.origin)) {
+            searchList.push({
+              label: getText(node),
+              value: node.id,
+              disabled: node.disabled,
+              [TREE_NODE_KEY]: node,
+            });
+          }
+        }
+        if (node.children) {
+          reduceNodes(node.children);
+        }
+      });
+    };
+    reduceNodes(renderNodes);
+
+    if (sortFn) {
+      searchList.sort((a, b) => sortFn(a[TREE_NODE_KEY].origin, b[TREE_NODE_KEY].origin));
+    }
+    return searchList;
   }, [dMultiple, dOnlyLeafSelectable, filterFn, hasSearch, renderNodes, sortFn]);
 
-  const [isFocusVisible, setIsFocusVisible] = useState(false);
+  const [_noSearchFocusItem, setNoSearchFocusItem] = useState<AbstractTreeNode<V, T> | undefined>();
+  const noSearchFocusItem = (() => {
+    if (_noSearchFocusItem) {
+      const node = nodesMap.get(_noSearchFocusItem.id);
+      if (node && node.enabled) {
+        return node;
+      }
+    }
 
-  const [noSearchFocusNode, setNoSearchFocusNode] = useState(() => {
-    if ((isArray(select) && select.length > 0) || !isNull(select)) {
-      return findNested(renderNodes as AbstractTreeNode<V, T>[], (node) => node.checked);
+    if (hasSelected) {
+      return findNested(renderNodes, (node) => node.enabled && node.checked);
     }
-  });
-  const [searchFocusOption, setSearchFocusOption] = useMemoWithUpdate(() => {
+  })();
+
+  const [_searchFocusItem, setSearchFocusItem] = useState<DSearchItem<V, T> | undefined>();
+  const searchFocusItem = (() => {
+    if (_searchFocusItem && findNested(searchList, (item) => item[TREE_NODE_KEY].enabled && item.value === _searchFocusItem.value)) {
+      return _searchFocusItem;
+    }
+
     if (hasSearch) {
-      return findNested(searchOptions, (node) => node[TREE_NODE_KEY].enabled);
+      return findNested(searchList, (item) => item[TREE_NODE_KEY].enabled);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchValue]);
+  })();
 
   const handleClear = () => {
     onClear?.();
@@ -255,190 +272,320 @@ export function DCascader<V extends DId, T extends DCascaderOption<V>>(props: DC
     }
   };
 
-  const handleClose = useEventCallback(() => {
-    changeVisible(false);
+  const [popupPositionStyle, setPopupPositionStyle] = useState<React.CSSProperties>({
+    top: '-200vh',
+    left: '-200vw',
   });
-  const [onKeyDown$] = useState(() => new Subject<React.KeyboardEvent<HTMLInputElement>>());
+  const [transformOrigin, setTransformOrigin] = useState<string>();
+  const updatePosition = useEventCallback(() => {
+    if (visible && boxRef.current && popupRef.current) {
+      const height = popupRef.current.offsetHeight;
+      const maxWidth = window.innerWidth - WINDOW_SPACE * 2;
+      const width = Math.min(popupRef.current.scrollWidth, maxWidth);
+      const { top, left, transformOrigin } = getVerticalSidePosition(
+        boxRef.current,
+        { width, height },
+        {
+          placement: 'bottom-left',
+          inWindow: WINDOW_SPACE,
+        }
+      );
+      setPopupPositionStyle({
+        top,
+        left,
+        maxWidth,
+      });
+      setTransformOrigin(transformOrigin);
+    }
+  });
 
-  const [selectedNode, suffixNode, selectedLabel] = useMemo(() => {
+  useImperativeHandle(
+    ref,
+    () => ({
+      updatePosition,
+    }),
+    [updatePosition]
+  );
+
+  const [selectedNode, suffixNode, selectedLabel] = (() => {
     let selectedNode: React.ReactNode = null;
     let suffixNode: React.ReactNode = null;
     let selectedLabel: string | undefined;
     if (dMultiple) {
-      const selectedNodes: MultipleTreeNode<V, T>[] = [];
-      let length = (select as V[]).length;
-      const reduceArr = (arr: MultipleTreeNode<V, T>[]) => {
-        for (const item of arr) {
-          if (length === 0) {
-            break;
-          }
-          if (item.children) {
-            reduceArr(item.children);
-          } else {
-            const index = (select as V[]).findIndex((val) => val === item.id);
-            if (index !== -1) {
-              selectedNodes[index] = item;
-              length -= 1;
-            }
-          }
-        }
-      };
-      reduceArr(renderNodes as MultipleTreeNode<V, T>[]);
+      const selectedNodes = (_select as V[]).map((v) => nodesMap.get(v) as MultipleTreeNode<V, T>);
 
       suffixNode = (
         <DDropdown
-          dOptions={selectedNodes.map<DDropdownOption<V> & { node: MultipleTreeNode<V, T> }>((node) => {
-            const { value: optionValue, disabled: optionDisabled } = node.origin;
+          dList={selectedNodes.map<DDropdownItem<V> & { node: MultipleTreeNode<V, T> }>((node) => {
+            const { value: itemValue, disabled: itemDisabled } = node.origin;
             const text = dCustomSelected ? dCustomSelected(node.origin) : getText(node);
 
             return {
-              id: optionValue,
+              id: itemValue,
               label: text,
               type: 'item',
-              disabled: optionDisabled,
+              disabled: itemDisabled,
               node,
             };
           })}
           dCloseOnClick={false}
-          onOptionClick={(id, option) => {
-            const checkeds = (option.node as MultipleTreeNode<V, T>).changeStatus('UNCHECKED', select as V[]);
-            changeSelectByCache(checkeds);
+          onItemClick={(id, item) => {
+            const checkeds = (item.node as MultipleTreeNode<V, T>).changeStatus('UNCHECKED', select as Set<V>);
+            changeSelect(Array.from(checkeds.keys()));
           }}
         >
-          <DTag className={`${dPrefix}cascader__multiple-count`} dSize={size}>
-            {(select as V[]).length}
+          <DTag className={`${dPrefix}cascader__multiple-count`} tabIndex={-1} dSize={size}>
+            {(select as Set<V>).size}
           </DTag>
         </DDropdown>
       );
       selectedNode = selectedNodes.map((node) => (
-        <DTag
-          key={node.id}
-          className={`${dPrefix}cascader__multiple-tag`}
-          dSize={size}
-          dClosable={!(node.disabled || disabled)}
-          onCloseClick={(e) => {
-            e.stopPropagation();
-
-            const checkeds = (node as MultipleTreeNode<V, T>).changeStatus('UNCHECKED', select as V[]);
-            changeSelectByCache(checkeds);
-          }}
-        >
+        <DTag key={node.id} className={`${dPrefix}cascader__multiple-tag`} dSize={size}>
           {dCustomSelected ? dCustomSelected(node.origin) : node.origin.label}
+          {!(node.disabled || disabled) && (
+            <div
+              className={`${dPrefix}cascader__close`}
+              role="button"
+              aria-label={t('Close')}
+              onClick={(e) => {
+                e.stopPropagation();
+
+                const checkeds = (node as MultipleTreeNode<V, T>).changeStatus('UNCHECKED', select as Set<V>);
+                changeSelect(Array.from(checkeds.keys()));
+              }}
+            >
+              <CloseOutlined />
+            </div>
+          )}
         </DTag>
       ));
     } else {
       if (!isNull(select)) {
-        const node = findNested(renderNodes as SingleTreeNode<V, T>[], (node) => node.id === (select as V));
-        if (node) {
-          selectedLabel = getText(node);
-          selectedNode = dCustomSelected ? dCustomSelected(node.origin) : selectedLabel;
-        }
+        const node = nodesMap.get(select as V)!;
+        selectedLabel = getText(node);
+        selectedNode = dCustomSelected ? dCustomSelected(node.origin) : selectedLabel;
       }
     }
     return [selectedNode, suffixNode, selectedLabel];
-  }, [changeSelectByCache, dCustomSelected, dMultiple, dPrefix, disabled, renderNodes, select, size]);
+  })();
 
   return (
     <DSelectbox
       {...restProps}
-      {...dFormControl?.dataAttrs}
-      className={getClassName(className, `${dPrefix}cascader`)}
-      dDisabled={disabled}
+      onClick={(e) => {
+        restProps.onClick?.(e);
+
+        changeVisible((draft) => (dSearchable ? true : !draft));
+      }}
+      dRef={{
+        box: boxRef,
+        input: dRef?.input,
+      }}
+      dClassNamePrefix="cascader"
+      dFormControl={dFormControl}
       dVisible={visible}
       dContent={hasSelected && selectedNode}
-      dSuffix={suffixNode}
-      dShowClear={dClearable && hasSelected}
       dContentTitle={selectedLabel}
-      dLoading={dLoading}
+      dPlaceholder={dPlaceholder}
+      dSuffix={suffixNode}
       dSize={size}
-      dInputProps={{
-        ...dFormControl?.inputAttrs,
-        id: dFormControl?.controlId,
-        'aria-controls': listId,
-        onChange: (e) => {
-          const value = e.currentTarget.value;
-          setSearchValue(value);
-
-          onSearch?.(value);
-        },
-        onKeyDown: (e) => {
-          if (visible) {
-            onKeyDown$.next(e);
-          }
-        },
+      dLoading={dLoading}
+      dSearchable={dSearchable}
+      dClearable={dClearable}
+      dDisabled={disabled}
+      dUpdatePosition={{
+        fn: updatePosition,
+        popupRef,
+        extraScrollRefs: [],
       }}
-      dCustomWidth
-      dAutoMaxWidth={dAutoMaxWidth}
-      onClear={handleClear}
-      onVisibleChange={changeVisible}
-      onFocusVisibleChange={setIsFocusVisible}
-    >
-      {({ sStyle, sOnMouseDown, sOnMouseUp, ...restSProps }) => (
-        <div
-          {...restSProps}
-          ref={popupRef}
-          className={getClassName(dPopupClassName, `${dPrefix}cascader__popup`)}
-          style={sStyle}
-          onMouseDown={(e) => {
-            sOnMouseDown(e);
-          }}
-          onMouseUp={(e) => {
-            sOnMouseUp(e);
+      dInputRender={(el) => (
+        <DComboboxKeyboard
+          dVisible={visible}
+          dEditable={dSearchable}
+          dHasSub={!hasSearch}
+          onVisibleChange={changeVisible}
+          onFocusChange={(key) => {
+            comboboxKeyDownRef.current?.(key);
           }}
         >
-          {dLoading && (
-            <div
-              className={getClassName(`${dPrefix}cascader__loading`, {
-                [`${dPrefix}cascader__loading--empty`]: dOptions.length === 0,
-              })}
-            >
-              <LoadingOutlined dSize={dOptions.length === 0 ? 18 : 24} dSpin />
-            </div>
-          )}
-          {hasSearch ? (
-            <DSearchList
-              dListId={listId}
-              dGetOptionId={getOptionId}
-              dOptions={searchOptions}
-              dSelected={select}
-              dFocusOption={searchFocusOption}
-              dCustomOption={dCustomOption}
-              dMultiple={dMultiple}
-              dOnlyLeafSelectable={dOnlyLeafSelectable}
-              dFocusVisible={isFocusVisible}
-              onSelectedChange={changeSelectByCache}
-              onClose={handleClose}
-              onFocusChange={(option) => {
-                onFocusChange?.(option.value, option[TREE_NODE_KEY].origin);
+          {({ render: renderComboboxKeyboard }) => {
+            const input = renderComboboxKeyboard(
+              cloneHTMLElement(el, {
+                value: searchValue,
+                'aria-controls': listId,
+                onBlur: (e) => {
+                  el.props.onBlur?.(e);
 
-                setSearchFocusOption(option);
-              }}
-              onKeyDown$={onKeyDown$}
-            ></DSearchList>
-          ) : (
-            <DList
-              dListId={listId}
-              dGetOptionId={getOptionId}
-              dNodes={renderNodes}
-              dSelected={select}
-              dFocusNode={noSearchFocusNode}
-              dCustomOption={dCustomOption}
-              dMultiple={dMultiple}
-              dOnlyLeafSelectable={dOnlyLeafSelectable}
-              dFocusVisible={isFocusVisible}
-              dRoot
-              onSelectedChange={changeSelectByCache}
-              onClose={handleClose}
-              onFocusChange={(node) => {
-                onFocusChange?.(node.id, node.origin);
+                  changeVisible(false);
+                },
+                onKeyDown: (e) => {
+                  el.props.onKeyDown?.(e);
 
-                setNoSearchFocusNode(node);
-              }}
-              onKeyDown$={onKeyDown$}
-            ></DList>
-          )}
-        </div>
+                  if ((e.code === 'Enter' || (!dSearchable && e.code === 'Space')) && visible) {
+                    comboboxKeyDownRef.current?.('click');
+                  }
+                },
+                onChange: (e) => {
+                  el.props.onChange?.(e);
+
+                  const val = e.currentTarget.value;
+                  if (dSearchable) {
+                    changeSearchValue(val);
+                  }
+                },
+              })
+            );
+
+            return isUndefined(dInputRender) ? input : dInputRender(input);
+          }}
+        </DComboboxKeyboard>
+      )}
+      onFocusVisibleChange={setFocusVisible}
+      onClear={handleClear}
+    >
+      {({ renderPopup }) => (
+        <DTransition
+          dIn={visible}
+          dDuring={TTANSITION_DURING_POPUP}
+          onEnter={updatePosition}
+          afterEnter={() => {
+            afterVisibleChange?.(true);
+          }}
+          afterLeave={() => {
+            afterVisibleChange?.(false);
+          }}
+        >
+          {(state) => {
+            let transitionStyle: React.CSSProperties = {};
+            switch (state) {
+              case 'enter':
+                transitionStyle = { transform: 'scaleY(0.7)', opacity: 0 };
+                break;
+
+              case 'entering':
+                transitionStyle = {
+                  transition: ['transform', 'opacity'].map((attr) => `${attr} ${TTANSITION_DURING_POPUP}ms ease-out`).join(', '),
+                  transformOrigin,
+                };
+                break;
+
+              case 'leaving':
+                transitionStyle = {
+                  transform: 'scaleY(0.7)',
+                  opacity: 0,
+                  transition: ['transform', 'opacity'].map((attr) => `${attr} ${TTANSITION_DURING_POPUP}ms ease-in`).join(', '),
+                  transformOrigin,
+                };
+                break;
+
+              case 'leaved':
+                transitionStyle = { display: 'none' };
+                break;
+
+              default:
+                break;
+            }
+
+            return renderPopup(
+              <div
+                ref={popupRef}
+                className={getClassName(dPopupClassName, `${dPrefix}cascader__popup`)}
+                style={{
+                  ...popupPositionStyle,
+                  ...transitionStyle,
+                }}
+              >
+                {dLoading && (
+                  <div
+                    className={getClassName(`${dPrefix}cascader__loading`, {
+                      [`${dPrefix}cascader__loading--empty`]: (hasSearch ? searchList : renderNodes).length === 0,
+                    })}
+                  >
+                    <LoadingOutlined dSize={(hasSearch ? searchList : renderNodes).length === 0 ? 18 : 24} dSpin />
+                  </div>
+                )}
+                {hasSearch ? (
+                  <DTreeSearchPanel
+                    ref={comboboxKeyDownRef}
+                    id={listId}
+                    style={{ pointerEvents: dLoading ? 'none' : undefined }}
+                    dGetItemId={getItemId}
+                    dList={searchList}
+                    dFocusItem={searchFocusItem}
+                    dCustomItem={dCustomItem}
+                    dMultiple={dMultiple}
+                    dOnlyLeafSelectable={dOnlyLeafSelectable}
+                    dFocusVisible={focusVisible}
+                    dVirtual={dVirtual}
+                    onFocusChange={(item) => {
+                      if (!dataRef.current.focusList.has(item.value)) {
+                        dataRef.current.focusList.add(item.value);
+                        onFirstFocus?.(item.value, item[TREE_NODE_KEY].origin);
+                      }
+
+                      setSearchFocusItem(item);
+                    }}
+                    onClickItem={(item) => {
+                      if (dMultiple) {
+                        const checkeds = (item[TREE_NODE_KEY] as MultipleTreeNode<V, T>).changeStatus(
+                          item[TREE_NODE_KEY].checked ? 'UNCHECKED' : 'CHECKED',
+                          select as Set<V>
+                        );
+                        changeSelect(Array.from(checkeds.keys()));
+                      } else {
+                        changeSelect(item[TREE_NODE_KEY].id);
+                        changeVisible(false);
+                      }
+                    }}
+                  ></DTreeSearchPanel>
+                ) : (
+                  <DList
+                    ref={comboboxKeyDownRef}
+                    id={listId}
+                    style={{ pointerEvents: dLoading ? 'none' : undefined }}
+                    dGetItemId={getItemId}
+                    dList={renderNodes}
+                    dFocusItem={noSearchFocusItem}
+                    dCustomItem={dCustomItem}
+                    dMultiple={dMultiple}
+                    dVirtual={dVirtual}
+                    dFocusVisible={focusVisible}
+                    dRoot
+                    onFocusChange={(node) => {
+                      if (!dataRef.current.focusList.has(node.id)) {
+                        dataRef.current.focusList.add(node.id);
+                        onFirstFocus?.(node.id, node.origin);
+                      }
+
+                      setNoSearchFocusItem(node);
+                    }}
+                    onClickItem={(node) => {
+                      if (dMultiple) {
+                        const checkeds = (node as MultipleTreeNode<V, T>).changeStatus(
+                          node.checked ? 'UNCHECKED' : 'CHECKED',
+                          select as Set<V>
+                        );
+                        changeSelect(Array.from(checkeds.keys()));
+                      } else {
+                        if (!dOnlyLeafSelectable || node.isLeaf) {
+                          changeSelect(node.id);
+                        }
+                        if (node.isLeaf) {
+                          changeVisible(false);
+                        }
+                      }
+                    }}
+                  ></DList>
+                )}
+              </div>
+            );
+          }}
+        </DTransition>
       )}
     </DSelectbox>
   );
 }
+
+export const DCascader: <V extends DId, T extends DCascaderItem<V>>(
+  props: DCascaderProps<V, T> & React.RefAttributes<DCascaderRef>
+) => ReturnType<typeof Cascader> = React.forwardRef(Cascader) as any;

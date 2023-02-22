@@ -1,9 +1,0 @@
-// @ts-nocheck
-
-import { lazy } from 'react';
-
-__import__
-
-export const ComponentRoutes = [
-__Route__
-];

@@ -1,29 +1,41 @@
-import type { DHeaderProps } from '../_header';
+import type { DButtonProps } from '../button';
 
-import { usePrefixConfig, useComponentConfig } from '../../hooks';
-import { registerComponentMate, getClassName } from '../../utils';
+import { registerComponentMate } from '../../utils';
 import { DHeader } from '../_header';
+import { useComponentConfig } from '../root';
 
-export type DDrawerHeaderProps = Omit<DHeaderProps, 'onClose'>;
+export interface DDrawerHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+  dActions?: React.ReactNode[];
+  dCloseProps?: DButtonProps;
+  onCloseClick?: () => void | boolean | Promise<boolean>;
+}
 
-export interface DDrawerHeaderPropsWithPrivate extends DDrawerHeaderProps {
+export interface DDrawerHeaderPrivateProps {
   __id?: string;
   __onClose?: () => void;
 }
 
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DDrawerHeader' });
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DDrawer.Header' as const });
 export function DDrawerHeader(props: DDrawerHeaderProps): JSX.Element | null {
   const {
+    dActions = ['close'],
+    dCloseProps,
+    onCloseClick,
     __id,
     __onClose,
 
-    className,
     ...restProps
-  } = useComponentConfig(COMPONENT_NAME, props as DDrawerHeaderPropsWithPrivate);
+  } = useComponentConfig(COMPONENT_NAME, props as DDrawerHeaderProps & DDrawerHeaderPrivateProps);
 
-  //#region Context
-  const dPrefix = usePrefixConfig();
-  //#endregion
-
-  return <DHeader {...restProps} id={__id} className={getClassName(className, `${dPrefix}drawer-header`)} onClose={__onClose}></DHeader>;
+  return (
+    <DHeader
+      {...restProps}
+      dClassNamePrefix="drawer"
+      dActions={dActions}
+      dCloseProps={dCloseProps}
+      dAriaLabelledby={__id}
+      onCloseClick={onCloseClick}
+      onClose={__onClose}
+    ></DHeader>
+  );
 }

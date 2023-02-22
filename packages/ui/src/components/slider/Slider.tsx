@@ -1,25 +1,27 @@
-import type { DUpdater } from '../../hooks/common/useTwoWayBinding';
+import type { DCloneHTMLElement } from '../../utils/types';
 import type { DFormControl } from '../form';
 import type { DTooltipRef } from '../tooltip';
 
-import { isArray, isNumber, toNumber } from 'lodash';
-import { useEffect, useState } from 'react';
-import { useRef } from 'react';
+import { isArray, isNull, isNumber, isUndefined, toNumber } from 'lodash';
+import { useEffect, useState, useRef } from 'react';
 
-import {
-  usePrefixConfig,
-  useComponentConfig,
-  useGeneralState,
-  useTwoWayBinding,
-  useAsync,
-  useThrottle,
-  useEventCallback,
-} from '../../hooks';
-import { registerComponentMate, getClassName, mergeAriaDescribedby } from '../../utils';
+import { useEvent, useRefExtra } from '@react-devui/hooks';
+import { getClassName } from '@react-devui/utils';
+
+import { useGeneralContext, useDValue } from '../../hooks';
+import { registerComponentMate } from '../../utils';
+import { DBaseInput } from '../_base-input';
+import { useFormControl } from '../form';
+import { useComponentConfig, usePrefixConfig } from '../root';
 import { DTooltip } from '../tooltip';
 
-export interface DSliderBaseProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface DSliderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+  dRef?: {
+    inputLeft?: React.ForwardedRef<HTMLInputElement>;
+    inputRight?: React.ForwardedRef<HTMLInputElement>;
+  };
   dFormControl?: DFormControl;
+  dModel?: number | [number, number];
   dMax?: number;
   dMin?: number;
   dStep?: number | null;
@@ -27,76 +29,45 @@ export interface DSliderBaseProps extends Omit<React.HTMLAttributes<HTMLDivEleme
   dMarks?: number | ({ value: number; label: React.ReactNode } | number)[];
   dVertical?: boolean;
   dReverse?: boolean;
-  dCustomTooltip?: (value: number) => React.ReactNode;
-}
-
-export interface DSliderSingleProps extends DSliderBaseProps {
-  dModel?: [number, DUpdater<number>?];
-  dRange?: false;
-  dInputProps?: React.InputHTMLAttributes<HTMLInputElement>;
-  dInputRef?: React.Ref<HTMLInputElement>;
-  dTooltipVisible?: boolean;
-  onModelChange?: (value: number) => void;
-}
-
-export interface DSliderRangeProps extends DSliderBaseProps {
-  dModel?: [[number, number], DUpdater<[number, number]>?];
-  dRange: true;
-  dRangeMinDistance?: number;
-  dRangeThumbDraggable?: boolean;
-  dInputProps?: [React.InputHTMLAttributes<HTMLInputElement>?, React.InputHTMLAttributes<HTMLInputElement>?];
-  dInputRef?: [React.Ref<HTMLInputElement>?, React.Ref<HTMLInputElement>?];
-  dTooltipVisible?: [boolean?, boolean?];
-  onModelChange?: (value: [number, number]) => void;
-}
-
-export interface DSliderProps extends DSliderBaseProps {
-  dFormControl?: DFormControl;
-  dModel?: [any, DUpdater<any>?];
-  dInputProps?: DSliderSingleProps['dInputProps'] | DSliderRangeProps['dInputProps'];
-  dInputRef?: DSliderSingleProps['dInputRef'] | DSliderRangeProps['dInputRef'];
-  dTooltipVisible?: DSliderSingleProps['dTooltipVisible'] | DSliderRangeProps['dTooltipVisible'];
   dRange?: boolean;
   dRangeMinDistance?: number;
   dRangeThumbDraggable?: boolean;
+  dTooltipVisible?: boolean | [boolean?, boolean?];
+  dCustomTooltip?: (value: number) => React.ReactNode;
+  dInputRender?: [
+    DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>?,
+    DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>?
+  ];
   onModelChange?: (value: any) => void;
 }
 
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DSlider' });
-export function DSlider(props: DSliderSingleProps): JSX.Element | null;
-export function DSlider(props: DSliderRangeProps): JSX.Element | null;
-export function DSlider(props: DSliderProps): JSX.Element | null;
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DSlider' as const });
 export function DSlider(props: DSliderProps): JSX.Element | null {
   const {
+    dRef,
+    dFormControl,
+    dModel,
     dMax = 100,
     dMin = 0,
     dStep = 1,
     dDisabled = false,
-    dFormControl,
-    dModel,
     dMarks,
-    dInputProps,
-    dInputRef,
-    dTooltipVisible,
+    dVertical = false,
+    dReverse = false,
     dRange = false,
     dRangeMinDistance,
     dRangeThumbDraggable = false,
-    dVertical = false,
-    dReverse = false,
+    dTooltipVisible,
     dCustomTooltip,
+    dInputRender,
     onModelChange,
 
-    className,
-    onMouseDown,
-    onMouseUp,
-    onTouchStart,
-    onTouchEnd,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const { gDisabled } = useGeneralState();
+  const { gDisabled } = useGeneralContext();
   //#endregion
 
   //#region Ref
@@ -105,28 +76,20 @@ export function DSlider(props: DSliderProps): JSX.Element | null {
   const dotRightRef = useRef<HTMLDivElement>(null);
   const tooltipLeftRef = useRef<DTooltipRef>(null);
   const tooltipRightRef = useRef<DTooltipRef>(null);
+  const windowRef = useRefExtra(() => window);
   //#endregion
-
-  const asyncCapture = useAsync();
-  const { throttleByAnimationFrame } = useThrottle();
 
   const [focusDot, setFocusDot] = useState<'left' | 'right' | null>(null);
   const [mouseenterDot, setMouseenterDot] = useState<'left' | 'right' | null>(null);
   const [draggableDot, setDraggableDot] = useState<'left' | 'right' | null>(null);
   const [thumbPoint, setThumbPoint] = useState<{ left: number; right: number; clientX: number; clientY: number } | null>(null);
 
-  const [inputPropsLeft, inputPropsRight] = (dRange ? dInputProps ?? [] : [dInputProps]) as [
-    React.InputHTMLAttributes<HTMLInputElement>?,
-    React.InputHTMLAttributes<HTMLInputElement>?
-  ];
-  const [inputRefLeft, inputRefRight] = (dRange ? dInputRef ?? [] : [dInputRef]) as [
-    React.Ref<HTMLInputElement>?,
-    React.Ref<HTMLInputElement>?
-  ];
-
-  const [_value, changeValue] = useTwoWayBinding<number | [number, number]>(dRange ? [0, 0] : 0, dModel, onModelChange, {
-    formControl: dFormControl?.control,
-    deepCompare: (a, b) => {
+  const formControlInject = useFormControl(dFormControl);
+  const [_value, changeValue] = useDValue<number | [number, number]>(
+    dRange ? [0, 0] : 0,
+    dModel,
+    onModelChange,
+    (a, b) => {
       if (isNumber(a) && isNumber(b)) {
         return a === b;
       } else if (isArray(a) && isArray(b)) {
@@ -134,10 +97,11 @@ export function DSlider(props: DSliderProps): JSX.Element | null {
       }
       return false;
     },
-  });
+    formControlInject
+  );
 
   const [valueLeft, valueRight = 0] = (dRange ? _value : [_value]) as [number, number?];
-  const disabled = dDisabled || gDisabled || dFormControl?.disabled;
+  const disabled = dDisabled || gDisabled || dFormControl?.control.disabled;
 
   const [visibleLeft, visibleRight] = [
     (dRange ? dTooltipVisible?.[0] : dTooltipVisible) ?? (mouseenterDot === 'left' ? true : !!(focusDot === 'left' || thumbPoint)),
@@ -176,7 +140,7 @@ export function DSlider(props: DSliderProps): JSX.Element | null {
     return newValue ?? dMin;
   };
 
-  const handleMove = useEventCallback((e: { clientX: number; clientY: number }, isLeft?: boolean) => {
+  const handleMove = (e: { clientX: number; clientY: number }, isLeft?: boolean) => {
     isLeft = isLeft ?? focusDot === 'left';
     if (sliderRef.current) {
       const rect = sliderRef.current.getBoundingClientRect();
@@ -207,9 +171,9 @@ export function DSlider(props: DSliderProps): JSX.Element | null {
         changeValue(newValue);
       }
     }
-  });
+  };
 
-  const handleThumbMove = useEventCallback((e: { clientX: number; clientY: number }) => {
+  const handleThumbMove = (e: { clientX: number; clientY: number }) => {
     if (dStep && thumbPoint && sliderRef.current) {
       const rect = sliderRef.current.getBoundingClientRect();
       const offset =
@@ -241,7 +205,7 @@ export function DSlider(props: DSliderProps): JSX.Element | null {
 
       changeValue(value);
     }
-  });
+  };
 
   const startDrag = (e: { clientX: number; clientY: number }) => {
     const handle = (isLeft = true) => {
@@ -282,27 +246,6 @@ export function DSlider(props: DSliderProps): JSX.Element | null {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, isLeft = true) => {
-    if (dRange) {
-      const index = isLeft ? 0 : 1;
-      const newValue = toNumber(e.currentTarget.value);
-      changeValue((draft) => {
-        const offset = newValue - draft[index];
-        const isAdd = offset > 0;
-        draft[index] = newValue;
-        if (isNumber(dRangeMinDistance) && draft[1] - draft[0] < dRangeMinDistance) {
-          const _index = isLeft ? 1 : 0;
-          draft[_index] = getValue(draft[_index] + offset, isAdd ? 'ceil' : 'floor');
-          if (draft[1] - draft[0] < dRangeMinDistance) {
-            draft[index] = getValue(draft[_index] + (isAdd ? -dRangeMinDistance : dRangeMinDistance), isAdd ? 'floor' : 'ceil');
-          }
-        }
-      });
-    } else {
-      changeValue(toNumber(e.currentTarget.value));
-    }
-  };
-
   useEffect(() => {
     if (thumbPoint) {
       tooltipLeftRef.current?.updatePosition();
@@ -316,97 +259,54 @@ export function DSlider(props: DSliderProps): JSX.Element | null {
     }
   }, [focusDot, _value, thumbPoint]);
 
-  useEffect(() => {
-    if (draggableDot !== null) {
-      const [asyncGroup, asyncId] = asyncCapture.createGroup();
+  const listenDragEvent = !isNull(draggableDot) || !isNull(thumbPoint);
 
-      let clientX: number;
-      let clientY: number;
+  useEvent<TouchEvent>(
+    windowRef,
+    'touchmove',
+    (e) => {
+      if (!isNull(draggableDot)) {
+        e.preventDefault();
 
-      asyncGroup.fromEvent<MouseEvent>(window, 'mouseup', { capture: true }).subscribe({
-        next: (e) => {
-          e.preventDefault();
+        handleMove({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY });
+      }
+      if (!isNull(thumbPoint)) {
+        e.preventDefault();
 
-          setDraggableDot(null);
-        },
-      });
+        handleThumbMove({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY });
+      }
+    },
+    { passive: false },
+    !listenDragEvent
+  );
+  useEvent<MouseEvent>(
+    windowRef,
+    'mousemove',
+    (e) => {
+      if (!isNull(draggableDot)) {
+        e.preventDefault();
 
-      asyncGroup.fromEvent<TouchEvent>(window, 'touchmove', { capture: true, passive: false }).subscribe({
-        next: (e) => {
-          e.preventDefault();
+        handleMove({ clientX: e.clientX, clientY: e.clientY });
+      }
+      if (!isNull(thumbPoint)) {
+        e.preventDefault();
 
-          clientY = e.touches[0].clientY;
-          clientX = e.touches[0].clientX;
-
-          throttleByAnimationFrame.run(() => {
-            handleMove({ clientX, clientY });
-          });
-        },
-      });
-
-      asyncGroup.fromEvent<MouseEvent>(window, 'mousemove', { capture: true }).subscribe({
-        next: (e) => {
-          e.preventDefault();
-          clientX = e.clientX;
-          clientY = e.clientY;
-
-          throttleByAnimationFrame.run(() => {
-            handleMove({ clientX, clientY });
-          });
-        },
-      });
-
-      return () => {
-        asyncCapture.deleteGroup(asyncId);
-      };
-    }
-  }, [asyncCapture, draggableDot, handleMove, throttleByAnimationFrame]);
-
-  useEffect(() => {
-    if (thumbPoint) {
-      const [asyncGroup, asyncId] = asyncCapture.createGroup();
-
-      let clientX: number;
-      let clientY: number;
-
-      asyncGroup.fromEvent<MouseEvent>(window, 'mouseup', { capture: true }).subscribe({
-        next: (e) => {
-          e.preventDefault();
-
-          setThumbPoint(null);
-        },
-      });
-
-      asyncGroup.fromEvent<TouchEvent>(window, 'touchmove', { capture: true, passive: false }).subscribe({
-        next: (e) => {
-          e.preventDefault();
-
-          clientY = e.touches[0].clientY;
-          clientX = e.touches[0].clientX;
-
-          throttleByAnimationFrame.run(() => {
-            handleThumbMove({ clientX, clientY });
-          });
-        },
-      });
-
-      asyncGroup.fromEvent<MouseEvent>(window, 'mousemove', { capture: true }).subscribe({
-        next: (e) => {
-          e.preventDefault();
-          clientX = e.clientX;
-          clientY = e.clientY;
-
-          throttleByAnimationFrame.run(() => {
-            handleThumbMove({ clientX, clientY });
-          });
-        },
-      });
-
-      return () => {
-        asyncCapture.deleteGroup(asyncId);
-      };
-    }
-  }, [asyncCapture, handleThumbMove, throttleByAnimationFrame, thumbPoint]);
+        handleThumbMove({ clientX: e.clientX, clientY: e.clientY });
+      }
+    },
+    {},
+    !listenDragEvent
+  );
+  useEvent(
+    windowRef,
+    'mouseup',
+    () => {
+      setDraggableDot(null);
+      setThumbPoint(null);
+    },
+    {},
+    !listenDragEvent
+  );
 
   const marks = (() => {
     const marks: React.ReactNode[] = [];
@@ -456,16 +356,92 @@ export function DSlider(props: DSliderProps): JSX.Element | null {
     return marks;
   })();
 
+  const getDotNode = (isLeft: boolean) => {
+    const value = isLeft ? valueLeft : valueRight;
+
+    return (
+      <DTooltip
+        ref={isLeft ? tooltipLeftRef : tooltipRightRef}
+        dVisible={isLeft ? visibleLeft : visibleRight}
+        dTitle={dCustomTooltip ? dCustomTooltip(value) : value}
+        dPlacement={dVertical ? 'right' : 'top'}
+        onVisibleChange={(visible) => {
+          setMouseenterDot(visible ? (isLeft ? 'left' : 'right') : null);
+        }}
+      >
+        <div
+          ref={isLeft ? dotLeftRef : dotRightRef}
+          className={getClassName(`${dPrefix}slider__input-wrapper`, {
+            'is-focus': focusDot === (isLeft ? 'left' : 'right'),
+          })}
+          style={{
+            left: dVertical ? undefined : `calc(${value} / ${dMax - dMin} * 100% - 7px)`,
+            bottom: dVertical ? `calc(${value} / ${dMax - dMin} * 100% - 7px)` : undefined,
+          }}
+        >
+          <DBaseInput dFormControl={dFormControl} dLabelFor={isLeft}>
+            {({ render: renderBaseInput }) => {
+              const inputRender = (dInputRender ?? [])[isLeft ? 0 : 1];
+              const input = renderBaseInput(
+                <input
+                  ref={isLeft ? dRef?.inputLeft : dRef?.inputRight}
+                  className={`${dPrefix}slider__input`}
+                  type="range"
+                  value={value}
+                  disabled={disabled}
+                  max={dMax}
+                  min={dMin}
+                  step={dStep ?? undefined}
+                  aria-orientation={dVertical ? 'vertical' : 'horizontal'}
+                  onChange={(e) => {
+                    const val = toNumber(e.currentTarget.value);
+                    if (dRange) {
+                      const index = isLeft ? 0 : 1;
+                      changeValue((draft) => {
+                        const offset = val - draft[index];
+                        const isAdd = offset > 0;
+                        draft[index] = val;
+                        if (isNumber(dRangeMinDistance) && draft[1] - draft[0] < dRangeMinDistance) {
+                          const _index = isLeft ? 1 : 0;
+                          draft[_index] = getValue(draft[_index] + offset, isAdd ? 'ceil' : 'floor');
+                          if (draft[1] - draft[0] < dRangeMinDistance) {
+                            draft[index] = getValue(
+                              draft[_index] + (isAdd ? -dRangeMinDistance : dRangeMinDistance),
+                              isAdd ? 'floor' : 'ceil'
+                            );
+                          }
+                        }
+                      });
+                    } else {
+                      changeValue(val);
+                    }
+                  }}
+                  onFocus={() => {
+                    setFocusDot(isLeft ? 'left' : 'right');
+                  }}
+                  onBlur={() => {
+                    setFocusDot(null);
+                  }}
+                />
+              );
+
+              return isUndefined(inputRender) ? input : inputRender(input);
+            }}
+          </DBaseInput>
+        </div>
+      </DTooltip>
+    );
+  };
+
   return (
     <div
       {...restProps}
-      {...dFormControl?.dataAttrs}
       ref={sliderRef}
-      className={getClassName(className, `${dPrefix}slider`, `${dPrefix}slider--${dVertical ? 'vertical' : 'horizontal'}`, {
+      className={getClassName(restProps.className, `${dPrefix}slider`, `${dPrefix}slider--${dVertical ? 'vertical' : 'horizontal'}`, {
         'is-disabled': disabled,
       })}
       onMouseDown={(e) => {
-        onMouseDown?.(e);
+        restProps.onMouseDown?.(e);
 
         preventBlur(e);
         if (e.button === 0) {
@@ -473,17 +449,17 @@ export function DSlider(props: DSliderProps): JSX.Element | null {
         }
       }}
       onMouseUp={(e) => {
-        onMouseUp?.(e);
+        restProps.onMouseUp?.(e);
 
         preventBlur(e);
       }}
       onTouchStart={(e) => {
-        onTouchStart?.(e);
+        restProps.onTouchStart?.(e);
 
         startDrag({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY });
       }}
       onTouchEnd={(e) => {
-        onTouchEnd?.(e);
+        restProps.onTouchEnd?.(e);
 
         setDraggableDot(null);
         setThumbPoint(null);
@@ -511,107 +487,8 @@ export function DSlider(props: DSliderProps): JSX.Element | null {
                 }
           }
         ></div>
-        <DTooltip
-          ref={tooltipLeftRef}
-          dVisible={[visibleLeft]}
-          dTitle={dCustomTooltip ? dCustomTooltip(valueLeft) : valueLeft}
-          dPlacement={dVertical ? 'right' : 'top'}
-          onVisibleChange={(visible) => {
-            setMouseenterDot(visible ? 'left' : null);
-          }}
-        >
-          <div
-            ref={dotLeftRef}
-            className={getClassName(`${dPrefix}slider__input-wrapper`, {
-              'is-focus': focusDot === 'left',
-            })}
-            style={{
-              left: dVertical ? undefined : `calc(${valueLeft} / ${dMax - dMin} * 100% - 7px)`,
-              bottom: dVertical ? `calc(${valueLeft} / ${dMax - dMin} * 100% - 7px)` : undefined,
-            }}
-          >
-            <input
-              {...inputPropsLeft}
-              {...dFormControl?.inputAttrs}
-              id={inputPropsLeft?.id ?? dFormControl?.controlId}
-              ref={inputRefLeft}
-              className={getClassName(inputPropsLeft?.className, `${dPrefix}slider__input`)}
-              type="range"
-              value={valueLeft}
-              disabled={disabled}
-              max={dMax}
-              min={dMin}
-              step={dStep ?? undefined}
-              aria-orientation={dVertical ? 'vertical' : 'horizontal'}
-              aria-describedby={mergeAriaDescribedby(inputPropsLeft?.['aria-describedby'], dFormControl?.inputAttrs?.['aria-describedby'])}
-              onChange={handleChange}
-              onFocus={(e) => {
-                inputPropsLeft?.onFocus?.(e);
-
-                setFocusDot('left');
-              }}
-              onBlur={(e) => {
-                inputPropsLeft?.onBlur?.(e);
-
-                setFocusDot(null);
-              }}
-            ></input>
-          </div>
-        </DTooltip>
-        {dRange && (
-          <DTooltip
-            ref={tooltipRightRef}
-            dVisible={[visibleRight]}
-            dTitle={dCustomTooltip ? dCustomTooltip(valueRight) : valueRight}
-            dPlacement={dVertical ? 'right' : 'top'}
-            onVisibleChange={(visible) => {
-              setMouseenterDot(visible ? 'right' : null);
-            }}
-          >
-            <div
-              ref={dotRightRef}
-              className={getClassName(`${dPrefix}slider__input-wrapper`, {
-                'is-focus': focusDot === 'right',
-              })}
-              style={{
-                left: dVertical ? undefined : `calc(${valueRight} / ${dMax - dMin} * 100% - 7px)`,
-                bottom: dVertical ? `calc(${valueRight} / ${dMax - dMin} * 100% - 7px)` : undefined,
-              }}
-            >
-              <input
-                {...inputPropsRight}
-                {...dFormControl?.inputAttrs}
-                id={inputPropsRight?.id ?? dFormControl?.controlId}
-                ref={inputRefRight}
-                className={getClassName(inputPropsRight?.className, `${dPrefix}slider__input`)}
-                type="range"
-                value={valueRight}
-                disabled={disabled}
-                max={dMax}
-                min={dMin}
-                step={dStep ?? undefined}
-                aria-orientation={dVertical ? 'vertical' : 'horizontal'}
-                aria-describedby={mergeAriaDescribedby(
-                  inputPropsRight?.['aria-describedby'],
-                  dFormControl?.inputAttrs?.['aria-describedby']
-                )}
-                onChange={(e) => {
-                  handleChange(e, false);
-                }}
-                onFocus={(e) => {
-                  inputPropsRight?.onFocus?.(e);
-
-                  setFocusDot('right');
-                }}
-                onBlur={(e) => {
-                  inputPropsRight?.onBlur?.(e);
-
-                  setFocusDot(null);
-                }}
-              ></input>
-            </div>
-          </DTooltip>
-        )}
+        {getDotNode(true)}
+        {dRange && getDotNode(false)}
       </div>
       {marks}
     </div>

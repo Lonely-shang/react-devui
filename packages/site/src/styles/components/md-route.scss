@@ -1,0 +1,42 @@
+@include b(md-route) {
+  code.hljs {
+    background-color: var(--#{$rd-prefix}background-color) !important;
+    border: 1px solid var(--#{$rd-prefix}color-divider);
+  }
+
+  @include e(content) {
+    padding: 0 20px 32px;
+
+    @include media-breakpoint-up(md) {
+      padding: 0 200px 32px 64px;
+    }
+  }
+
+  @include e(anchor) {
+    position: fixed;
+    top: 120px;
+    right: 20px;
+    z-index: 910;
+    width: 168px;
+  }
+
+  @include e(anchor-toggler) {
+    @include utils-button;
+
+    position: fixed;
+    right: 20px;
+    bottom: 44px;
+    z-index: 910;
+    flex-direction: column;
+    gap: 2px 0;
+    width: 60px;
+    height: 60px;
+    padding: 0;
+    margin: 0;
+    color: var(--#{$rd-prefix}color-primary-lighter);
+    background-color: var(--app-anchor-toggler-color);
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 2px 20px 2px var(--#{$rd-prefix}shadow-color);
+  }
+}

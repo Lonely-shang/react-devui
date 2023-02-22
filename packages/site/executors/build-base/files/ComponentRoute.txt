@@ -1,0 +1,23 @@
+// @ts-nocheck
+
+import { AppComponentRoute } from 'packages/site/src/app/components';
+import { AppDemoBox } from 'packages/site/src/app/components/route/component/DemoBox';
+import React from 'react';
+
+__import__
+
+function __Route__() {
+  const tsxSources= {__tsxSources__
+  };
+  const scssSources= {__scssSources__
+  };
+
+  const props = {
+    'en-US': __en-US__,
+    'zh-CN': __zh-CN__,
+  };
+
+  return <AppComponentRoute {...props} />;
+}
+
+export default React.memo(__Route__);

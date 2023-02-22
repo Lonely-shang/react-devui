@@ -1,0 +1,34 @@
+@use 'sass:map';
+
+@include b(avatar) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: top;
+
+  @include m(circular) {
+    border-radius: 50%;
+  }
+
+  @include m(square) {
+    border-radius: var(--#{$rd-prefix}border-radius);
+  }
+
+  @include m(icon) {
+    color: map.get($rd-colors, 'white');
+    background-color: var(--#{$rd-prefix}avatar-background-color);
+  }
+
+  @include m(text) {
+    color: map.get($rd-colors, 'white');
+    background-color: var(--#{$rd-prefix}avatar-background-color);
+  }
+
+  @include e(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}

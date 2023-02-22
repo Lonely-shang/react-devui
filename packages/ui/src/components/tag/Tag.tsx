@@ -1,19 +1,19 @@
-import type { DSize } from '../../types';
+import type { DSize } from '../../utils/types';
 
-import { usePrefixConfig, useComponentConfig, useTranslation, useGeneralState, useThemeConfig } from '../../hooks';
-import { CloseOutlined } from '../../icons';
-import { convertHex, registerComponentMate, getClassName, pSBC } from '../../utils';
+import { getClassName } from '@react-devui/utils';
+
+import { useGeneralContext } from '../../hooks';
+import { convertHex, registerComponentMate } from '../../utils';
+import { useComponentConfig, usePrefixConfig } from '../root';
 
 export interface DTagProps extends React.HTMLAttributes<HTMLDivElement> {
   dType?: 'primary' | 'fill' | 'outline';
   dTheme?: 'primary' | 'success' | 'warning' | 'danger';
   dColor?: string;
   dSize?: DSize;
-  dClosable?: boolean;
-  onCloseClick?: React.MouseEventHandler<HTMLSpanElement>;
 }
 
-const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DTag' });
+const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DTag' as const });
 export function DTag(props: DTagProps): JSX.Element | null {
   const {
     children,
@@ -21,48 +21,35 @@ export function DTag(props: DTagProps): JSX.Element | null {
     dTheme,
     dColor,
     dSize,
-    dClosable = false,
-    onCloseClick,
 
-    className,
-    style,
     ...restProps
   } = useComponentConfig(COMPONENT_NAME, props);
 
   //#region Context
   const dPrefix = usePrefixConfig();
-  const theme = useThemeConfig();
-  const { gDisabled } = useGeneralState();
+  const { gSize } = useGeneralContext();
   //#endregion
 
-  const size = dSize ?? gDisabled;
-
-  const [t] = useTranslation('Common');
+  const size = dSize ?? gSize;
 
   return (
     <div
       {...restProps}
-      className={getClassName(className, `${dPrefix}tag`, `${dPrefix}tag--${dType}`, {
+      className={getClassName(restProps.className, `${dPrefix}tag`, `${dPrefix}tag--${dType}`, {
         [`${dPrefix}tag--${size}`]: size,
         [`t-${dTheme}`]: dTheme,
       })}
       style={{
-        ...style,
+        ...restProps.style,
         ...(dColor
           ? {
               [`--${dPrefix}tag-color`]: dColor,
-              [`--${dPrefix}tag-border-color`]: pSBC(0.3, dColor),
-              [`--${dPrefix}tag-background-color`]: convertHex(dColor, theme === 'light' ? 0.1 : 0.16),
+              [`--${dPrefix}tag-background-color`]: convertHex(dColor, 0.1),
             }
           : {}),
       }}
     >
       {children}
-      {dClosable && (
-        <button className={getClassName(`${dPrefix}icon-button`, `${dPrefix}tag__close`)} aria-label={t('Close')} onClick={onCloseClick}>
-          <CloseOutlined />
-        </button>
-      )}
     </div>
   );
 }

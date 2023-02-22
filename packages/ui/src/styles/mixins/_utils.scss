@@ -1,44 +1,28 @@
+@mixin utils-button($outline: false) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  white-space: nowrap;
+  vertical-align: top;
+  cursor: pointer;
+  appearance: none;
+
+  @if $outline == false {
+    outline: none;
+  }
+}
+
+@mixin utils-input {
+  font: inherit;
+  letter-spacing: inherit;
+  outline: none;
+  appearance: none;
+  caret-color: var(--#{$rd-prefix}color-primary);
+}
+
 @mixin utils-ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-@mixin utils-disabled($background: false, $disabled: '.is-disabled') {
-  &#{$disabled} {
-    color: var(--#{$variable-prefix}color-disabled);
-    pointer-events: none;
-
-    @if $background {
-      background-color: var(--#{$variable-prefix}background-color-disabled);
-    }
-  }
-}
-
-@mixin utils-loading($border: '0') {
-  pointer-events: none;
-
-  &::after {
-    position: absolute;
-    top: -#{$border};
-    right: -#{$border};
-    bottom: -#{$border};
-    left: -#{$border};
-    content: '';
-    /* stylelint-disable-next-line declaration-property-value-allowed-list */
-    background-color: rgb(255 255 255 / 30%);
-    border-radius: inherit;
-  }
-}
-
-@mixin utils-break-word {
-  $selector: &;
-
-  overflow-wrap: break-word;
-
-  @at-root {
-    body.CJK #{$selector} {
-      word-break: break-all;
-    }
-  }
 }

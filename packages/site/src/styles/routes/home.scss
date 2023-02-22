@@ -1,0 +1,53 @@
+@include b(home-route) {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: calc(100% - 64px);
+  overflow: auto;
+
+  @include e(page) {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    padding: 20px 20px 40px;
+  }
+
+  @include e(bg) {
+    flex-shrink: 0;
+    max-width: 100%;
+    height: 240px;
+    margin: 60px auto 0;
+  }
+
+  @include e(title) {
+    margin: 40px 0 0;
+    text-align: center;
+
+    @include font-size(2.25rem);
+  }
+
+  @include e(description) {
+    margin: 20px 0 0;
+    color: rgb(var(--#{$rd-prefix}text-color-rgb) / 80%);
+    text-align: center;
+
+    @include font-size(1.5rem);
+  }
+
+  @include e(button-link) {
+    margin: 20px auto 0;
+    font: inherit;
+    color: inherit;
+    text-decoration: none;
+
+    .#{$rd-prefix}button {
+      --#{$rd-prefix}size: 52px;
+      --#{$rd-prefix}padding-size: 24px;
+
+      @include font-size(1.25rem);
+    }
+  }
+}

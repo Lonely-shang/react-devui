@@ -1,61 +1,57 @@
+@import 'mixins/size';
+
 @include b(textarea) {
-  --#{$variable-prefix}textarea-line-height: 24px;
+  @include utils-input;
 
   display: block;
   width: 100%;
-  min-height: calc(var(--#{$variable-prefix}textarea-line-height) + 8px);
-  padding: 3px calc(var(--#{$variable-prefix}horizontal-space-size) - 1px);
+  padding: 3px calc(var(--#{$rd-prefix}horizontal-space-size) - 1px);
   margin: 0;
-  font: inherit;
-  font-size: var(--#{$variable-prefix}font-size);
-  line-height: var(--#{$variable-prefix}textarea-line-height);
-  color: var(--#{$variable-prefix}text-color);
-  letter-spacing: inherit;
+  color: var(--#{$rd-prefix}text-color);
   resize: vertical;
-  background-color: var(--#{$variable-prefix}background-color-input);
-  border: 1px solid var(--#{$variable-prefix}color-border);
-  border-radius: var(--#{$variable-prefix}border-radius);
-  outline: none;
-  transition: border-color var(--#{$variable-prefix}animation-duration-base) linear;
-  appearance: none;
-  caret-color: var(--#{$variable-prefix}color-primary);
+  background-color: var(--#{$rd-prefix}background-color-input);
+  border: 1px solid var(--#{$rd-prefix}color-border);
+  border-radius: var(--#{$rd-prefix}border-radius);
+  transition: border-color var(--#{$rd-prefix}animation-duration-base) linear;
 
-  @include utils-disabled(true, ':disabled');
-  @include form-validate;
+  &[data-form-invalid-warning='true'] {
+    border-color: var(--#{$rd-prefix}color-warning) !important;
+    caret-color: var(--#{$rd-prefix}color-warning) !important;
+  }
+
+  &[data-form-invalid-error='true'] {
+    border-color: var(--#{$rd-prefix}color-danger) !important;
+    caret-color: var(--#{$rd-prefix}color-danger) !important;
+  }
 
   &:hover {
-    border-color: var(--#{$variable-prefix}color-primary-lighter);
+    border-color: var(--#{$rd-prefix}color-primary-lighter);
   }
 
   &:focus {
-    border-color: var(--#{$variable-prefix}color-primary);
+    border-color: var(--#{$rd-prefix}color-primary);
   }
 
   &::placeholder {
-    color: rgb(var(--#{$variable-prefix}text-color-rgb) / 40%);
-    transform: translateX(1px);
+    color: $rd-placeholder-color;
   }
 
-  &:disabled::placeholder {
-    color: rgb(var(--#{$variable-prefix}text-color-rgb) / 10%);
+  &:disabled {
+    color: var(--#{$rd-prefix}color-disabled);
+    pointer-events: none;
+    background-color: var(--#{$rd-prefix}background-color-disabled);
+
+    &::placeholder {
+      color: $rd-placeholder-disabled-color;
+    }
   }
 
-  @include m(smaller) {
-    --#{$variable-prefix}textarea-line-height: 20px;
-    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-smaller);
-    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-smaller);
-  }
-
-  @include m(larger) {
-    --#{$variable-prefix}textarea-line-height: 28px;
-    --#{$variable-prefix}font-size: var(--#{$variable-prefix}font-size-larger);
-    --#{$variable-prefix}horizontal-space-size: var(--#{$variable-prefix}horizontal-space-size-larger);
-  }
+  @include component-size;
 
   @include e(count) {
     font-variant-numeric: tabular-nums;
     line-height: 28px;
-    color: var(--#{$variable-prefix}text-color-sub);
+    color: var(--#{$rd-prefix}text-color-sub);
     text-align: right;
   }
 }
