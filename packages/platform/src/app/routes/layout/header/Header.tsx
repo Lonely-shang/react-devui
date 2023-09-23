@@ -1,4 +1,4 @@
-import type { AppTheme } from '../../../App';
+import type { AppTheme } from '../../../utils/types';
 
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,9 +11,10 @@ import { getClassName } from '@react-devui/utils';
 import { AppLanguage } from '../../../components';
 import { APP_NAME } from '../../../config/other';
 import { STORAGE_KEY } from '../../../config/storage';
-import styles from './Header.module.scss';
 import { AppNotification } from './notification/Notification';
 import { AppUser } from './user/User';
+
+import styles from './Header.module.scss';
 
 export interface AppHeaderProps {
   sidebarWidth: number;
@@ -95,7 +96,7 @@ export function AppHeader(props: AppHeaderProps): JSX.Element | null {
       </button>
       <AppNotification className={styles['app-header__button']} />
       <AppUser className={styles['app-header__button']} style={{ gap: '0 8px' }} />
-      <AppLanguage className={styles['app-header__button']} />
+      <AppLanguage className={styles['app-header__button']} aTrigger="click" />
     </header>
   );
 }

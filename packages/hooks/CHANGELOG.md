@@ -2,6 +2,118 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.6.2](https://github.com/DevCloudFE/react-devui/compare/v18.6.1...v18.6.2) (2023-07-10)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.6.1](https://github.com/DevCloudFE/react-devui/compare/v18.6.0...v18.6.1) (2023-07-07)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+# [18.6.0](https://github.com/DevCloudFE/react-devui/compare/v18.5.13...v18.6.0) (2023-07-07)
+
+### Bug Fixes
+
+- calculate page size ([f2fa480](https://github.com/DevCloudFE/react-devui/commit/f2fa48096f122b13eaf2fa0b0ea97dd39e7658c6))
+
+## [18.5.13](https://github.com/DevCloudFE/react-devui/compare/v18.5.12...v18.5.13) (2023-07-05)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.5.12](https://github.com/DevCloudFE/react-devui/compare/v18.5.11...v18.5.12) (2023-07-05)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.5.11](https://github.com/DevCloudFE/react-devui/compare/v18.5.10...v18.5.11) (2023-06-21)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.5.10](https://github.com/DevCloudFE/react-devui/compare/v18.5.9...v18.5.10) (2023-06-15)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.5.9](https://github.com/DevCloudFE/react-devui/compare/v18.5.8...v18.5.9) (2023-06-09)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.5.8](https://github.com/DevCloudFE/react-devui/compare/v18.5.7...v18.5.8) (2023-05-30)
+
+### Features
+
+- **hooks:** add `useACL` ([4f4f31b](https://github.com/DevCloudFE/react-devui/commit/4f4f31b6bb264e28e49c250a79a342c7432bd872))
+
+## [18.5.7](https://github.com/DevCloudFE/react-devui/compare/v18.5.6...v18.5.7) (2023-05-25)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.5.6](https://github.com/DevCloudFE/react-devui/compare/v18.5.5...v18.5.6) (2023-05-17)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.5.5](https://github.com/DevCloudFE/react-devui/compare/v18.5.4...v18.5.5) (2023-05-08)
+
+### Bug Fixes
+
+- **hooks:** add golbal update to effect hook ([457dbe4](https://github.com/DevCloudFE/react-devui/commit/457dbe4abfd01a3be03095da57604e055bd76428))
+
+## [18.5.4](https://github.com/DevCloudFE/react-devui/compare/v18.5.3...v18.5.4) (2023-05-04)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.5.3](https://github.com/DevCloudFE/react-devui/compare/v18.5.2...v18.5.3) (2023-03-17)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.5.2](https://github.com/DevCloudFE/react-devui/compare/v18.5.1...v18.5.2) (2023-03-17)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.5.1](https://github.com/DevCloudFE/react-devui/compare/v18.5.0...v18.5.1) (2023-03-17)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+# [18.5.0](https://github.com/DevCloudFE/react-devui/compare/v18.4.1...v18.5.0) (2023-03-16)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.4.1](https://github.com/DevCloudFE/react-devui/compare/v18.4.0...v18.4.1) (2023-03-15)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+# [18.4.0](https://github.com/DevCloudFE/react-devui/compare/v18.3.7...v18.4.0) (2023-03-14)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.3.7](https://github.com/DevCloudFE/react-devui/compare/v18.3.6...v18.3.7) (2023-03-10)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.3.6](https://github.com/DevCloudFE/react-devui/compare/v18.3.5...v18.3.6) (2023-03-09)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.3.5](https://github.com/DevCloudFE/react-devui/compare/v18.3.4...v18.3.5) (2023-03-09)
+
+### Bug Fixes
+
+- **ui:** fix `ResizeObserver` miss borderBoxSize with some browsers ([13df709](https://github.com/DevCloudFE/react-devui/commit/13df7098a483bfe874799f835a747716c5459210))
+
+## [18.3.4](https://github.com/DevCloudFE/react-devui/compare/v18.3.3...v18.3.4) (2023-03-09)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.3.3](https://github.com/DevCloudFE/react-devui/compare/v18.3.2...v18.3.3) (2023-03-03)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.3.2](https://github.com/DevCloudFE/react-devui/compare/v18.3.1...v18.3.2) (2023-02-24)
+
+**Note:** Version bump only for package @react-devui/hooks
+
+## [18.3.1](https://github.com/DevCloudFE/react-devui/compare/v18.3.0...v18.3.1) (2023-02-24)
+
+**Note:** Version bump only for package @react-devui/hooks
+
 # [18.3.0](https://github.com/DevCloudFE/react-devui/compare/v18.2.0...v18.3.0) (2023-02-17)
 
 **Note:** Version bump only for package @react-devui/hooks

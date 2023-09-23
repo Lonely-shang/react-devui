@@ -1,7 +1,8 @@
 @include b(rating) {
+  @include polyfill-column-gap(8px);
+
   position: relative;
   display: inline-flex;
-  gap: 0 0.35em;
   align-items: center;
   font-size: 1.2em;
   color: var(--#{$rd-prefix}color-warning);
@@ -48,8 +49,13 @@
 
   @include e(input) {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 1;
+    width: 100%;
+    height: 100%;
     margin: 0;
     cursor: pointer;
     appearance: none;

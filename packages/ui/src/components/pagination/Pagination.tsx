@@ -88,137 +88,6 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
   const [jumpValue, setJumpValue] = useState('');
   const lastPage = Math.max(Math.ceil(dTotal / pageSize), 1);
 
-  const totalNode = (() => {
-    if (dCompose.includes('total')) {
-      const range: [number, number] = [Math.min((active - 1) * pageSize + 1, dTotal), Math.min(active * pageSize, dTotal)];
-      if (dCustomRender && dCustomRender.total) {
-        return dCustomRender.total(range);
-      } else {
-        return (
-          <div>
-            {t('Pagination', 'Total')} {dTotal} {t('Pagination', 'items')}
-          </div>
-        );
-      }
-    }
-    return null;
-  })();
-
-  const [prevNode, pageNode, nextNode] = (() => {
-    let [prevNode, nextNode]: [React.ReactNode, React.ReactNode] = [null, null];
-    if (dCompose.includes('pages')) {
-      prevNode = (
-        <li
-          {...getButtonRoleAttributes(() => {
-            changeActive(active - 1);
-          }, active === 1)}
-          className={getClassName(`${dPrefix}pagination__button`, {
-            'is-disabled': active === 1,
-            [`${dPrefix}pagination__button--border`]: !(dCustomRender && dCustomRender.prev),
-          })}
-          title={t('Pagination', 'Previous page')}
-        >
-          {dCustomRender && dCustomRender.prev ? dCustomRender.prev : <LeftOutlined />}
-        </li>
-      );
-
-      nextNode = (
-        <li
-          {...getButtonRoleAttributes(() => {
-            changeActive(active + 1);
-          }, active === lastPage)}
-          className={getClassName(`${dPrefix}pagination__button`, {
-            'is-disabled': active === lastPage,
-            [`${dPrefix}pagination__button--border`]: !(dCustomRender && dCustomRender.next),
-          })}
-          style={{ marginRight: dCompose[dCompose.length - 1] === 'pages' ? 0 : `var(--${dPrefix}pagination-space)` }}
-          title={t('Pagination', 'Next page')}
-        >
-          {dCustomRender && dCustomRender.next ? dCustomRender.next : <RightOutlined />}
-        </li>
-      );
-    }
-    return [
-      prevNode,
-      (page: number) => {
-        if (dCustomRender && dCustomRender.page) {
-          return dCustomRender.page(page);
-        } else {
-          return <div>{page}</div>;
-        }
-      },
-      nextNode,
-    ];
-  })();
-
-  const pageSizeNode = (() => {
-    const list = dPageSizeList.map((size) => ({
-      label: size.toString(),
-      value: size,
-    }));
-
-    return (
-      <DSelect
-        key="page-size"
-        className={`${dPrefix}pagination__page-size`}
-        style={{ marginRight: dCompose[dCompose.length - 1] === 'page-size' ? 0 : undefined }}
-        dList={list}
-        dModel={pageSize}
-        dCustomItem={(item) => (dCustomRender && dCustomRender.pageSize ? dCustomRender.pageSize(item.value) : item.label)}
-        dCustomSelected={(select) => `${select.label}${t('Pagination', ' / Page')}`}
-        onModelChange={(value) => {
-          if (!isNull(value)) {
-            changePageSize(value);
-          }
-        }}
-      />
-    );
-  })();
-
-  const jumpNode = (() => {
-    if (dCompose.includes('jump')) {
-      const jumpInput = (
-        <DInput
-          className={`${dPrefix}pagination__jump-input`}
-          dType="number"
-          dMax={lastPage}
-          dMin={1}
-          dStep={1}
-          dModel={jumpValue}
-          dNumbetButton={!dMini}
-          dInputRender={(el) =>
-            cloneHTMLElement(el, {
-              onKeyDown: (e) => {
-                el.props.onKeyDown?.(e);
-
-                if (e.code === 'Enter') {
-                  e.preventDefault();
-
-                  const val = Number(jumpValue);
-                  if (!isNaN(val)) {
-                    changeActive(val);
-                  }
-                }
-              },
-            })
-          }
-          onModelChange={setJumpValue}
-        />
-      );
-
-      if (dCustomRender && dCustomRender.jump) {
-        return dCustomRender.jump(jumpInput);
-      } else {
-        return (
-          <div className={`${dPrefix}pagination__jump-wrapper`}>
-            {t('Pagination', 'Go')} {jumpInput} {t('Pagination', 'Page')}
-          </div>
-        );
-      }
-    }
-    return null;
-  })();
-
   return (
     <nav
       {...restProps}
@@ -232,18 +101,61 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
     >
       {dCompose.map((item) => {
         if (item === 'total') {
+          const totalNode = (() => {
+            const range: [number, number] = [Math.min((active - 1) * pageSize + 1, dTotal), Math.min(active * pageSize, dTotal)];
+            if (dCustomRender && dCustomRender.total) {
+              return dCustomRender.total(range);
+            } else {
+              return (
+                <div>
+                  {t('Pagination', 'Total')} {dTotal} {t('Pagination', 'items')}
+                </div>
+              );
+            }
+          })();
+
           return (
-            <div
-              key="total"
-              className={`${dPrefix}pagination__total`}
-              style={{ marginRight: dCompose[dCompose.length - 1] === 'total' ? 0 : undefined }}
-            >
+            <div key="total" className={`${dPrefix}pagination__total`}>
               {totalNode}
             </div>
           );
         }
 
         if (item === 'pages') {
+          const [prevNode, pageNode, nextNode] = [
+            <li
+              {...getButtonRoleAttributes(() => {
+                changeActive(active - 1);
+              }, active === 1)}
+              className={getClassName(`${dPrefix}pagination__button`, {
+                'is-disabled': active === 1,
+                [`${dPrefix}pagination__button--border`]: !(dCustomRender && dCustomRender.prev),
+              })}
+              title={t('Pagination', 'Previous page')}
+            >
+              {dCustomRender && dCustomRender.prev ? dCustomRender.prev : <LeftOutlined />}
+            </li>,
+            (page: number) => {
+              if (dCustomRender && dCustomRender.page) {
+                return dCustomRender.page(page);
+              } else {
+                return <div>{page}</div>;
+              }
+            },
+            <li
+              {...getButtonRoleAttributes(() => {
+                changeActive(active + 1);
+              }, active === lastPage)}
+              className={getClassName(`${dPrefix}pagination__button`, {
+                'is-disabled': active === lastPage,
+                [`${dPrefix}pagination__button--border`]: !(dCustomRender && dCustomRender.next),
+              })}
+              title={t('Pagination', 'Next page')}
+            >
+              {dCustomRender && dCustomRender.next ? dCustomRender.next : <RightOutlined />}
+            </li>,
+          ];
+
           let pages: (number | 'prev5' | 'next5')[] = [];
 
           if (lastPage <= 7) {
@@ -368,17 +280,77 @@ export function DPagination(props: DPaginationProps): JSX.Element | null {
         }
 
         if (item === 'page-size') {
-          return pageSizeNode;
+          const list = dPageSizeList.map((size) => ({
+            label: size.toString(),
+            value: size,
+          }));
+
+          return (
+            <DSelect
+              key="page-size"
+              className={`${dPrefix}pagination__page-size`}
+              dList={list}
+              dModel={pageSize}
+              dCustomItem={(item) => (dCustomRender && dCustomRender.pageSize ? dCustomRender.pageSize(item.value) : item.label)}
+              dCustomSelected={(select) => `${select.label}${t('Pagination', ' / Page')}`}
+              onModelChange={(value) => {
+                if (!isNull(value)) {
+                  changePageSize(value);
+                }
+              }}
+            />
+          );
         }
 
         if (item === 'jump') {
+          const jumpNode = (() => {
+            const jumpInput = (
+              <DInput
+                className={`${dPrefix}pagination__jump-input`}
+                dType="number"
+                dMax={lastPage}
+                dMin={1}
+                dStep={1}
+                dModel={jumpValue}
+                dNumbetButton={!dMini}
+                dInputRender={(el) =>
+                  cloneHTMLElement(el, {
+                    onKeyDown: (e) => {
+                      el.props.onKeyDown?.(e);
+
+                      if (e.code === 'Enter') {
+                        e.preventDefault();
+
+                        const val = Number(jumpValue);
+                        if (!isNaN(val)) {
+                          changeActive(val);
+                        }
+                      }
+                    },
+                  })
+                }
+                onModelChange={setJumpValue}
+              />
+            );
+
+            if (dCustomRender && dCustomRender.jump) {
+              return dCustomRender.jump(jumpInput);
+            } else {
+              return (
+                <>
+                  <span>{t('Pagination', 'Go')}</span>
+                  {jumpInput}
+                  <span>{t('Pagination', 'Page')}</span>
+                </>
+              );
+            }
+          })();
+
           return (
-            <div
-              key="jump"
-              className={`${dPrefix}pagination__jump`}
-              style={{ marginRight: dCompose[dCompose.length - 1] === 'jump' ? 0 : undefined }}
-            >
-              {jumpNode}
+            <div key="jump">
+              <div key="jump" className={`${dPrefix}pagination__jump`}>
+                {jumpNode}
+              </div>
             </div>
           );
         }

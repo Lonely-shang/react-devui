@@ -95,8 +95,9 @@
   }
 
   @include e(item-label-extra) {
+    @include polyfill-column-gap(4px);
+
     display: inline-flex;
-    gap: 0 4px;
     align-items: center;
     margin-left: 4px;
     font-size: 0.9em;
@@ -110,14 +111,6 @@
     flex-wrap: wrap;
     align-items: center;
     min-height: var(--#{$rd-prefix}size);
-
-    .#{$rd-prefix}select,
-    .#{$rd-prefix}cascader,
-    .#{$rd-prefix}tree-select,
-    .#{$rd-prefix}compose,
-    .#{$rd-prefix}input:not(.#{$rd-prefix}input--number) {
-      width: 100%;
-    }
   }
 
   @include e(pending) {

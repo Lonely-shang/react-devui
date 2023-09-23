@@ -2,6 +2,214 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.6.2](https://github.com/DevCloudFE/react-devui/compare/v18.6.1...v18.6.2) (2023-07-10)
+
+### Bug Fixes
+
+- **ui:** calculate click position ([612011a](https://github.com/DevCloudFE/react-devui/commit/612011ad28414577db99089d3e8c648307ff06dd))
+
+### Features
+
+- **platform:** chart support locale ([ff75a14](https://github.com/DevCloudFE/react-devui/commit/ff75a14d5071fa1d28d4977a207015e67f5d897f))
+
+## [18.6.1](https://github.com/DevCloudFE/react-devui/compare/v18.6.0...v18.6.1) (2023-07-07)
+
+**Note:** Version bump only for package react-devui
+
+# [18.6.0](https://github.com/DevCloudFE/react-devui/compare/v18.5.13...v18.6.0) (2023-07-07)
+
+### Bug Fixes
+
+- calculate page size ([f2fa480](https://github.com/DevCloudFE/react-devui/commit/f2fa48096f122b13eaf2fa0b0ea97dd39e7658c6))
+
+### Features
+
+- **platform:** support `'canvas'` chart ([42c7978](https://github.com/DevCloudFE/react-devui/commit/42c7978e82e91d3cf00e2f77f720a3ae820c4683))
+
+## [18.5.13](https://github.com/DevCloudFE/react-devui/compare/v18.5.12...v18.5.13) (2023-07-05)
+
+### Bug Fixes
+
+- **ui:** add miss prefix to `$rd-enable-gap` ([1f75c24](https://github.com/DevCloudFE/react-devui/commit/1f75c24dde76c13ab0eb9dc721ac92d288a127b7))
+
+## [18.5.12](https://github.com/DevCloudFE/react-devui/compare/v18.5.11...v18.5.12) (2023-07-05)
+
+### Bug Fixes
+
+- **platform:** fix table checkbox hidden ([cd9d014](https://github.com/DevCloudFE/react-devui/commit/cd9d01431793be9aba45240abb1e1cc3e7b517fa))
+
+### Features
+
+- **ui:** add `$enable-gap` ([f7d37d9](https://github.com/DevCloudFE/react-devui/commit/f7d37d94fc0674e01831c1e7866322abec19e3f3))
+
+## [18.5.11](https://github.com/DevCloudFE/react-devui/compare/v18.5.10...v18.5.11) (2023-06-21)
+
+### Features
+
+- **ui:** popup components support `dInitialVisible` ([82ef3d5](https://github.com/DevCloudFE/react-devui/commit/82ef3d5fecc4a453e45926a69c955109df434ff8))
+
+## [18.5.10](https://github.com/DevCloudFE/react-devui/compare/v18.5.9...v18.5.10) (2023-06-15)
+
+### Bug Fixes
+
+- **ui:** fix table fixed ([81a51ac](https://github.com/DevCloudFE/react-devui/commit/81a51ac98b46a67a82b7c59af98f214fc89fe942))
+
+## [18.5.9](https://github.com/DevCloudFE/react-devui/compare/v18.5.8...v18.5.9) (2023-06-09)
+
+### Bug Fixes
+
+- **ui:** fix date-picker preset error ([b4a252e](https://github.com/DevCloudFE/react-devui/commit/b4a252e122d65a6e93e9d1d4797e84a6e7abda1c))
+
+## [18.5.8](https://github.com/DevCloudFE/react-devui/compare/v18.5.7...v18.5.8) (2023-05-30)
+
+### Features
+
+- **hooks:** add `useACL` ([4f4f31b](https://github.com/DevCloudFE/react-devui/commit/4f4f31b6bb264e28e49c250a79a342c7432bd872))
+
+## [18.5.7](https://github.com/DevCloudFE/react-devui/compare/v18.5.6...v18.5.7) (2023-05-25)
+
+### Bug Fixes
+
+- **platform:** fix echat tooltip overflow hidden ([1630134](https://github.com/DevCloudFE/react-devui/commit/16301346221ca19cb9d9998f0911979284bce410))
+
+## [18.5.6](https://github.com/DevCloudFE/react-devui/compare/v18.5.5...v18.5.6) (2023-05-17)
+
+### Features
+
+- **ui:** select support `dMonospaced` prop ([3167d57](https://github.com/DevCloudFE/react-devui/commit/3167d57438ec6b2b468e454b11edf55b823dd549))
+
+## [18.5.5](https://github.com/DevCloudFE/react-devui/compare/v18.5.4...v18.5.5) (2023-05-08)
+
+### Bug Fixes
+
+- **hooks:** add golbal update to effect hook ([457dbe4](https://github.com/DevCloudFE/react-devui/commit/457dbe4abfd01a3be03095da57604e055bd76428))
+
+## [18.5.4](https://github.com/DevCloudFE/react-devui/compare/v18.5.3...v18.5.4) (2023-05-04)
+
+### Bug Fixes
+
+- **platform:** fix break-all not work in ios ([32fd556](https://github.com/DevCloudFE/react-devui/commit/32fd556f1fc785f193d5b2de8563bf0ff7146069))
+- **platform:** fix home page miss tokenGuard ([84eef0b](https://github.com/DevCloudFE/react-devui/commit/84eef0beedb71ca0a1c26c13a768df42875b5f0d))
+
+### Features
+
+- **ui:** badge support custom text ([5dbc1da](https://github.com/DevCloudFE/react-devui/commit/5dbc1da01dfb8ebf75f8ec47fb812f2665a78d76))
+
+## [18.5.3](https://github.com/DevCloudFE/react-devui/compare/v18.5.2...v18.5.3) (2023-03-17)
+
+### Reverts
+
+- revert "feat(ui): add dVerticalCenter to checkbox and radio" ([9b0b06a](https://github.com/DevCloudFE/react-devui/commit/9b0b06a4c031c915fdcd8d60d6028aa38e253e1c))
+
+## [18.5.2](https://github.com/DevCloudFE/react-devui/compare/v18.5.1...v18.5.2) (2023-03-17)
+
+### Features
+
+- **ui:** add dVerticalCenter to checkbox and radio ([cfe1fe7](https://github.com/DevCloudFE/react-devui/commit/cfe1fe7ee0a441e6cc2fbadc4dafd1b95a2b8c4a))
+
+## [18.5.1](https://github.com/DevCloudFE/react-devui/compare/v18.5.0...v18.5.1) (2023-03-17)
+
+### Features
+
+- **ui:** add group renderer ([2cda99f](https://github.com/DevCloudFE/react-devui/commit/2cda99fddd8c31b2fbb068aa8e1a1397123c62d3))
+
+# [18.5.0](https://github.com/DevCloudFE/react-devui/compare/v18.4.1...v18.5.0) (2023-03-16)
+
+### Bug Fixes
+
+- **ui:** fix style when card action is disabled ([a4e3077](https://github.com/DevCloudFE/react-devui/commit/a4e307739b7c6209bcdac2bac550b33cbb86e660))
+
+### Code Refactoring
+
+- **ui:** remove dCloseOnClick in dropdown ([adde61a](https://github.com/DevCloudFE/react-devui/commit/adde61ad28d34864cbfa860c90d8bbd5df7c7c62))
+
+### BREAKING CHANGES
+
+- **ui:** onItemClick support control close.
+
+## [18.4.1](https://github.com/DevCloudFE/react-devui/compare/v18.4.0...v18.4.1) (2023-03-15)
+
+### Bug Fixes
+
+- **platform:** fix table index error ([4cc7bea](https://github.com/DevCloudFE/react-devui/commit/4cc7bea682d109321874fb6417a461b1650b8b6d))
+- **ui:** fix style ([8a0a181](https://github.com/DevCloudFE/react-devui/commit/8a0a18121cfbb4ab4bb072ae7fadc58d7373f9dd))
+
+# [18.4.0](https://github.com/DevCloudFE/react-devui/compare/v18.3.7...v18.4.0) (2023-03-14)
+
+### Bug Fixes
+
+- **platform:** fix gap not support in old browser ([a922ff7](https://github.com/DevCloudFE/react-devui/commit/a922ff7727e2be1ddf68b902829b7026c94aff8f))
+- **ui:** fix style of pagination ([b83a36b](https://github.com/DevCloudFE/react-devui/commit/b83a36bf6d3327c97203aaecc298f2539587cf8e))
+
+### Code Refactoring
+
+- **ui:** add DCardActions ([01176c2](https://github.com/DevCloudFE/react-devui/commit/01176c2f4f327214d449b86084909c20fa4c811a))
+
+### BREAKING CHANGES
+
+- **ui:** adjust api of card's actions.
+
+## [18.3.7](https://github.com/DevCloudFE/react-devui/compare/v18.3.6...v18.3.7) (2023-03-10)
+
+### Bug Fixes
+
+- fix gap not support in old browser ([4a39ad9](https://github.com/DevCloudFE/react-devui/commit/4a39ad9d0d08cdc89764bd1134df03e426d31239))
+- **platform:** set page to 1 when filter list ([45f5752](https://github.com/DevCloudFE/react-devui/commit/45f5752aa9586bed1117c0f8839b05d46c6adbe3))
+- **ui:** fix input no size in old browser ([f553aaf](https://github.com/DevCloudFE/react-devui/commit/f553aaf08062c14df932558c835e94b88fdcd42b))
+
+## [18.3.6](https://github.com/DevCloudFE/react-devui/compare/v18.3.5...v18.3.6) (2023-03-09)
+
+### Bug Fixes
+
+- fix inset not support in old browser ([539a954](https://github.com/DevCloudFE/react-devui/commit/539a954b9f596799d9203e557ede9eaa994f1db6))
+
+## [18.3.5](https://github.com/DevCloudFE/react-devui/compare/v18.3.4...v18.3.5) (2023-03-09)
+
+### Bug Fixes
+
+- **ui:** fix `ResizeObserver` miss borderBoxSize with some browsers ([13df709](https://github.com/DevCloudFE/react-devui/commit/13df7098a483bfe874799f835a747716c5459210))
+
+## [18.3.4](https://github.com/DevCloudFE/react-devui/compare/v18.3.3...v18.3.4) (2023-03-09)
+
+### Bug Fixes
+
+- **site:** safari doesn't support lookbehind ([12a418f](https://github.com/DevCloudFE/react-devui/commit/12a418f63f64c187a6bce4045920cb3ae2a65405))
+- **ui:** change focus after visible change ([02d4072](https://github.com/DevCloudFE/react-devui/commit/02d407206c230eb5f1f1bd7489dd2fe68420e5d0))
+- **ui:** close popup when tree-select selected ([adb5f33](https://github.com/DevCloudFE/react-devui/commit/adb5f33a2419b6bcbc72201fa9d6df2251385aad))
+- **ui:** fix styles ([2bf87b0](https://github.com/DevCloudFE/react-devui/commit/2bf87b0e7a3071f1a2a3349ae4c7c710e1f65bd1))
+
+## [18.3.3](https://github.com/DevCloudFE/react-devui/compare/v18.3.2...v18.3.3) (2023-03-03)
+
+### Bug Fixes
+
+- **platform:** dont center content when detail-view is vertical ([a692605](https://github.com/DevCloudFE/react-devui/commit/a6926055560ef5b6c7c35dd591dde2c4c176cd57))
+- **ui:** fix collapse-transition not work when el hide initially ([98c8dec](https://github.com/DevCloudFE/react-devui/commit/98c8dece4675c50c08568e2bc72899cbf754da82))
+- **ui:** fix logic of date-picker popup window ([b69cf2d](https://github.com/DevCloudFE/react-devui/commit/b69cf2d9ff4d60a006e0136ec30beebc8e891919))
+
+## [18.3.2](https://github.com/DevCloudFE/react-devui/compare/v18.3.1...v18.3.2) (2023-02-24)
+
+### Bug Fixes
+
+- **ui:** clear input when click date-input's clear-button ([b9a2316](https://github.com/DevCloudFE/react-devui/commit/b9a231670ef855e487ff920e799c7333c799c8cb))
+
+### Reverts
+
+- revert "fix(ui): fix menu-indicator flash" ([154f664](https://github.com/DevCloudFE/react-devui/commit/154f66482f49a795d8297d9432720a2e0f043c07))
+
+## [18.3.1](https://github.com/DevCloudFE/react-devui/compare/v18.3.0...v18.3.1) (2023-02-24)
+
+### Bug Fixes
+
+- **ui:** fix input pass `dModel` not work ([8cfa7ca](https://github.com/DevCloudFE/react-devui/commit/8cfa7ca77495e381c484487bc8df0b026f7911bc))
+- **ui:** fix menu-indicator flash ([ed794b0](https://github.com/DevCloudFE/react-devui/commit/ed794b0f15c5f1137c34bda09e78fe36001724a5))
+- **ui:** remove `min-width` when button is link type ([f4e3a06](https://github.com/DevCloudFE/react-devui/commit/f4e3a068363d9519dec5f66ee758c5398ccb3720))
+- **ui:** render `div` when `dSearchable` is `false` ([84f4189](https://github.com/DevCloudFE/react-devui/commit/84f41896f493b029d175d08ea3933747986aee4a))
+
+### Features
+
+- **platform:** add correct className for `Link` ([1dfda85](https://github.com/DevCloudFE/react-devui/commit/1dfda85565890c8fdf6868173ff0f6923c45b39c))
+- **ui:** optimize date-picker ([132cecc](https://github.com/DevCloudFE/react-devui/commit/132cecc6863dc56993c9d6c1e7458efafa837231))
+
 # [18.3.0](https://github.com/DevCloudFE/react-devui/compare/v18.2.0...v18.3.0) (2023-02-17)
 
 ### Bug Fixes

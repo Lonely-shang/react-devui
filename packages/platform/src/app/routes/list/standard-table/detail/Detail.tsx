@@ -1,8 +1,7 @@
-import type { OpenSettingFn } from '../../../../utils/types';
 import type { DeviceData } from '../StandardTable';
 
 import { isUndefined } from 'lodash';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 
@@ -10,16 +9,18 @@ import { EditOutlined } from '@react-devui/icons';
 import { DButton, DCard, DSeparator, DSpinner, DTable } from '@react-devui/ui';
 
 import { AppDetailView, AppRouteHeader } from '../../../../components';
+import { useHttp } from '../../../../core';
 import { useAPI } from '../../../../hooks';
+import { AppRoute, DialogService } from '../../../../utils';
 import { AppDeviceModal } from '../DeviceModal';
+
 import styles from './Detail.module.scss';
 
-export default function Detail(): JSX.Element | null {
-  const deviceModalRef = useRef<OpenSettingFn<DeviceData>>(null);
-
+const Detail = AppRoute(() => {
   const { t } = useTranslation();
 
-  const deviceApi = useAPI('/device');
+  const http = useHttp();
+  const deviceApi = useAPI(http, '/device');
 
   const { id: _id } = useParams();
   const id = Number(_id!);
@@ -41,12 +42,6 @@ export default function Detail(): JSX.Element | null {
 
   return (
     <>
-      <AppDeviceModal
-        ref={deviceModalRef}
-        onSuccess={() => {
-          setUpdateDevice((n) => n + 1);
-        }}
-      />
       <AppRouteHeader>
         <AppRouteHeader.Breadcrumb
           aList={[
@@ -61,17 +56,23 @@ export default function Detail(): JSX.Element | null {
         />
         <AppRouteHeader.Header
           aBack
-          aActions={[
-            <DButton
-              disabled={isUndefined(device)}
-              onClick={() => {
-                deviceModalRef.current?.(device);
-              }}
-              dIcon={<EditOutlined />}
-            >
-              Edit
-            </DButton>,
-          ]}
+          aActions={
+            device && [
+              <DButton
+                onClick={() => {
+                  DialogService.open(AppDeviceModal, {
+                    aDevice: device,
+                    onSuccess: () => {
+                      setUpdateDevice((n) => n + 1);
+                    },
+                  });
+                }}
+                dIcon={<EditOutlined />}
+              >
+                Edit
+              </DButton>,
+            ]
+          }
         />
       </AppRouteHeader>
       <div className={styles['app-detail']}>
@@ -135,4 +136,6 @@ export default function Detail(): JSX.Element | null {
       </div>
     </>
   );
-}
+});
+
+export default Detail;

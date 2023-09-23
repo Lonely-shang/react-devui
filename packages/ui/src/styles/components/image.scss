@@ -14,7 +14,10 @@
 
   @include e(actions) {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -55,7 +58,10 @@
 
 @include b(image-preview) {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   padding: 68px 68px 98px;
   overflow: hidden;
@@ -114,8 +120,9 @@
   }
 
   @include e(toolbar-page) {
+    @include polyfill-column-gap(8px);
+
     display: inline-flex;
-    gap: 0 8px;
     align-items: center;
     margin-right: auto;
   }
@@ -153,12 +160,13 @@
   }
 
   @include e(thumbnail-list) {
+    @include polyfill-column-gap(8px);
+
     position: absolute;
     bottom: 10px;
     left: 50%;
     z-index: 5;
     display: flex;
-    gap: 0 8px;
     padding: 8px;
     margin: 0;
     list-style: none;

@@ -1,5 +1,5 @@
 {
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.tsdk": "./node_modules/typescript/lib",
   "eslint.format.enable": true,
   "stylelint.validate": ["css", "scss", "html", "markdown"],
   "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -36,5 +36,7 @@
   },
   "[typescriptreact]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-  }
+  },
+  "javascript.preferences.importModuleSpecifier": "project-relative",
+  "typescript.preferences.importModuleSpecifier": "project-relative"
 }

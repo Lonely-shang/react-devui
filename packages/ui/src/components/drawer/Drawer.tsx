@@ -7,10 +7,10 @@ import { isString, isUndefined } from 'lodash';
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 
-import { useId, useLockScroll, useRefExtra } from '@react-devui/hooks';
+import { useId, useRefExtra } from '@react-devui/hooks';
 import { getClassName, toPx } from '@react-devui/utils';
 
-import { useMaxIndex, useDValue } from '../../hooks';
+import { useMaxIndex, useDValue, useLockScroll } from '../../hooks';
 import { registerComponentMate, handleModalKeyDown, TTANSITION_DURING_BASE, checkNoExpandedEl } from '../../utils';
 import { DMask } from '../_mask';
 import { DTransition } from '../_transition';
@@ -20,6 +20,7 @@ import { DDrawerHeader } from './DrawerHeader';
 
 export interface DDrawerProps extends React.HTMLAttributes<HTMLDivElement> {
   dVisible: boolean;
+  dInitialVisible?: boolean;
   dContainer?: DRefExtra | false;
   dPlacement?: 'top' | 'right' | 'bottom' | 'left';
   dWidth?: number | string;
@@ -51,6 +52,7 @@ export const DDrawer: {
   const {
     children,
     dVisible,
+    dInitialVisible = false,
     dContainer,
     dPlacement = 'right',
     dWidth = 400,
@@ -127,7 +129,7 @@ export const DDrawer: {
         : `translateX(${(distance[dPlacement] / 3) * 2}px)`,
   };
 
-  const [visible, changeVisible] = useDValue<boolean>(false, dVisible, onClose);
+  const [visible, changeVisible] = useDValue<boolean>(dInitialVisible, dVisible, onClose);
 
   const isFixed = isUndefined(dContainer);
 
@@ -167,18 +169,6 @@ export const DDrawer: {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
-
-  useEffect(() => {
-    if (visible) {
-      dataRef.current.prevActiveEl = document.activeElement as HTMLElement | null;
-
-      if (drawerRef.current) {
-        drawerRef.current.focus({ preventScroll: true });
-      }
-    } else if (dataRef.current.prevActiveEl) {
-      dataRef.current.prevActiveEl.focus({ preventScroll: true });
-    }
   }, [visible]);
 
   const transitionStyles: Partial<Record<DTransitionState, React.CSSProperties>> = (() => {
@@ -237,9 +227,18 @@ export const DDrawer: {
         dDestroyWhenLeaved={dDestroyAfterClose}
         afterEnter={() => {
           afterVisibleChange?.(true);
+
+          dataRef.current.prevActiveEl = document.activeElement as HTMLElement | null;
+          if (drawerRef.current) {
+            drawerRef.current.focus({ preventScroll: true });
+          }
         }}
         afterLeave={() => {
           afterVisibleChange?.(false);
+
+          if (dataRef.current.prevActiveEl) {
+            dataRef.current.prevActiveEl.focus({ preventScroll: true });
+          }
         }}
       >
         {(state) => (

@@ -29,7 +29,7 @@
   @include e(title) {
     flex-grow: 1;
     font-size: 1.1em;
-    font-weight: 500;
+    font-weight: $rd-font-weight-bold;
   }
 
   @include e(description) {
@@ -37,9 +37,10 @@
   }
 
   @include e(header-actions) {
+    @include polyfill-column-gap(4px);
+
     display: inline-flex;
     flex-shrink: 0;
-    gap: 0 4px;
     align-items: center;
 
     .#{$rd-prefix}button {

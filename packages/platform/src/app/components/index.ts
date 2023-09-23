@@ -6,6 +6,7 @@ export { AppDetailView } from './detail-view';
 
 export { AppFCPLoader } from './fcp-loader';
 
+export type { AppLanguageProps } from './language';
 export { AppLanguage } from './language';
 
 export type { AppListProps } from './list';
@@ -22,6 +23,9 @@ export { AppRouteHeader } from './route-header';
 
 export type { AppStatusDotProps } from './status-dot';
 export { AppStatusDot } from './status-dot';
+
+export type { AppTableProps } from './table';
+export { AppTable } from './table';
 
 export type { AppTableFilterProps } from './table-filter';
 export { AppTableFilter } from './table-filter';

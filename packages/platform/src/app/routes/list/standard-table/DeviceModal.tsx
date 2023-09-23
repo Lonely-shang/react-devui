@@ -1,84 +1,82 @@
-import type { OpenSettingFn } from '../../../utils/types';
+import type { AppDialogServiceSupport } from '../../../utils/dialog-service';
 import type { DeviceData } from './StandardTable';
 import type { DSelectItem } from '@react-devui/ui/components/select';
 
 import { isUndefined } from 'lodash';
-import React, { useImperativeHandle, useState } from 'react';
+import { useState } from 'react';
 
-import { useAsync, useEventCallback } from '@react-devui/hooks';
+import { useMount } from '@react-devui/hooks';
 import { FormControl, FormGroup, useForm, Validators } from '@react-devui/ui';
 import { DForm, DInput, DModal, DSelect } from '@react-devui/ui';
 
 import { AppResponsiveForm } from '../../../components';
+import { useHttp } from '../../../core';
 import { useAPI } from '../../../hooks';
 
 export interface AppDeviceModalProps {
+  aDevice: DeviceData | undefined;
   onSuccess: () => void;
 }
 
-function DeviceModal(props: AppDeviceModalProps, ref: React.ForwardedRef<OpenSettingFn<DeviceData>>): JSX.Element | null {
-  const { onSuccess } = props;
+export function AppDeviceModal(props: AppDeviceModalProps): JSX.Element | null {
+  const { aDevice, onSuccess, aVisible, onClose, afterVisibleChange } = props as AppDeviceModalProps & AppDialogServiceSupport;
 
-  const modelApi = useAPI('/device/model');
-  const async = useAsync();
+  const http = useHttp();
+  const modelApi = useAPI(http, '/device/model');
+
+  const [form, updateForm] = useForm(() => {
+    const form = new FormGroup({
+      name: new FormControl('', Validators.required),
+      model: new FormControl<string | null>(null, Validators.required),
+    });
+    if (aDevice) {
+      form.reset({
+        name: aDevice.name,
+        model: aDevice.model,
+      });
+    }
+    return form;
+  });
 
   const [modelList, setModelList] = useState<DSelectItem<string>[]>();
 
-  const [visible, setVisible] = useState(false);
-  const [device, setDevice] = useState<DeviceData>();
-  const [form, updateForm] = useForm(
-    () =>
-      new FormGroup({
-        name: new FormControl('', Validators.required),
-        model: new FormControl<string | null>(null, Validators.required),
-      })
-  );
-
-  const open = useEventCallback<OpenSettingFn<DeviceData>>((device) => {
-    setVisible(true);
-    setDevice(device);
-
-    form.reset(device ? { name: device.name, model: device.model } : undefined);
-    updateForm();
-
-    if (isUndefined(modelList)) {
-      modelApi.list().subscribe({
-        next: (res) => {
-          setModelList(
-            res.resources.map((model) => ({
-              label: model.name,
-              value: model.name,
-              disabled: model.disabled,
-            }))
-          );
-        },
-      });
-    }
+  useMount(() => {
+    modelApi.list().subscribe({
+      next: (res) => {
+        setModelList(
+          res.resources.map((model) => ({
+            label: model.name,
+            value: model.name,
+            disabled: model.disabled,
+          }))
+        );
+      },
+    });
   });
-
-  useImperativeHandle(ref, () => open, [open]);
 
   return (
     <DModal
-      dVisible={visible}
-      dHeader={`${device ? 'Edit' : 'Add'} Device`}
+      dVisible={aVisible}
+      dHeader={`${aDevice ? 'Edit' : 'Add'} Device`}
       dFooter={
         <DModal.Footer
           dOkProps={{ disabled: !form.valid }}
           onOkClick={() =>
             new Promise((r) => {
-              async.setTimeout(() => {
-                onSuccess();
-                r(true);
-              }, 500);
+              modelApi.list().subscribe({
+                next: () => {
+                  onSuccess();
+                  r(true);
+                },
+              });
             })
           }
         ></DModal.Footer>
       }
+      dSkipFirstTransition={false}
       dMaskClosable={false}
-      onClose={() => {
-        setVisible(false);
-      }}
+      onClose={onClose}
+      afterVisibleChange={afterVisibleChange}
     >
       <AppResponsiveForm>
         <DForm dUpdate={updateForm} dLabelWidth="6em">
@@ -88,13 +86,7 @@ function DeviceModal(props: AppDeviceModalProps, ref: React.ForwardedRef<OpenSet
             </DForm.Item>
             <DForm.Item dFormControls={{ model: 'Please select model!' }} dLabel="Model">
               {({ model }) => (
-                <DSelect
-                  dFormControl={modelList ? model : undefined}
-                  dList={modelList ?? []}
-                  dLoading={isUndefined(modelList)}
-                  dPlaceholder="Model"
-                  dClearable
-                />
+                <DSelect dFormControl={model} dList={modelList ?? []} dLoading={isUndefined(modelList)} dPlaceholder="Model" dClearable />
               )}
             </DForm.Item>
           </DForm.Group>
@@ -103,5 +95,3 @@ function DeviceModal(props: AppDeviceModalProps, ref: React.ForwardedRef<OpenSet
     </DModal>
   );
 }
-
-export const AppDeviceModal = React.forwardRef(DeviceModal);

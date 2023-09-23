@@ -2,13 +2,15 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
+import { useACL } from '@react-devui/hooks';
 import { DAlert, DButton, DCard, DTable, DTag } from '@react-devui/ui';
 
 import { AppRouteHeader } from '../../../components';
-import { useACL } from '../../../core';
+import { AppRoute } from '../../../utils';
+
 import styles from './ACL.module.scss';
 
-export default function ACL(): JSX.Element | null {
+const ACL = AppRoute(() => {
   const acl = useACL();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -38,10 +40,6 @@ export default function ACL(): JSX.Element | null {
                 <DTable.Th>Controls</DTable.Th>
                 <DTable.Td>{acl.controls.join(', ') || '-'}</DTable.Td>
               </tr>
-              <tr>
-                <DTable.Th>ControlMode</DTable.Th>
-                <DTable.Td>{acl.controlMode}</DTable.Td>
-              </tr>
             </tbody>
           </table>
         </DTable>
@@ -68,4 +66,6 @@ export default function ACL(): JSX.Element | null {
       </div>
     </>
   );
-}
+});
+
+export default ACL;

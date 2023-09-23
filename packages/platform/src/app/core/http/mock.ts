@@ -1,5 +1,4 @@
-import type { DeviceDoc } from '../../utils/types';
-import type { UserState, NotificationItem } from '../state';
+import type { AppNotification, AppUser } from '../../utils/types';
 import type { JWTToken, JWTTokenPayload } from '../token';
 
 import axios from 'axios';
@@ -22,16 +21,16 @@ if (environment.http.mock) {
       });
     };
 
-  const admin: UserState = {
+  const admin: AppUser = {
     name: 'admin',
     permission: [ROLE_ACL.super_admin],
   };
-  const user: UserState = {
+  const user: AppUser = {
     name: 'user',
     avatar: '/assets/imgs/avatar.png',
     permission: [0, ROUTES_ACL['/test/acl'], ROUTES_ACL['/test/http']],
   };
-  const notification: NotificationItem[] = [
+  const notification: AppNotification[] = [
     {
       id: '1',
       title: 'Title1',
@@ -48,7 +47,7 @@ if (environment.http.mock) {
       list: Array.from({ length: 3 }).map((_, i) => ({ message: `This is message ${i}`, read: false })),
     },
   ];
-  const deviceList = Array.from({ length: 108 }).map<DeviceDoc>((_, i) => ({
+  const deviceList = Array.from({ length: 108 }).map<AppDocs.Device>((_, i) => ({
     id: i,
     create_time: Date.now() + 60 * 60 * 1000,
     update_time: Date.now() + 60 * 60 * 1000,

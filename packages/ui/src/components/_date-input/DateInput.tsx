@@ -7,18 +7,18 @@ import ReactDOM from 'react-dom';
 
 import { useAsync, useEvent, useEventCallback, useForceUpdate, useForkRef, useImmer, useRefExtra, useResize } from '@react-devui/hooks';
 import { CloseCircleFilled, SwapRightOutlined } from '@react-devui/icons';
-import { checkNodeExist, getClassName, getVerticalSidePosition } from '@react-devui/utils';
+import { checkNodeExist, getClassName } from '@react-devui/utils';
 
 import dayjs from '../../dayjs';
 import { useDValue, useMaxIndex } from '../../hooks';
-import { cloneHTMLElement, TTANSITION_DURING_POPUP, WINDOW_SPACE } from '../../utils';
+import { cloneHTMLElement, getVerticalSidePosition, TTANSITION_DURING_POPUP, WINDOW_SPACE } from '../../utils';
 import { ESC_CLOSABLE_DATA } from '../../utils/checkNoExpandedEl';
 import { DBaseDesign } from '../_base-design';
 import { DBaseInput } from '../_base-input';
 import { DComboboxKeyboard } from '../_keyboard';
 import { DTransition } from '../_transition';
 import { useFormControl } from '../form';
-import { useGlobalScroll, useLayout, usePrefixConfig, useTranslation } from '../root';
+import { ROOT_DATA, useGlobalScroll, useLayout, usePrefixConfig, useTranslation } from '../root';
 import { deepCompareDate } from './utils';
 
 export interface DDateInputRef {
@@ -30,6 +30,7 @@ export interface DDateInputProps extends Omit<React.HTMLAttributes<HTMLDivElemen
     date: [Date | null, Date | null];
     isFocus: [boolean, boolean];
     changeDate: (date: Date | [Date, Date]) => void;
+    enter: () => void;
     renderPopup: DCloneHTMLElement;
   }) => JSX.Element | null;
   dRef:
@@ -42,7 +43,7 @@ export interface DDateInputProps extends Omit<React.HTMLAttributes<HTMLDivElemen
   dFormControl: DFormControl | undefined;
   dModel: Date | null | [Date, Date] | undefined;
   dFormat: string;
-  dVisible: boolean | undefined;
+  dVisible: boolean;
   dPlacement: 'top' | 'top-left' | 'top-right' | 'bottom' | 'bottom-left' | 'bottom-right';
   dOrder: (date: [Date, Date]) => boolean;
   dPlaceholder: [string, string];
@@ -55,7 +56,7 @@ export interface DDateInputProps extends Omit<React.HTMLAttributes<HTMLDivElemen
     | [DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>?, DCloneHTMLElement<React.InputHTMLAttributes<HTMLInputElement>>?]
     | undefined;
   onModelChange: ((date: any) => void) | undefined;
-  onVisibleChange: ((visible: boolean) => void) | undefined;
+  onVisibleChange: (visible: boolean) => void;
   onUpdatePanel: ((date: Date) => void) | undefined;
   afterVisibleChange: ((visible: boolean) => void) | undefined;
   onClear: (() => void) | undefined;
@@ -129,8 +130,6 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
   const [t] = useTranslation();
   const forceUpdate = useForceUpdate();
 
-  const [visible, changeVisible] = useDValue<boolean>(false, dVisible, onVisibleChange);
-
   const formControlInject = useFormControl(dFormControl);
   const [_value, _changeValue] = useDValue<Date | null | [Date, Date]>(
     null,
@@ -159,7 +158,7 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
       });
     } else {
       dataRef.current.clearTid = async.setTimeout(() => {
-        changeVisible(false);
+        onVisibleChange(false);
         setIsFocus([false, false]);
       }, 20);
     }
@@ -202,9 +201,28 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
     forceUpdate();
   };
 
-  const clearable = dClearable && !isNull(_value) && !visible && !dDisabled;
+  const handleEnter = () => {
+    const index = isFocus[0] ? 0 : 1;
+    const value = isFocus[0] ? valueLeft : valueRight;
+    if (dayjs(dataRef.current.inputValue[index], dFormat, true).isValid()) {
+      if (dRange) {
+        if (isNull(isFocus[0] ? valueRight : valueLeft)) {
+          dataRef.current.focusAnother = true;
+        } else {
+          onVisibleChange(false);
+        }
+      } else {
+        onVisibleChange(false);
+      }
+    } else {
+      dataRef.current.inputValue[index] = isNull(value) ? '' : dayjs(value).format(dFormat);
+    }
+    forceUpdate();
+  };
 
-  const maxZIndex = useMaxIndex(visible);
+  const clearable = dClearable && !isNull(_value) && !dVisible && !dDisabled;
+
+  const maxZIndex = useMaxIndex(dVisible);
 
   const [popupPositionStyle, setPopupPositionStyle] = useState<React.CSSProperties>({
     top: '-200vh',
@@ -212,9 +230,9 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
   });
   const [transformOrigin, setTransformOrigin] = useState<string>();
   const updatePosition = useEventCallback(() => {
-    if (visible && boxRef.current && popupRef.current) {
+    if (dVisible && boxRef.current && popupRef.current) {
       const height = popupRef.current.offsetHeight;
-      const maxWidth = window.innerWidth - WINDOW_SPACE * 2;
+      const maxWidth = ROOT_DATA.pageSize.width - WINDOW_SPACE * 2;
       const width = Math.min(popupRef.current.scrollWidth, maxWidth);
       const { top, left, transformOrigin } = getVerticalSidePosition(
         boxRef.current,
@@ -233,12 +251,12 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
     }
   });
 
-  const globalScroll = useGlobalScroll(updatePosition, !visible);
-  useEvent(dPageScrollRef, 'scroll', updatePosition, { passive: true }, !visible || globalScroll);
+  const globalScroll = useGlobalScroll(updatePosition, !dVisible);
+  useEvent(dPageScrollRef, 'scroll', updatePosition, { passive: true }, !dVisible || globalScroll);
 
-  useResize(boxRef, updatePosition, !visible);
-  useResize(popupRef, updatePosition, !visible);
-  useResize(dContentResizeRef, updatePosition, !visible);
+  useResize(boxRef, updatePosition, !dVisible);
+  useResize(popupRef, updatePosition, !dVisible);
+  useResize(dContentResizeRef, updatePosition, !dVisible);
 
   useEffect(() => {
     if (boxRef.current && indicatorRef.current) {
@@ -290,10 +308,10 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
 
   const getInputNode = (isLeft: boolean) => (
     <DComboboxKeyboard
-      dVisible={visible}
+      dVisible={dVisible}
       dEditable
       dHasSub={false}
-      onVisibleChange={changeVisible}
+      onVisibleChange={onVisibleChange}
       onFocusChange={() => {
         // Only for popup open/close
       }}
@@ -326,20 +344,7 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
                   }}
                   onKeyDown={(e) => {
                     if (e.code === 'Enter') {
-                      if (dayjs(dataRef.current.inputValue[index], dFormat, true).isValid()) {
-                        if (dRange) {
-                          if (isNull(isLeft ? valueRight : valueLeft)) {
-                            dataRef.current.focusAnother = true;
-                          } else {
-                            changeVisible(false);
-                          }
-                        } else {
-                          changeVisible(false);
-                        }
-                      } else {
-                        dataRef.current.inputValue[index] = isNull(value) ? '' : dayjs(value).format(dFormat);
-                      }
-                      forceUpdate();
+                      handleEnter();
                     }
                   }}
                   onFocus={() => {
@@ -378,7 +383,7 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
           renderBaseDesign(
             <div
               {...restProps}
-              {...{ [ESC_CLOSABLE_DATA]: visible }}
+              {...{ [ESC_CLOSABLE_DATA]: dVisible }}
               ref={boxRef}
               className={getClassName(restProps.className, prefix, {
                 [`${prefix}--${dSize}`]: dSize,
@@ -398,7 +403,7 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
               onClick={(e) => {
                 restProps.onClick?.(e);
 
-                changeVisible(true);
+                onVisibleChange(true);
                 if (!hasFocus) {
                   inputLeftRef.current?.focus({ preventScroll: true });
                 }
@@ -420,6 +425,7 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
                   onClick={(e) => {
                     e.stopPropagation();
 
+                    dataRef.current.inputValue = ['', ''];
                     _changeValue(null);
                     onClear?.();
                   }}
@@ -439,7 +445,7 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
       {containerRef.current &&
         ReactDOM.createPortal(
           <DTransition
-            dIn={visible}
+            dIn={dVisible}
             dDuring={TTANSITION_DURING_POPUP}
             onEnter={updatePosition}
             afterEnter={() => {
@@ -491,6 +497,7 @@ function DateInput(props: DDateInputProps, ref: React.ForwardedRef<DDateInputRef
                     changeValue(date);
                   }
                 },
+                enter: handleEnter,
                 renderPopup: (el) =>
                   cloneHTMLElement(el, {
                     ref: popupRef,

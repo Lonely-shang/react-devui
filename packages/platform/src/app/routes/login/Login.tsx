@@ -1,5 +1,5 @@
 import type { PREV_ROUTE_KEY } from '../../config/other';
-import type { UserState } from '../../core/state';
+import type { AppUser } from '../../utils/types';
 
 import { isString } from 'lodash';
 import { useEffect, useState } from 'react';
@@ -15,11 +15,12 @@ import { AppLanguage } from '../../components';
 import { LOGIN_PATH } from '../../config/other';
 import { APP_NAME } from '../../config/other';
 import { TOKEN, useHttp, useInit } from '../../core';
-import { NotificationService } from '../../utils';
-import styles from './Login.module.scss';
+import { AppRoute, NotificationService } from '../../utils';
 import { BASE64_DATA } from './base64.out';
 
-export default function Login(): JSX.Element | null {
+import styles from './Login.module.scss';
+
+const Login = AppRoute(() => {
   const { t } = useTranslation();
   const http = useHttp();
   const [loginloading, setLoginLoading] = useState(false);
@@ -62,7 +63,7 @@ export default function Login(): JSX.Element | null {
 
   const handleSubmit = () => {
     setLoginLoading(true);
-    http<{ user: UserState; token: string }>(
+    http<{ user: AppUser; token: string }>(
       {
         url: '/auth/login',
         method: 'post',
@@ -71,16 +72,17 @@ export default function Login(): JSX.Element | null {
       { authorization: false }
     ).subscribe({
       next: (res) => {
-        setLoginLoading(false);
         TOKEN.set(res.token);
+
+        setLoginLoading(false);
         init(res.user);
         navigate(isString(from) && from !== LOGIN_PATH ? from : '/', { replace: true });
       },
       error: (error) => {
         setLoginLoading(false);
         NotificationService.open({
-          dTitle: error.response!.status,
-          dDescription: error.response!.statusText,
+          dTitle: error.response.status,
+          dDescription: error.response.statusText,
           dType: 'error',
         });
       },
@@ -134,8 +136,8 @@ export default function Login(): JSX.Element | null {
                       <DForm.Item
                         dFormControls={{
                           username: {
-                            required: t('routes.login.Please enter your name')!,
-                            checkValue: t('routes.login.Username')!,
+                            required: t('routes.login.Please enter your name'),
+                            checkValue: t('routes.login.Username'),
                           },
                         }}
                       >
@@ -143,7 +145,7 @@ export default function Login(): JSX.Element | null {
                           <DInput dFormControl={username} dPrefix={<UserOutlined />} dPlaceholder={t('routes.login.Username')} />
                         )}
                       </DForm.Item>
-                      <DForm.Item dFormControls={{ password: t('routes.login.Please enter your password')! }}>
+                      <DForm.Item dFormControls={{ password: t('routes.login.Please enter your password') }}>
                         {({ password }) => (
                           <DInput
                             dFormControl={password}
@@ -164,12 +166,12 @@ export default function Login(): JSX.Element | null {
                 panel: (
                   <DForm onSubmit={handleSubmit} dUpdate={updatePhoneForm} dLabelWidth={0}>
                     <DForm.Group dFormGroup={phoneForm}>
-                      <DForm.Item dFormControls={{ phone: t('routes.login.Please enter your phone number')! }}>
+                      <DForm.Item dFormControls={{ phone: t('routes.login.Please enter your phone number') }}>
                         {({ phone }) => (
                           <DInput dFormControl={phone} dPrefix={<MobileOutlined />} dPlaceholder={t('routes.login.Phone number')} />
                         )}
                       </DForm.Item>
-                      <DForm.Item dFormControls={{ code: t('routes.login.Please enter verification code')! }} dSpan>
+                      <DForm.Item dFormControls={{ code: t('routes.login.Please enter verification code') }} dSpan>
                         {({ code }) => <DInput dFormControl={code} dPlaceholder={t('routes.login.Verification code')} />}
                       </DForm.Item>
                       <DForm.Item dLabelWidth={8} dSpan="auto">
@@ -207,4 +209,6 @@ export default function Login(): JSX.Element | null {
       </footer>
     </div>
   );
-}
+});
+
+export default Login;

@@ -1,18 +1,19 @@
 @mixin component-footer {
   @include e(footer) {
+    @include polyfill-column-gap(8px);
+
     position: relative;
     display: flex;
-    gap: 0 8px;
     align-items: center;
     padding: 12px 16px;
     border-top: 1px solid var(--#{$rd-prefix}color-divider);
 
     @include m(left) {
-      justify-content: left;
+      justify-content: flex-start;
     }
 
     @include m(right) {
-      justify-content: right;
+      justify-content: flex-end;
     }
 
     @include m(center) {

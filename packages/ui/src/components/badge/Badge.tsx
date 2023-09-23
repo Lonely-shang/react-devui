@@ -5,6 +5,7 @@ import { getClassName } from '@react-devui/utils';
 import { registerComponentMate, TTANSITION_DURING_BASE } from '../../utils';
 import { DTransition } from '../_transition';
 import { useComponentConfig, usePrefixConfig } from '../root';
+import { DBadgeText } from './BadgeText';
 import { DNumber } from './Number';
 
 export interface DBadgeProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
@@ -19,7 +20,10 @@ export interface DBadgeProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
 }
 
 const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DBadge' as const });
-export function DBadge(props: DBadgeProps): JSX.Element | null {
+export const DBadge: {
+  (props: DBadgeProps): JSX.Element | null;
+  Text: typeof DBadgeText;
+} = (props) => {
   const {
     dValue,
     dTheme = 'danger',
@@ -122,4 +126,6 @@ export function DBadge(props: DBadgeProps): JSX.Element | null {
       }}
     </DTransition>
   );
-}
+};
+
+DBadge.Text = DBadgeText;

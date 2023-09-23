@@ -1,30 +1,27 @@
-import type { UserState } from './core/state';
+import type { AppTheme, AppUser } from './utils/types';
 import type { DRootProps } from '@react-devui/ui';
 import type { DLang } from '@react-devui/ui/utils/types';
 
 import { isNull } from 'lodash';
-import { useEffect, useMemo, useState } from 'react';
+import { useStore } from 'rcl-store';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { useAsync, useMount, useStorage } from '@react-devui/hooks';
 import { DNotification, DToast } from '@react-devui/ui';
 import { DRoot } from '@react-devui/ui';
 
-import { AppRoutes } from './Routes';
+import AppRoutes from './Routes';
 import { STORAGE_KEY } from './config/storage';
-import { TOKEN, useHttp, useInit } from './core';
-import { useNotifications, useToasts } from './core/state';
+import { GlobalStore, TOKEN, useHttp, useInit } from './core';
 
-export type AppTheme = 'light' | 'dark';
-
-export function App() {
+function App() {
   const http = useHttp();
   const init = useInit();
   const async = useAsync();
-  const [loading, setLoading] = useState(!isNull(TOKEN.value));
   const languageStorage = useStorage<DLang>(...STORAGE_KEY.language);
   const themeStorage = useStorage<AppTheme>(...STORAGE_KEY.theme);
-  const [notifications] = useNotifications();
-  const [toasts] = useToasts();
+  const [loading, setLoading] = useState(!isNull(TOKEN.value));
+  const [{ dialogs, notifications, toasts }] = useStore(GlobalStore, ['dialogs', 'notifications', 'toasts']);
 
   useMount(() => {
     if (!isNull(TOKEN.value)) {
@@ -35,7 +32,7 @@ export function App() {
         next: (res) => {
           TOKEN.set(res);
 
-          http<UserState>({
+          http<AppUser>({
             url: '/auth/me',
             method: 'get',
           }).subscribe({
@@ -56,10 +53,6 @@ export function App() {
   });
 
   useEffect(() => {
-    document.documentElement.lang = languageStorage.value;
-  }, [languageStorage.value]);
-
-  useEffect(() => {
     if (loading === false) {
       const loader = document.querySelector('.fp-loader') as HTMLElement;
       loader.style.cssText = 'opacity:0;transition:opacity 0.5s ease-out;';
@@ -68,6 +61,10 @@ export function App() {
       }, 500);
     }
   }, [async, loading]);
+
+  useEffect(() => {
+    document.documentElement.lang = languageStorage.value;
+  }, [languageStorage.value]);
 
   useEffect(() => {
     for (const t of ['light', 'dark']) {
@@ -91,6 +88,7 @@ export function App() {
   return (
     <DRoot context={rootContext}>
       {loading ? null : <AppRoutes />}
+      {dialogs.map(({ key, type, props }) => React.createElement(type, { key, ...props }))}
       {notifications.map(({ key, ...props }) => (
         <DNotification {...props} key={key}></DNotification>
       ))}

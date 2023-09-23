@@ -28,15 +28,9 @@ export function useHttp() {
   const location = useLocation();
   const { t } = useTranslation();
 
-  useUnmount(() => {
-    for (const abort of dataRef.current.abortFns) {
-      abort();
-    }
-  });
-
-  return useEventCallback(
+  const http = useEventCallback(
     <T = any, D = any>(
-      config: AxiosRequestConfig<D>,
+      config: AxiosRequestConfig<D> & { url: string },
       options?: { unmount?: boolean; authorization?: boolean }
     ): Observable<T> & { abort: () => void } => {
       const { unmount = true, authorization = true } = options ?? {};
@@ -61,7 +55,7 @@ export function useHttp() {
       const req = of({
         ...config,
         baseURL: environment.http.baseURL,
-        url: environment.http.transformURL(config.url!),
+        url: environment.http.transformURL(config.url),
         headers,
         signal: controller.signal,
       }).pipe(
@@ -106,4 +100,17 @@ export function useHttp() {
       return req as any;
     }
   );
+
+  http['abortAll'] = () => {
+    for (const abort of dataRef.current.abortFns) {
+      abort();
+    }
+    dataRef.current.abortFns = new Set();
+  };
+
+  useUnmount(() => {
+    http['abortAll']();
+  });
+
+  return http as typeof http & { abortAll: () => void };
 }

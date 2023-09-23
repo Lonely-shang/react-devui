@@ -9,7 +9,6 @@
   }
 
   @include e(avatar) {
-    flex: 0 0 auto;
     margin-right: 12px;
   }
 
@@ -18,14 +17,17 @@
   }
 
   @include e(title) {
-    font-weight: 500;
+    font-weight: $rd-font-weight-bold;
+  }
 
-    & + .app-list__description {
-      margin-top: 4px;
-    }
+  @include e(subtitle) {
+    /* stylelint-disable-next-line declaration-property-value-allowed-list */
+    font-size: 10px;
+    color: var(--#{$rd-prefix}text-color-sub);
   }
 
   @include e(description) {
+    margin-top: 4px;
     color: var(--#{$rd-prefix}text-color-sub);
   }
 }

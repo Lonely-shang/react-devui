@@ -8,17 +8,17 @@ import React, { useState, useCallback, useMemo, useRef, useImperativeHandle } fr
 
 import { useEventCallback, useId } from '@react-devui/hooks';
 import { CloseOutlined, LoadingOutlined, PlusOutlined } from '@react-devui/icons';
-import { findNested, getClassName, getVerticalSidePosition } from '@react-devui/utils';
+import { findNested, getClassName } from '@react-devui/utils';
 
 import { useGeneralContext, useDValue } from '../../hooks';
-import { cloneHTMLElement, registerComponentMate, TTANSITION_DURING_POPUP, WINDOW_SPACE } from '../../utils';
+import { cloneHTMLElement, getVerticalSidePosition, registerComponentMate, TTANSITION_DURING_POPUP, WINDOW_SPACE } from '../../utils';
 import { DComboboxKeyboard } from '../_keyboard';
 import { DSelectbox } from '../_selectbox';
 import { DTransition } from '../_transition';
 import { DCheckbox } from '../checkbox';
 import { DDropdown } from '../dropdown';
 import { useFormControl } from '../form';
-import { useComponentConfig, usePrefixConfig, useTranslation } from '../root';
+import { ROOT_DATA, useComponentConfig, usePrefixConfig, useTranslation } from '../root';
 import { DTag } from '../tag';
 import { DVirtualScroll } from '../virtual-scroll';
 
@@ -43,6 +43,7 @@ export interface DSelectProps<V extends DId, T extends DSelectItem<V>> extends O
   dList: T[];
   dModel?: V | null | V[];
   dVisible?: boolean;
+  dInitialVisible?: boolean;
   dPlaceholder?: string;
   dSize?: DSize;
   dLoading?: boolean;
@@ -51,6 +52,7 @@ export interface DSelectProps<V extends DId, T extends DSelectItem<V>> extends O
   dClearable?: boolean;
   dDisabled?: boolean;
   dMultiple?: boolean;
+  dMonospaced?: boolean;
   dVirtual?: boolean;
   dCustomItem?: (item: T) => React.ReactNode;
   dCustomSelected?: (select: T) => string;
@@ -81,6 +83,7 @@ function Select<V extends DId, T extends DSelectItem<V>>(
     dList,
     dModel,
     dVisible,
+    dInitialVisible = false,
     dPlaceholder,
     dSize,
     dLoading = false,
@@ -89,6 +92,7 @@ function Select<V extends DId, T extends DSelectItem<V>>(
     dClearable = false,
     dDisabled = false,
     dMultiple = false,
+    dMonospaced = true,
     dVirtual = false,
     dCustomItem,
     dCustomSelected,
@@ -145,7 +149,7 @@ function Select<V extends DId, T extends DSelectItem<V>>(
 
   const [focusVisible, setFocusVisible] = useState(false);
 
-  const [visible, changeVisible] = useDValue<boolean>(false, dVisible, onVisibleChange);
+  const [visible, changeVisible] = useDValue<boolean>(dInitialVisible, dVisible, onVisibleChange);
   const formControlInject = useFormControl(dFormControl);
   const [_select, changeSelect] = useDValue<V | null | V[]>(
     dMultiple ? [] : null,
@@ -306,22 +310,45 @@ function Select<V extends DId, T extends DSelectItem<V>>(
   const [transformOrigin, setTransformOrigin] = useState<string>();
   const updatePosition = useEventCallback(() => {
     if (visible && boxRef.current && popupRef.current) {
-      const width = Math.min(boxRef.current.offsetWidth, window.innerWidth - WINDOW_SPACE * 2);
-      const height = popupRef.current.offsetHeight;
-      const { top, left, transformOrigin } = getVerticalSidePosition(
-        boxRef.current,
-        { width, height },
-        {
-          placement: 'bottom',
-          inWindow: WINDOW_SPACE,
-        }
-      );
-      setPopupPositionStyle({
-        top,
-        left,
-        width,
-      });
-      setTransformOrigin(transformOrigin);
+      if (dMonospaced) {
+        const width = Math.min(boxRef.current.offsetWidth, ROOT_DATA.pageSize.width - WINDOW_SPACE * 2);
+        const height = popupRef.current.offsetHeight;
+        const { top, left, transformOrigin } = getVerticalSidePosition(
+          boxRef.current,
+          { width, height },
+          {
+            placement: 'bottom',
+            inWindow: WINDOW_SPACE,
+          }
+        );
+        setPopupPositionStyle({
+          top,
+          left,
+          width,
+        });
+        setTransformOrigin(transformOrigin);
+      } else {
+        const boxWidth = boxRef.current.offsetWidth;
+        const height = popupRef.current.offsetHeight;
+        const maxWidth = ROOT_DATA.pageSize.width - WINDOW_SPACE * 2;
+        const width = Math.min(Math.max(popupRef.current.scrollWidth, boxWidth), maxWidth);
+        const { top, left, transformOrigin } = getVerticalSidePosition(
+          boxRef.current,
+          { width, height },
+          {
+            placement: 'bottom-left',
+            inWindow: WINDOW_SPACE,
+          }
+        );
+
+        setPopupPositionStyle({
+          top,
+          left,
+          minWidth: Math.min(boxWidth, maxWidth),
+          maxWidth,
+        });
+        setTransformOrigin(transformOrigin);
+      }
     }
   });
 
@@ -338,7 +365,15 @@ function Select<V extends DId, T extends DSelectItem<V>>(
     let suffixNode: React.ReactNode = null;
     let selectedLabel: string | undefined;
     if (dMultiple) {
-      const selectedItems: T[] = (_select as V[]).map((v) => itemsMap.get(v)!);
+      const selectedItems: T[] = [];
+      for (const v of _select as V[]) {
+        const item = itemsMap.get(v);
+        if (item) {
+          selectedItems.push(item);
+        } else {
+          console.warn(`Can't find item that value field is ${v}!`);
+        }
+      }
 
       suffixNode = (
         <DDropdown
@@ -353,9 +388,9 @@ function Select<V extends DId, T extends DSelectItem<V>>(
               disabled: itemDisabled,
             };
           })}
-          dCloseOnClick={false}
           onItemClick={(id: V) => {
             changeSelectByClick(id);
+            return false;
           }}
         >
           <DTag className={`${dPrefix}select__multiple-count`} tabIndex={-1} dSize={size}>
@@ -384,9 +419,13 @@ function Select<V extends DId, T extends DSelectItem<V>>(
       ));
     } else {
       if (!isNull(select)) {
-        const item = itemsMap.get(select as V)!;
-        selectedLabel = item.label;
-        selectedNode = dCustomSelected ? dCustomSelected(item) : selectedLabel;
+        const item = itemsMap.get(select as V);
+        if (item) {
+          selectedLabel = item.label;
+          selectedNode = dCustomSelected ? dCustomSelected(item) : selectedLabel;
+        } else {
+          console.warn(`Can't find item that value field is ${select}!`);
+        }
       }
     }
     return [selectedNode, suffixNode, selectedLabel];

@@ -2,14 +2,14 @@ import type { DModalFooterPrivateProps } from './ModalFooter';
 import type { DModalHeaderPrivateProps } from './ModalHeader';
 
 import { isNumber, isString, isUndefined } from 'lodash';
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import ReactDOM from 'react-dom';
 
-import { useId, useLockScroll, useRefExtra } from '@react-devui/hooks';
+import { useId, useRefExtra } from '@react-devui/hooks';
 import { CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, WarningOutlined } from '@react-devui/icons';
 import { checkNodeExist, getClassName } from '@react-devui/utils';
 
-import { useMaxIndex, useDValue } from '../../hooks';
+import { useMaxIndex, useDValue, useLockScroll } from '../../hooks';
 import { registerComponentMate, handleModalKeyDown, TTANSITION_DURING_BASE, checkNoExpandedEl } from '../../utils';
 import { DMask } from '../_mask';
 import { DTransition } from '../_transition';
@@ -19,6 +19,7 @@ import { DModalHeader } from './ModalHeader';
 
 export interface DModalProps extends React.HTMLAttributes<HTMLDivElement> {
   dVisible: boolean;
+  dInitialVisible?: boolean;
   dWidth?: number | string;
   dTop?: number | string;
   dZIndex?: number | string;
@@ -48,6 +49,7 @@ export const DModal: {
   const {
     children,
     dVisible,
+    dInitialVisible = false,
     dWidth = 520,
     dTop = 100,
     dZIndex,
@@ -96,7 +98,7 @@ export const DModal: {
 
   const topStyle = dTop + (isNumber(dTop) ? 'px' : '');
 
-  const [visible, changeVisible] = useDValue<boolean>(false, dVisible, onClose);
+  const [visible, changeVisible] = useDValue<boolean>(dInitialVisible, dVisible, onClose);
 
   const maxZIndex = useMaxIndex(visible);
   const zIndex = (() => {
@@ -107,18 +109,6 @@ export const DModal: {
   })();
 
   useLockScroll(visible);
-
-  useEffect(() => {
-    if (visible) {
-      dataRef.current.prevActiveEl = document.activeElement as HTMLElement | null;
-
-      if (modalRef.current) {
-        modalRef.current.focus({ preventScroll: true });
-      }
-    } else if (dataRef.current.prevActiveEl) {
-      dataRef.current.prevActiveEl.focus({ preventScroll: true });
-    }
-  }, [visible]);
 
   const headerNode = (() => {
     if (dHeader) {
@@ -144,16 +134,25 @@ export const DModal: {
           if (isUndefined(ROOT_DATA.clickEvent) || performance.now() - ROOT_DATA.clickEvent.time > 100) {
             dataRef.current.transformOrigin = undefined;
           } else if (modalContentRef.current) {
-            const left = `${(window.innerWidth - modalContentRef.current.offsetWidth) / 2}px`;
-            const top = dTop === 'center' ? `${(window.innerHeight - modalContentRef.current.offsetHeight) / 2}px` : topStyle;
-            dataRef.current.transformOrigin = `calc(${ROOT_DATA.clickEvent.e.clientX}px - ${left}) calc(${ROOT_DATA.clickEvent.e.clientY}px - ${top})`;
+            const left = `${(ROOT_DATA.pageSize.width - modalContentRef.current.offsetWidth) / 2}px`;
+            const top = dTop === 'center' ? `${(ROOT_DATA.pageSize.height - modalContentRef.current.offsetHeight) / 2}px` : topStyle;
+            dataRef.current.transformOrigin = `calc(${ROOT_DATA.clickEvent.x}px - ${left}) calc(${ROOT_DATA.clickEvent.y}px - ${top})`;
           }
         }}
         afterEnter={() => {
           afterVisibleChange?.(true);
+
+          dataRef.current.prevActiveEl = document.activeElement as HTMLElement | null;
+          if (modalRef.current) {
+            modalRef.current.focus({ preventScroll: true });
+          }
         }}
         afterLeave={() => {
           afterVisibleChange?.(false);
+
+          if (dataRef.current.prevActiveEl) {
+            dataRef.current.prevActiveEl.focus({ preventScroll: true });
+          }
         }}
       >
         {(state) => {

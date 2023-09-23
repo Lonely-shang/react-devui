@@ -4,13 +4,13 @@ import type { DFormControl } from '../form';
 import type { DTimePickerProps } from '../time-picker';
 import type { DPanelPrivateProps as DTimePickerPanelPrivateProps } from '../time-picker/Panel';
 
-import { isBoolean, isUndefined } from 'lodash';
+import { isArray, isBoolean, isUndefined } from 'lodash';
 import React, { useRef } from 'react';
 
 import { CalendarOutlined } from '@react-devui/icons';
 import { getClassName } from '@react-devui/utils';
 
-import { useGeneralContext } from '../../hooks';
+import { useDValue, useGeneralContext } from '../../hooks';
 import { registerComponentMate } from '../../utils';
 import { DDateInput } from '../_date-input';
 import { getCols, orderDate } from '../_date-input/utils';
@@ -29,6 +29,7 @@ export interface DDatePickerProps extends Omit<React.HTMLAttributes<HTMLDivEleme
   dModel?: Date | null | [Date, Date];
   dFormat?: string;
   dVisible?: boolean;
+  dInitialVisible?: boolean;
   dPlacement?: 'top' | 'top-left' | 'top-right' | 'bottom' | 'bottom-left' | 'bottom-right';
   dOrder?: 'ascend' | 'descend' | false;
   dPlaceholder?: string | [string?, string?];
@@ -58,6 +59,7 @@ function DatePicker(props: DDatePickerProps, ref: React.ForwardedRef<DDateInputR
     dModel,
     dFormat,
     dVisible,
+    dInitialVisible = false,
     dPlacement = 'bottom-left',
     dOrder = 'ascend',
     dPlaceholder,
@@ -90,6 +92,8 @@ function DatePicker(props: DDatePickerProps, ref: React.ForwardedRef<DDateInputR
 
   const [t] = useTranslation();
 
+  const [visible, changeVisible] = useDValue<boolean>(dInitialVisible, dVisible, onVisibleChange);
+
   const size = dSize ?? gSize;
   const disabled = (dDisabled || gDisabled || dFormControl?.control.disabled) ?? false;
 
@@ -118,7 +122,7 @@ function DatePicker(props: DDatePickerProps, ref: React.ForwardedRef<DDateInputR
       dFormControl={dFormControl}
       dModel={dModel}
       dFormat={format}
-      dVisible={dVisible}
+      dVisible={visible}
       dPlacement={dPlacement}
       dOrder={(date) => orderDate(date, dOrder, dShowTime ? undefined : 'date')}
       dPlaceholder={[placeholderLeft, placeholderRight]}
@@ -129,7 +133,7 @@ function DatePicker(props: DDatePickerProps, ref: React.ForwardedRef<DDateInputR
       dDisabled={disabled}
       dInputRender={dInputRender}
       onModelChange={onModelChange}
-      onVisibleChange={onVisibleChange}
+      onVisibleChange={changeVisible}
       onUpdatePanel={(date) => {
         updatePanelRef.current?.(date);
         updateTimePickerPanelRef.current?.(date);
@@ -137,7 +141,7 @@ function DatePicker(props: DDatePickerProps, ref: React.ForwardedRef<DDateInputR
       afterVisibleChange={afterVisibleChange}
       onClear={onClear}
     >
-      {({ date, isFocus, changeDate, renderPopup }) => {
+      {({ date, isFocus, changeDate, enter, renderPopup }) => {
         const index = isFocus[0] ? 0 : 1;
         const position = isFocus[0] ? 'start' : 'end';
 
@@ -148,7 +152,12 @@ function DatePicker(props: DDatePickerProps, ref: React.ForwardedRef<DDateInputR
               dDateCurrentSelected={date[index]}
               dDateAnotherSelected={date[isFocus[0] ? 1 : 0]}
               dConfigDate={dConfigDate ? (...args) => dConfigDate(...args, position, date) : undefined}
-              onDateChange={changeDate}
+              onDateChange={(date) => {
+                changeDate(date);
+                if (!dShowTime) {
+                  enter();
+                }
+              }}
             ></DPanel>
             {dShowTime &&
               React.cloneElement<DTimePickerPanelPrivateProps>(
@@ -174,8 +183,11 @@ function DatePicker(props: DDatePickerProps, ref: React.ForwardedRef<DDateInputR
                   const handleClick = () => {
                     const d = dPresetDate[name]();
                     changeDate(d);
-                    updatePanelRef.current?.(d[index]);
-                    updateTimePickerPanelRef.current?.(d[index]);
+                    if (dRange && isArray(d)) {
+                      changeVisible(false);
+                    } else {
+                      enter();
+                    }
                   };
 
                   return (
@@ -195,6 +207,7 @@ function DatePicker(props: DDatePickerProps, ref: React.ForwardedRef<DDateInputR
                   onClick={() => {
                     const now = new Date();
                     changeDate(now);
+                    enter();
                     updatePanelRef.current?.(now);
                     updateTimePickerPanelRef.current?.(now);
                   }}

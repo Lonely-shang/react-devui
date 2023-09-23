@@ -1,6 +1,11 @@
+@import 'mixins/form';
 @import 'mixins/size';
 
 @include b(compose) {
+  @include component-in-form('#{&}') {
+    width: 100%;
+  }
+
   $compose-support: "[data-compose-support='true']";
   $compose-support--active: "[data-compose-support-active='true']";
   $compose-support--disabled: "[data-compose-support-disabled='true']";
@@ -37,7 +42,7 @@
   }
 
   &:not(#{&}--vertical) {
-    & > :not(:first-child, :only-child) {
+    & > :not(:first-child):not(:only-child) {
       margin-left: -1px !important;
     }
 
@@ -51,7 +56,7 @@
       border-bottom-left-radius: 0 !important;
     }
 
-    & > :not(:first-child, :last-child) {
+    & > :not(:first-child):not(:last-child) {
       border-radius: 0 !important;
     }
   }
@@ -59,7 +64,7 @@
   @include m(vertical) {
     flex-direction: column;
 
-    & > :not(:first-child, :only-child) {
+    & > :not(:first-child):not(:only-child) {
       margin-top: -1px !important;
     }
 
@@ -73,7 +78,7 @@
       border-top-right-radius: 0 !important;
     }
 
-    & > :not(:first-child, :last-child) {
+    & > :not(:first-child):not(:last-child) {
       border-radius: 0 !important;
     }
   }

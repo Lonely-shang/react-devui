@@ -6,7 +6,10 @@
   @include component-footer;
 
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   overflow: hidden;
   outline: none;
 
@@ -51,7 +54,7 @@
 
   @include e(body) {
     position: relative;
-    flex-grow: 1;
+    flex: 1 0 0;
     padding: 20px;
     overflow: hidden auto;
   }

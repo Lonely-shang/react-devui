@@ -4,9 +4,11 @@ import { DButton, DCard } from '@react-devui/ui';
 
 import { AppRouteHeader } from '../../../components';
 import { useHttp } from '../../../core';
+import { AppRoute } from '../../../utils';
+
 import styles from './Http.module.scss';
 
-export default function Http(): JSX.Element | null {
+const Http = AppRoute(() => {
   const http = useHttp();
   const { t } = useTranslation();
 
@@ -45,4 +47,6 @@ export default function Http(): JSX.Element | null {
       </div>
     </>
   );
-}
+});
+
+export default Http;

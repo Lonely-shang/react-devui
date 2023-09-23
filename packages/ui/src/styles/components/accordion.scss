@@ -12,8 +12,9 @@
   }
 
   @include e(item-button) {
+    @include polyfill-column-gap(10px);
+
     display: flex;
-    gap: 0 10px;
     align-items: center;
     padding: 12px 16px;
     cursor: pointer;
@@ -22,10 +23,6 @@
     @include when(disabled) {
       color: var(--#{$rd-prefix}color-disabled);
       pointer-events: none;
-    }
-
-    @include m(arrow-left) {
-      flex-direction: row-reverse;
     }
   }
 

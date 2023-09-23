@@ -1,21 +1,21 @@
+import type { DPopupPlacement } from '../../utils/position';
 import type { DPopoverFooterPrivateProps } from './PopoverFooter';
 import type { DPopoverHeaderPrivateProps } from './PopoverHeader';
 import type { DRefExtra } from '@react-devui/hooks/useRefExtra';
-import type { DPopupPlacement } from '@react-devui/utils/position';
 
 import { isString, isUndefined } from 'lodash';
-import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { useImperativeHandle, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 
-import { useEvent, useEventCallback, useId, useLockScroll, useRefExtra } from '@react-devui/hooks';
-import { getClassName, getPopupPosition } from '@react-devui/utils';
+import { useEvent, useEventCallback, useId, useRefExtra } from '@react-devui/hooks';
+import { getClassName } from '@react-devui/utils';
 
-import { useMaxIndex, useDValue } from '../../hooks';
-import { registerComponentMate, handleModalKeyDown, cloneHTMLElement, checkNoExpandedEl } from '../../utils';
+import { useMaxIndex, useDValue, useLockScroll } from '../../hooks';
+import { registerComponentMate, handleModalKeyDown, cloneHTMLElement, checkNoExpandedEl, getPopupPosition } from '../../utils';
 import { ESC_CLOSABLE_DATA } from '../../utils/checkNoExpandedEl';
 import { DPopup } from '../_popup';
 import { DTransition } from '../_transition';
-import { useComponentConfig, usePrefixConfig } from '../root';
+import { ROOT_DATA, useComponentConfig, usePrefixConfig } from '../root';
 import { DPopoverFooter } from './PopoverFooter';
 import { DPopoverHeader } from './PopoverHeader';
 
@@ -26,6 +26,7 @@ export interface DPopoverRef {
 export interface DPopoverProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
   children: React.ReactElement;
   dVisible?: boolean;
+  dInitialVisible?: boolean;
   dTrigger?: 'hover' | 'click';
   dContainer?: DRefExtra | false;
   dPlacement?: DPopupPlacement;
@@ -51,6 +52,7 @@ function Popover(props: DPopoverProps, ref: React.ForwardedRef<DPopoverRef>): JS
   const {
     children,
     dVisible,
+    dInitialVisible = false,
     dTrigger = 'hover',
     dContainer,
     dPlacement = 'top',
@@ -112,7 +114,7 @@ function Popover(props: DPopoverProps, ref: React.ForwardedRef<DPopoverRef>): JS
   const titleId = `${dPrefix}popover-title-${uniqueId}`;
   const bodyId = `${dPrefix}popover-content-${uniqueId}`;
 
-  const [visible, changeVisible] = useDValue<boolean>(false, dVisible, onVisibleChange);
+  const [visible, changeVisible] = useDValue<boolean>(dInitialVisible, dVisible, onVisibleChange);
 
   const maxZIndex = useMaxIndex(visible);
   const zIndex = (() => {
@@ -142,8 +144,8 @@ function Popover(props: DPopoverProps, ref: React.ForwardedRef<DPopoverRef>): JS
         const containerRect = containerRef.current.getBoundingClientRect();
         space = [
           containerRect.top,
-          window.innerWidth - containerRect.left - containerRect.width,
-          window.innerHeight - containerRect.top - containerRect.height,
+          ROOT_DATA.pageSize.width - containerRect.left - containerRect.width,
+          ROOT_DATA.pageSize.height - containerRect.top - containerRect.height,
           containerRect.left,
         ];
       }
@@ -246,20 +248,6 @@ function Popover(props: DPopoverProps, ref: React.ForwardedRef<DPopoverRef>): JS
     !dEscClosable || !visible
   );
 
-  useEffect(() => {
-    if (dModal) {
-      if (visible) {
-        dataRef.current.prevActiveEl = document.activeElement as HTMLElement | null;
-
-        if (popoverRef.current) {
-          popoverRef.current.focus({ preventScroll: true });
-        }
-      } else if (dataRef.current.prevActiveEl) {
-        dataRef.current.prevActiveEl.focus({ preventScroll: true });
-      }
-    }
-  }, [dModal, visible]);
-
   const headerNode = (() => {
     if (dHeader) {
       const node = isString(dHeader) ? <DPopoverHeader>{dHeader}</DPopoverHeader> : dHeader;
@@ -311,9 +299,20 @@ function Popover(props: DPopoverProps, ref: React.ForwardedRef<DPopoverRef>): JS
                 onEnter={updatePosition}
                 afterEnter={() => {
                   afterVisibleChange?.(true);
+
+                  if (dModal) {
+                    dataRef.current.prevActiveEl = document.activeElement as HTMLElement | null;
+                    if (popoverRef.current) {
+                      popoverRef.current.focus({ preventScroll: true });
+                    }
+                  }
                 }}
                 afterLeave={() => {
                   afterVisibleChange?.(false);
+
+                  if (dModal && dataRef.current.prevActiveEl) {
+                    dataRef.current.prevActiveEl.focus({ preventScroll: true });
+                  }
                 }}
               >
                 {(state) => {

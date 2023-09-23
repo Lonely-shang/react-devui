@@ -1,20 +1,15 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useMount } from '@react-devui/hooks';
 import { DCard } from '@react-devui/ui';
 
 import { AppChart, AppRouteHeader } from '../../../components';
-import styles from './ECharts.module.scss';
+import { AppRoute } from '../../../utils';
 import { barOptions, lineOptions, nightingaleOptions, pieOptions, scatterOptions, stackedBarOptions, stackedLineOptions } from './options';
 
-export default function ECharts(): JSX.Element | null {
-  const [options, setOptions] = useState<echarts.EChartsOption[]>([]);
-  const { t } = useTranslation();
+import styles from './ECharts.module.scss';
 
-  useMount(() => {
-    setOptions([lineOptions, stackedLineOptions, barOptions, stackedBarOptions, pieOptions, nightingaleOptions, scatterOptions]);
-  });
+const ECharts = AppRoute(() => {
+  const { t } = useTranslation();
 
   return (
     <>
@@ -29,17 +24,26 @@ export default function ECharts(): JSX.Element | null {
       </AppRouteHeader>
       <div className={styles['app-echarts']}>
         <div className="row" style={{ gap: 'var(--bs-gutter-x) 0' }}>
-          {options.map((option, index) => (
-            <div key={index} className="col-12 col-xxl-6">
-              <DCard>
-                <DCard.Content>
-                  <AppChart style={{ height: 320 }} aOption={option} />
-                </DCard.Content>
-              </DCard>
-            </div>
-          ))}
+          {[lineOptions, stackedLineOptions, barOptions, stackedBarOptions, pieOptions, nightingaleOptions, scatterOptions].map(
+            (option, index) => (
+              <div key={index} className="col-12 col-xxl-6">
+                <DCard>
+                  <DCard.Content>
+                    <AppChart
+                      style={{ height: 320 }}
+                      onInit={(instance) => {
+                        instance.setOption(option);
+                      }}
+                    />
+                  </DCard.Content>
+                </DCard>
+              </div>
+            )
+          )}
         </div>
       </div>
     </>
   );
-}
+});
+
+export default ECharts;

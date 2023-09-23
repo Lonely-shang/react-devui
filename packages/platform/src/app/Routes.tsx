@@ -1,4 +1,4 @@
-import type { Control, ControlMode } from './core/useACL';
+import type { Control, ControlMode } from '@react-devui/hooks/useACL';
 import type { IndexRouteObject, NonIndexRouteObject, RouteMatch } from 'react-router-dom';
 
 import { isFunction, isUndefined, nth } from 'lodash';
@@ -78,7 +78,7 @@ export interface NonIndexRouteItemInput extends Omit<NonIndexRouteObject, 'child
 export type RouteItemInput = IndexRouteItemInput | NonIndexRouteItemInput;
 
 // I have a great implementation of route caching, but considering the synchronization of data between pages (like modifying list or detail page data), I ended up not introducing route caching.
-export const AppRoutes = React.memo(() => {
+const AppRoutes = React.memo(() => {
   const ACLGuard = useACLGuard();
   const tokenGuard = useTokenGuard();
   const location = useLocation();
@@ -95,16 +95,18 @@ export const AppRoutes = React.memo(() => {
       },
       {
         path: '/',
+        element: <AppHomeRoute />,
+        data: {
+          canActivate: [tokenGuard],
+        },
+      },
+      {
         element: <AppLayout />,
         data: {
           canActivate: [tokenGuard],
           canActivateChild: [tokenGuard],
         },
         children: [
-          {
-            index: true,
-            element: <AppHomeRoute />,
-          },
           {
             path: 'dashboard',
             children: [
@@ -238,11 +240,12 @@ export const AppRoutes = React.memo(() => {
 
   const title = (() => {
     if (matches) {
-      const match = nth(matches, -1)!;
-      const { title } = match.route.data ?? {};
-      return isFunction(title) ? title(match.params) : title;
+      const match = nth(matches, -1);
+      if (match) {
+        const { title } = match.route.data ?? {};
+        return isFunction(title) ? title(match.params) : title;
+      }
     }
-    return undefined;
   })();
   useEffect(() => {
     if (isUndefined(title)) {
@@ -269,7 +272,9 @@ export const AppRoutes = React.memo(() => {
         title,
       }}
     >
-      <React.Fragment key={location.pathname}>{element}</React.Fragment>
+      {element}
     </RouteStateContext.Provider>
   );
 });
+
+export default AppRoutes;

@@ -11,6 +11,7 @@ import { DBaseInput } from '../_base-input';
 import { useFormControl } from '../form';
 import { useComponentConfig, usePrefixConfig } from '../root';
 import { DCheckboxGroup } from './CheckboxGroup';
+import { DCheckboxGroupRenderer } from './CheckboxGroupRenderer';
 
 export interface DCheckboxProps extends React.HTMLAttributes<HTMLElement> {
   dRef?: {
@@ -28,6 +29,7 @@ const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DCheckbox' a
 export const DCheckbox: {
   (props: DCheckboxProps): JSX.Element | null;
   Group: typeof DCheckboxGroup;
+  GroupRenderer: typeof DCheckboxGroupRenderer;
 } = (props) => {
   const {
     children,
@@ -67,30 +69,32 @@ export const DCheckbox: {
         'is-disabled': disabled,
       })}
     >
-      <div className={`${dPrefix}checkbox__state-container`}>
-        <DBaseInput dFormControl={dFormControl} dLabelFor>
-          {({ render: renderBaseInput }) => {
-            const input = renderBaseInput(
-              <input
-                ref={dRef?.input}
-                className={`${dPrefix}checkbox__input`}
-                type="checkbox"
-                disabled={disabled}
-                aria-checked={dIndeterminate ? 'mixed' : checked}
-                onChange={() => {
-                  changeChecked(!checked);
-                }}
-              />
-            );
+      <div className={`${dPrefix}checkbox__state-container-wrapper`}>
+        <div className={`${dPrefix}checkbox__state-container`}>
+          <DBaseInput dFormControl={dFormControl} dLabelFor>
+            {({ render: renderBaseInput }) => {
+              const input = renderBaseInput(
+                <input
+                  ref={dRef?.input}
+                  className={`${dPrefix}checkbox__input`}
+                  type="checkbox"
+                  disabled={disabled}
+                  aria-checked={dIndeterminate ? 'mixed' : checked}
+                  onChange={() => {
+                    changeChecked(!checked);
+                  }}
+                />
+              );
 
-            return isUndefined(dInputRender) ? input : dInputRender(input);
-          }}
-        </DBaseInput>
-        {dIndeterminate ? (
-          <div className={`${dPrefix}checkbox__indeterminate`}></div>
-        ) : (
-          checked && <div className={`${dPrefix}checkbox__tick`}></div>
-        )}
+              return isUndefined(dInputRender) ? input : dInputRender(input);
+            }}
+          </DBaseInput>
+          {dIndeterminate ? (
+            <div className={`${dPrefix}checkbox__indeterminate`}></div>
+          ) : (
+            checked && <div className={`${dPrefix}checkbox__tick`}></div>
+          )}
+        </div>
       </div>
       {checkNodeExist(children) && <div className={`${dPrefix}checkbox__label`}>{children}</div>}
     </label>
@@ -98,3 +102,4 @@ export const DCheckbox: {
 };
 
 DCheckbox.Group = DCheckboxGroup;
+DCheckbox.GroupRenderer = DCheckboxGroupRenderer;

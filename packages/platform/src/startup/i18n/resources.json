@@ -10,6 +10,10 @@
         "language": {
           "Change language": "Change language"
         },
+        "table": {
+          "ACTIONS": "ACTIONS",
+          "More": "More"
+        },
         "table-filter": {
           "Search": "Search",
           "Reset": "Reset",
@@ -27,6 +31,7 @@
           "My account": "My account",
           "Account Center": "Account Center",
           "Account Settings": "Account Settings",
+          "Change Password": "Change Password",
           "Logout": "Logout"
         },
         "login": {
@@ -100,6 +105,10 @@
         "language": {
           "Change language": "改变语言"
         },
+        "table": {
+          "ACTIONS": "操作",
+          "More": "更多"
+        },
         "table-filter": {
           "Search": "查询",
           "Reset": "重置",
@@ -117,6 +126,7 @@
           "My account": "我的账户",
           "Account Center": "个人中心",
           "Account Settings": "个人设置",
+          "Change Password": "修改密码",
           "Logout": "退出登录"
         },
         "login": {

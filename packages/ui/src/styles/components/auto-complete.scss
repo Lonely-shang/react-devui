@@ -16,9 +16,10 @@ $auto-complete-option-height: 32px;
   }
 
   @include e(option) {
+    @include polyfill-column-gap(8px);
+
     position: relative;
     display: flex;
-    gap: 0 8px;
     align-items: center;
     width: 100%;
     height: $auto-complete-option-height;
@@ -71,7 +72,10 @@ $auto-complete-option-height: 32px;
 
   @include e(loading) {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 5;
     display: flex;
     align-items: center;

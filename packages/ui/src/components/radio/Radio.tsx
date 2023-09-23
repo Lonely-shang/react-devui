@@ -14,6 +14,7 @@ import { DFocusVisible } from '../_focus-visible';
 import { useFormControl } from '../form';
 import { useComponentConfig, usePrefixConfig } from '../root';
 import { DRadioGroup } from './RadioGroup';
+import { DRadioGroupRenderer } from './RadioGroupRenderer';
 
 export interface DRadioProps extends React.HTMLAttributes<HTMLElement> {
   dRef?: {
@@ -34,6 +35,7 @@ const { COMPONENT_NAME } = registerComponentMate({ COMPONENT_NAME: 'DRadio' as c
 export const DRadio: {
   (props: DRadioProps): JSX.Element | null;
   Group: typeof DRadioGroup;
+  GroupRenderer: typeof DRadioGroupRenderer;
 } = (props) => {
   const {
     children,
@@ -64,10 +66,14 @@ export const DRadio: {
 
   return (
     <DBaseDesign
-      dComposeDesign={{
-        active: checked || focusVisible,
-        disabled: disabled,
-      }}
+      dComposeDesign={
+        __type
+          ? {
+              active: checked || focusVisible,
+              disabled: disabled,
+            }
+          : false
+      }
       dFormDesign={false}
     >
       {({ render: renderBaseDesign }) =>
@@ -90,32 +96,34 @@ export const DRadio: {
               }
             }}
           >
-            <div className={`${dPrefix}radio__input-wrapper`}>
-              <DFocusVisible onFocusVisibleChange={setFocusVisible}>
-                {({ render: renderFocusVisible }) => (
-                  <DBaseInput dFormControl={dFormControl} dLabelFor>
-                    {({ render: renderBaseInput }) => {
-                      const input = renderFocusVisible(
-                        renderBaseInput(
-                          <input
-                            ref={dRef?.input}
-                            className={`${dPrefix}radio__input`}
-                            type="radio"
-                            checked={checked}
-                            disabled={disabled}
-                            aria-checked={checked}
-                            onChange={() => {
-                              changeChecked(true);
-                            }}
-                          />
-                        )
-                      );
+            <div className={`${dPrefix}radio__input-wrapper-wrapper`}>
+              <div className={`${dPrefix}radio__input-wrapper`}>
+                <DFocusVisible onFocusVisibleChange={setFocusVisible}>
+                  {({ render: renderFocusVisible }) => (
+                    <DBaseInput dFormControl={dFormControl} dLabelFor>
+                      {({ render: renderBaseInput }) => {
+                        const input = renderFocusVisible(
+                          renderBaseInput(
+                            <input
+                              ref={dRef?.input}
+                              className={`${dPrefix}radio__input`}
+                              type="radio"
+                              checked={checked}
+                              disabled={disabled}
+                              aria-checked={checked}
+                              onChange={() => {
+                                changeChecked(true);
+                              }}
+                            />
+                          )
+                        );
 
-                      return isUndefined(dInputRender) ? input : dInputRender(input);
-                    }}
-                  </DBaseInput>
-                )}
-              </DFocusVisible>
+                        return isUndefined(dInputRender) ? input : dInputRender(input);
+                      }}
+                    </DBaseInput>
+                  )}
+                </DFocusVisible>
+              </div>
             </div>
             {checkNodeExist(children) && <div className={`${dPrefix}radio__label`}>{children}</div>}
             {waveNode}
@@ -127,3 +135,4 @@ export const DRadio: {
 };
 
 DRadio.Group = DRadioGroup;
+DRadio.GroupRenderer = DRadioGroupRenderer;

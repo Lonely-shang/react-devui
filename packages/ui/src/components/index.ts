@@ -16,7 +16,7 @@ export { DAutoComplete } from './auto-complete';
 export type { DAvatarProps } from './avatar';
 export { DAvatar } from './avatar';
 
-export type { DBadgeProps } from './badge';
+export type { DBadgeProps, DBadgeTextProps } from './badge';
 export { DBadge } from './badge';
 
 export type { DBreadcrumbProps } from './breadcrumb';
@@ -25,13 +25,13 @@ export { DBreadcrumb } from './breadcrumb';
 export type { DButtonProps } from './button';
 export { DButton } from './button';
 
-export type { DCardProps, DCardActionProps, DCardHeaderProps, DCardContentProps } from './card';
+export type { DCardProps, DCardActionsProps, DCardActionProps, DCardHeaderProps, DCardContentProps } from './card';
 export { DCard } from './card';
 
 export type { DCascaderProps } from './cascader';
 export { DCascader } from './cascader';
 
-export type { DCheckboxProps, DCheckboxGroupProps } from './checkbox';
+export type { DCheckboxProps, DCheckboxGroupProps, DCheckboxGroupRendererProps } from './checkbox';
 export { DCheckbox } from './checkbox';
 
 export type { DComposeProps, DComposeItemProps } from './compose';
@@ -79,7 +79,7 @@ export { DPopover } from './popover';
 export type { DProgressProps } from './progress';
 export { DProgress } from './progress';
 
-export type { DRadioProps, DRadioGroupProps } from './radio';
+export type { DRadioProps, DRadioGroupProps, DRadioGroupRendererProps } from './radio';
 export { DRadio } from './radio';
 
 export type { DRatingProps } from './rating';

@@ -20,23 +20,23 @@
   }
 
   @include e(button-container) {
+    @include polyfill-gap(12px, 8px);
+
     display: flex;
     flex-wrap: wrap;
-    gap: 12px 8px;
     align-items: center;
   }
 
   @include e(filter) {
-    display: flex;
-
     & + & {
       margin-top: 8px;
     }
   }
 
   @include e(filter-label) {
-    display: inline-flex;
-    align-items: center;
-    height: var(--#{$rd-prefix}size);
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.775em;
+    color: var(--#{$rd-prefix}text-color-sub);
   }
 }

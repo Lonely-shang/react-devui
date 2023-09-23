@@ -4,10 +4,12 @@ import { useImmer } from '@react-devui/hooks';
 import { DRadio } from '@react-devui/ui';
 
 import { AppMap } from '../../../components';
-import styles from './AMap.module.scss';
+import { AppRoute } from '../../../utils';
 import points from './points';
 
-export default function AMap(): JSX.Element | null {
+import styles from './AMap.module.scss';
+
+const AMap = AppRoute(() => {
   const [mapTmp, setMapTmp] = useState('Marker');
   const [infoWindow, setInfoWindow] = useImmer<{ visible: boolean; position?: [number, number] }>({ visible: false });
 
@@ -65,4 +67,6 @@ export default function AMap(): JSX.Element | null {
       </AppMap>
     </div>
   );
-}
+});
+
+export default AMap;

@@ -12,7 +12,10 @@
   @include component-footer;
 
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   pointer-events: none;
   outline: none;
 
@@ -146,7 +149,8 @@
   }
 
   @include e(footer) {
-    gap: 0 6px;
+    @include polyfill-column-gap(6px);
+
     padding: 0 12px 10px;
     border-top: none;
 
@@ -166,7 +170,10 @@
 
   @include e(mask) {
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     pointer-events: all;
   }
 }

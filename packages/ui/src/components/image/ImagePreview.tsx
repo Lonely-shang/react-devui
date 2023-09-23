@@ -1,26 +1,24 @@
 import { isUndefined } from 'lodash';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 
-import { useEvent, useImmer, useIsomorphicLayoutEffect, useLockScroll, useRefExtra } from '@react-devui/hooks';
+import { useEvent, useImmer, useIsomorphicLayoutEffect, useRefExtra } from '@react-devui/hooks';
 import { CloseOutlined, LeftOutlined, RightOutlined, RotateRightOutlined, ZoomInOutlined, ZoomOutOutlined } from '@react-devui/icons';
 import { getClassName } from '@react-devui/utils';
 
-import { useDValue, useMaxIndex } from '../../hooks';
+import { useDValue, useLockScroll, useMaxIndex } from '../../hooks';
 import { registerComponentMate, TTANSITION_DURING_BASE } from '../../utils';
 import { DMask } from '../_mask';
 import { DTransition } from '../_transition';
 import { DButton } from '../button';
 import { DInput } from '../input';
-import { useComponentConfig, usePrefixConfig } from '../root';
+import { ROOT_DATA, useComponentConfig, usePrefixConfig } from '../root';
 
 export interface DImagePreviewProps extends React.HTMLAttributes<HTMLDivElement> {
-  dList: React.ImgHTMLAttributes<HTMLImageElement>[];
+  dList: (React.ImgHTMLAttributes<HTMLImageElement> & { src: string })[];
   dActive?: number;
   dVisible?: boolean;
   dZIndex?: number | string;
-  dMask?: boolean;
-  dMaskClosable?: boolean;
   dEscClosable?: boolean;
   onActiveChange?: (index: number) => void;
   onClose?: () => void;
@@ -34,8 +32,6 @@ export function DImagePreview(props: DImagePreviewProps): JSX.Element | null {
     dActive,
     dVisible,
     dZIndex,
-    dMask = true,
-    dMaskClosable = true,
     dEscClosable = true,
     onActiveChange,
     onClose,
@@ -76,7 +72,7 @@ export function DImagePreview(props: DImagePreviewProps): JSX.Element | null {
   });
 
   const [activeIndex, changeActiveIndex] = useDValue<number>(0, dActive, onActiveChange);
-  const activeSrc = dList[activeIndex].src!;
+  const activeSrc = dList[activeIndex].src;
 
   const [offset, setOffset] = useState(3);
 
@@ -106,7 +102,7 @@ export function DImagePreview(props: DImagePreviewProps): JSX.Element | null {
   })();
 
   const getOffset = () => {
-    setOffset(~~((window.innerWidth - 108) / 120));
+    setOffset(~~((ROOT_DATA.pageSize.width - 108) / 120));
   };
   useIsomorphicLayoutEffect(() => {
     getOffset();
@@ -145,18 +141,6 @@ export function DImagePreview(props: DImagePreviewProps): JSX.Element | null {
   };
 
   useLockScroll(visible);
-
-  useEffect(() => {
-    if (visible) {
-      dataRef.current.prevActiveEl = document.activeElement as HTMLElement | null;
-
-      if (previewRef.current) {
-        previewRef.current.focus({ preventScroll: true });
-      }
-    } else if (dataRef.current.prevActiveEl) {
-      dataRef.current.prevActiveEl.focus({ preventScroll: true });
-    }
-  }, [visible]);
 
   const listenDragEvent = visible && isDragging;
 
@@ -241,9 +225,18 @@ export function DImagePreview(props: DImagePreviewProps): JSX.Element | null {
         dDestroyWhenLeaved
         afterEnter={() => {
           afterVisibleChange?.(true);
+
+          dataRef.current.prevActiveEl = document.activeElement as HTMLElement | null;
+          if (previewRef.current) {
+            previewRef.current.focus({ preventScroll: true });
+          }
         }}
         afterLeave={() => {
           afterVisibleChange?.(false);
+
+          if (dataRef.current.prevActiveEl) {
+            dataRef.current.prevActiveEl.focus({ preventScroll: true });
+          }
         }}
       >
         {(state) => {
@@ -461,16 +454,7 @@ export function DImagePreview(props: DImagePreviewProps): JSX.Element | null {
                     )
                 )}
               </ul>
-              {dMask && (
-                <DMask
-                  dVisible
-                  onClose={() => {
-                    if (dMaskClosable) {
-                      changeVisible(false);
-                    }
-                  }}
-                />
-              )}
+              <DMask dVisible onClose={undefined} />
             </div>
           );
         }}

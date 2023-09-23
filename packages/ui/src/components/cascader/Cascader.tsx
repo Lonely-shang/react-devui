@@ -10,16 +10,16 @@ import React, { useCallback, useState, useMemo, useRef, useImperativeHandle } fr
 
 import { useEventCallback, useId } from '@react-devui/hooks';
 import { CloseOutlined, LoadingOutlined } from '@react-devui/icons';
-import { findNested, getClassName, getVerticalSidePosition } from '@react-devui/utils';
+import { findNested, getClassName } from '@react-devui/utils';
 
 import { useGeneralContext, useDValue } from '../../hooks';
-import { cloneHTMLElement, registerComponentMate, TTANSITION_DURING_POPUP, WINDOW_SPACE } from '../../utils';
+import { cloneHTMLElement, getVerticalSidePosition, registerComponentMate, TTANSITION_DURING_POPUP, WINDOW_SPACE } from '../../utils';
 import { DComboboxKeyboard } from '../_keyboard';
 import { DSelectbox } from '../_selectbox';
 import { DTransition } from '../_transition';
 import { DDropdown } from '../dropdown';
 import { useFormControl } from '../form';
-import { useComponentConfig, usePrefixConfig, useTranslation } from '../root';
+import { ROOT_DATA, useComponentConfig, usePrefixConfig, useTranslation } from '../root';
 import { DTag } from '../tag';
 import { DSearchPanel as DTreeSearchPanel } from '../tree/SearchPanel';
 import { MultipleTreeNode } from '../tree/multiple-node';
@@ -49,6 +49,7 @@ export interface DCascaderProps<V extends DId, T extends DCascaderItem<V>> exten
   dList: T[];
   dModel?: V | null | V[];
   dVisible?: boolean;
+  dInitialVisible?: boolean;
   dPlaceholder?: string;
   dSize?: DSize;
   dLoading?: boolean;
@@ -86,6 +87,7 @@ function Cascader<V extends DId, T extends DCascaderItem<V>>(
     dList,
     dModel,
     dVisible,
+    dInitialVisible = false,
     dPlaceholder,
     dSize,
     dLoading = false,
@@ -163,7 +165,7 @@ function Cascader<V extends DId, T extends DCascaderItem<V>>(
 
   const [searchValue, changeSearchValue] = useDValue<string>('', dSearchValue, onSearchValueChange);
 
-  const [visible, changeVisible] = useDValue<boolean>(false, dVisible, onVisibleChange);
+  const [visible, changeVisible] = useDValue<boolean>(dInitialVisible, dVisible, onVisibleChange);
   const formControlInject = useFormControl(dFormControl);
   const [_select, changeSelect] = useDValue<V | null | V[]>(
     dMultiple ? [] : null,
@@ -280,7 +282,7 @@ function Cascader<V extends DId, T extends DCascaderItem<V>>(
   const updatePosition = useEventCallback(() => {
     if (visible && boxRef.current && popupRef.current) {
       const height = popupRef.current.offsetHeight;
-      const maxWidth = window.innerWidth - WINDOW_SPACE * 2;
+      const maxWidth = ROOT_DATA.pageSize.width - WINDOW_SPACE * 2;
       const width = Math.min(popupRef.current.scrollWidth, maxWidth);
       const { top, left, transformOrigin } = getVerticalSidePosition(
         boxRef.current,
@@ -312,7 +314,15 @@ function Cascader<V extends DId, T extends DCascaderItem<V>>(
     let suffixNode: React.ReactNode = null;
     let selectedLabel: string | undefined;
     if (dMultiple) {
-      const selectedNodes = (_select as V[]).map((v) => nodesMap.get(v) as MultipleTreeNode<V, T>);
+      const selectedNodes: MultipleTreeNode<V, T>[] = [];
+      for (const v of _select as V[]) {
+        const node = nodesMap.get(v);
+        if (node) {
+          selectedNodes.push(node as MultipleTreeNode<V, T>);
+        } else {
+          console.warn(`Can't find item that value field is ${v}!`);
+        }
+      }
 
       suffixNode = (
         <DDropdown
@@ -328,10 +338,10 @@ function Cascader<V extends DId, T extends DCascaderItem<V>>(
               node,
             };
           })}
-          dCloseOnClick={false}
           onItemClick={(id, item) => {
             const checkeds = (item.node as MultipleTreeNode<V, T>).changeStatus('UNCHECKED', select as Set<V>);
             changeSelect(Array.from(checkeds.keys()));
+            return false;
           }}
         >
           <DTag className={`${dPrefix}cascader__multiple-count`} tabIndex={-1} dSize={size}>
@@ -361,9 +371,13 @@ function Cascader<V extends DId, T extends DCascaderItem<V>>(
       ));
     } else {
       if (!isNull(select)) {
-        const node = nodesMap.get(select as V)!;
-        selectedLabel = getText(node);
-        selectedNode = dCustomSelected ? dCustomSelected(node.origin) : selectedLabel;
+        const node = nodesMap.get(select as V);
+        if (node) {
+          selectedLabel = getText(node);
+          selectedNode = dCustomSelected ? dCustomSelected(node.origin) : selectedLabel;
+        } else {
+          console.warn(`Can't find item that value field is ${select}!`);
+        }
       }
     }
     return [selectedNode, suffixNode, selectedLabel];
